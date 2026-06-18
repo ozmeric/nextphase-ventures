@@ -1,1 +1,639 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>NextPhase Ventures</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;width:100%}
+body{background:#0a1628;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit}
+button{cursor:pointer}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#0a1628}
+::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+table{border-collapse:collapse;width:100%}
+optgroup{color:#94a3b8;font-size:11px}
+option{color:#e2e8f0;background:#071020}
+
+/* Mobile bottom nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0d1f3c;border-top:1px solid #1e3a5f;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+@media(max-width:768px){
+  .bottom-nav{display:flex}
+  .desktop-sidebar{display:none!important}
+  .main-content{padding:16px 16px 80px!important}
+  .header-title{font-size:13px!important}
+  .stat-grid{grid-template-columns:1fr 1fr!important}
+  .summary-grid{grid-template-columns:1fr 1fr!important}
+  .rehab-amount{font-size:28px!important}
+  .rehab-remaining{font-size:20px!important}
+  .rehab-grid{grid-template-columns:1fr!important}
+  .project-grid{grid-template-columns:1fr!important}
+  .form-row{flex-direction:column!important}
+  .action-row{flex-wrap:wrap!important}
+  .desktop-table{display:none!important}
+  .mobile-cards{display:block!important}
+  .page-header{flex-direction:column!important;align-items:flex-start!important;gap:12px!important}
+  .page-header-actions{width:100%}
+  .page-header-actions button{width:100%}
+}
+.mobile-cards{display:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useRef } = React;
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwXs0y2pTDQpaTQcV-aN6k30F8x1eAmCLLJdLAQY3dAmyIYaISt2EHH_-KABxaGeVBj/exec";
+
+const ACQUISITION_CATEGORIES = ["Down Payment","Closing Costs","Loan Expenses"];
+const REHAB_CATEGORIES = ["Labor","Demo/Cleanup","Materials","Permits","Utilities","Equipment","Professional Fees","Other"];
+const CATEGORIES = [...ACQUISITION_CATEGORIES,...REHAB_CATEGORIES];
+const CATEGORY_COLORS = {
+  "Down Payment":"#f97316","Closing Costs":"#06b6d4","Loan Expenses":"#a78bfa",
+  "Labor":"#6366f1","Demo/Cleanup":"#e11d48","Materials":"#f59e0b",
+  "Permits":"#10b981","Utilities":"#3b82f6","Equipment":"#ef4444",
+  "Professional Fees":"#8b5cf6","Other":"#6b7280"
+};
+
+const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
+const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+const fmtDateShort = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+const genId   = () => Math.random().toString(36).slice(2,10);
+
+let SESSION_PIN = "";
+
+async function api(action, extra={}) {
+  const res = await fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({pin:SESSION_PIN, action, ...extra})
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+const S = {
+  root:     {minHeight:"100%",background:"#0a1628",color:"#e2e8f0",display:"flex",flexDirection:"column"},
+  header:   {background:"#0d1f3c",borderBottom:"1px solid #1e3a5f",padding:"0 20px",display:"flex",alignItems:"center",gap:12,height:56,position:"sticky",top:0,zIndex:20,flexShrink:0},
+  sidebar:  {width:220,background:"#0d1f3c",borderRight:"1px solid #1e3a5f",padding:"16px 0",display:"flex",flexDirection:"column",height:"calc(100vh - 56px)",position:"sticky",top:56,overflowY:"auto",flexShrink:0},
+  sideLabel:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",padding:"0 16px 6px"},
+  sideItem: a=>({padding:"9px 16px",cursor:"pointer",fontSize:13,color:a?"#f8f0d8":"#7a9cc5",background:a?"#1e3a5f":"transparent",borderLeft:a?"2px solid #d4a017":"2px solid transparent",display:"flex",alignItems:"center",gap:8,transition:"all .15s",userSelect:"none"}),
+  content:  {flex:1,padding:24,overflowY:"auto",minHeight:0},
+  card:     {background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:10,padding:"18px 20px"},
+  btn:      (v="primary")=>({padding:"9px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",
+    background:v==="primary"?"#d4a017":v==="danger"?"#ef444422":v==="ghost"?"#1e3a5f":"#1e3a5f",
+    color:v==="danger"?"#ef4444":v==="ghost"?"#7a9cc5":"#0a1628",
+    cursor:"pointer"
+  }),
+  input:    {background:"#071020",border:"1px solid #1e3a5f",borderRadius:7,padding:"10px 12px",color:"#e2e8f0",fontSize:14,width:"100%",outline:"none"},
+  label:    {fontSize:11,color:"#4a6fa5",fontWeight:700,marginBottom:5,display:"block",textTransform:"uppercase",letterSpacing:"0.06em"},
+  th:       {padding:"10px 12px",fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",textAlign:"left",borderBottom:"1px solid #1e3a5f"},
+  td:       {padding:"12px 12px",fontSize:13,color:"#cbd5e1",borderBottom:"1px solid #071020",verticalAlign:"middle"},
+  badge:    cat=>({background:(CATEGORY_COLORS[cat]||"#6b7280")+"22",color:CATEGORY_COLORS[cat]||"#6b7280",padding:"3px 9px",borderRadius:99,fontSize:11,fontWeight:600,whiteSpace:"nowrap"}),
+};
+
+// ── PIN SCREEN ───────────────────────────────────────────────────────────
+function PinScreen({onUnlock}) {
+  const [pin,setPin]=useState("");
+  const [err,setErr]=useState(false);
+  const [checking,setChecking]=useState(false);
+  const check=async()=>{
+    if(!pin)return;
+    setChecking(true);
+    try{
+      const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({pin,action:"getProjects"})});
+      const data=await res.json();
+      if(data.error==="Unauthorized"){setErr(true);setPin("");}
+      else onUnlock(pin);
+    }catch(e){setErr(true);}
+    setChecking(false);
+  };
+  return React.createElement("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    React.createElement("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:16,padding:"40px 36px",textAlign:"center",width:"100%",maxWidth:340}},
+      React.createElement("div",{style:{fontSize:36,marginBottom:12}},"🏗️"),
+      React.createElement("div",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",marginBottom:4,letterSpacing:"-0.5px"}},"NextPhase Ventures"),
+      React.createElement("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:28}},"Enter PIN to continue"),
+      React.createElement("input",{type:"password",maxLength:6,placeholder:"••••",value:pin,autoFocus:true,
+        style:{...S.input,fontSize:28,textAlign:"center",letterSpacing:10,padding:14,marginBottom:err?8:16,border:err?"1px solid #ef4444":"1px solid #1e3a5f"},
+        onChange:ev=>{setPin(ev.target.value);setErr(false);},
+        onKeyDown:ev=>ev.key==="Enter"&&check()
+      }),
+      err&&React.createElement("div",{style:{fontSize:12,color:"#ef4444",marginBottom:12}},"Incorrect PIN."),
+      React.createElement("button",{style:{...S.btn(),width:"100%",padding:13,fontSize:15},onClick:check,disabled:checking},checking?"Checking…":"Unlock")
+    )
+  );
+}
+
+// ── APP ──────────────────────────────────────────────────────────────────
+function App() {
+  const [authed,setAuthed]         = useState(()=>{try{return sessionStorage.getItem("npv-auth")==="ok"}catch{return false}});
+  const [projects,setProjects]     = useState([]);
+  const [activeId,setActiveId]     = useState(null);
+  const [expenses,setExpenses]     = useState([]);
+  const [loading,setLoading]       = useState(true);
+  const [loadingExp,setLoadingExp] = useState(false);
+  const [saving,setSaving]         = useState(false);
+  const [view,setView]             = useState("home");
+  const [form,setForm]             = useState({});
+  const [filter,setFilter]         = useState({category:"",search:""});
+  const [toast,setToast]           = useState(null);
+  const [delConfirm,setDelConfirm] = useState(null);
+  const [error,setError]           = useState(null);
+
+  const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+  const unlock=(pin)=>{SESSION_PIN=pin;try{sessionStorage.setItem("npv-auth","ok");sessionStorage.setItem("npv-pin",pin);}catch{}setAuthed(true);};
+
+  useEffect(()=>{
+    if(authed){try{const p=sessionStorage.getItem("npv-pin");if(p)SESSION_PIN=p;}catch{}}
+  },[authed]);
+
+  useEffect(()=>{
+    if(!authed)return;
+    setLoading(true);
+    api("getProjects").then(async data=>{
+      let projs=data.projects||[];
+      if(projs.length===0){await api("seedLincoln");const d2=await api("getProjects");projs=d2.projects||[];}
+      setProjects(projs);
+      if(projs.length>0)setActiveId(projs[0].id);
+      setError(null);
+    }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+  },[authed]);
+
+  useEffect(()=>{
+    if(!activeId)return;
+    setLoadingExp(true);
+    api("getExpenses",{projectId:activeId})
+      .then(data=>setExpenses(data.expenses||[]))
+      .catch(e=>showToast("Failed to load expenses","error"))
+      .finally(()=>setLoadingExp(false));
+  },[activeId]);
+
+  const activeProject=projects.find(p=>String(p.id)===String(activeId))||null;
+
+  const saveExpense=async()=>{
+    if(!form.description||!form.amount||!form.date){showToast("Fill in all required fields.","error");return;}
+    const amount=parseFloat(form.amount);
+    if(isNaN(amount)||amount<=0){showToast("Enter a valid amount.","error");return;}
+    setSaving(true);
+    try{
+      if(form.id){
+        await api("updateExpense",{projectId:activeId,expense:{...form,amount}});
+        setExpenses(prev=>prev.map(e=>e.id===form.id?{...form,amount}:e));
+        showToast("Expense updated.");
+      } else {
+        const newExp={...form,id:genId(),amount};
+        await api("addExpense",{projectId:activeId,expense:newExp});
+        setExpenses(prev=>[...prev,newExp]);
+        showToast("Expense added.");
+      }
+      setView("expenses");
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteExpense=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteExpense",{projectId:activeId,expenseId:id});
+      setExpenses(prev=>prev.filter(e=>e.id!==id));
+      showToast("Expense deleted.");
+    }catch(e){showToast("Delete failed","error");}
+    setDelConfirm(null);setSaving(false);
+  };
+
+  const saveProject=async()=>{
+    if(!form.name){showToast("Project name is required.","error");return;}
+    setSaving(true);
+    try{
+      const pp=parseFloat(form.purchasePrice)||0;
+      const rb=parseFloat(form.rehabBudget)||0;
+      if(form.id){
+        await api("updateProject",{project:{...form,purchasePrice:pp,rehabBudget:rb}});
+        setProjects(prev=>prev.map(p=>p.id===form.id?{...form,purchasePrice:pp,rehabBudget:rb}:p));
+        showToast("Project updated.");setView("dashboard");
+      } else {
+        const newP={id:genId(),name:form.name,purchasePrice:pp,rehabBudget:rb,description:form.description||""};
+        await api("addProject",{project:newP});
+        setProjects(prev=>[...prev,newP]);
+        setActiveId(newP.id);setExpenses([]);
+        showToast("Project created.");setView("dashboard");
+      }
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteProject=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteProject",{projectId:id});
+      const rem=projects.filter(p=>p.id!==id);
+      setProjects(rem);
+      if(activeId===id){setActiveId(rem[0]?.id||null);setExpenses([]);}
+      showToast("Project deleted.");
+      setDelConfirm(null);
+      setView(rem.length>0?"dashboard":"home");
+    }catch(e){showToast("Delete failed","error");}
+    setSaving(false);
+  };
+
+  const openAddExpense=(expense=null)=>{
+    setForm(expense?{...expense}:{date:new Date().toISOString().slice(0,10),category:CATEGORIES[0]});
+    setView("add-expense");
+  };
+
+  const navTo=(v)=>{setView(v);window.scrollTo(0,0);};
+
+  if(!authed) return React.createElement(PinScreen,{onUnlock:unlock});
+
+  const e=React.createElement;
+
+  if(loading) return e("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}},
+    e("div",{style:{fontSize:28}},"⏳"),
+    e("div",{style:{color:"#4a6fa5",fontSize:14}},"Connecting…")
+  );
+
+  if(error) return e("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    e("div",{style:{...S.card,maxWidth:360,width:"100%",textAlign:"center"}},
+      e("div",{style:{fontSize:28,marginBottom:12}},"⚠️"),
+      e("div",{style:{fontWeight:700,color:"#f8f0d8",marginBottom:8}},"Connection failed"),
+      e("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:16}},error),
+      e("button",{style:{...S.btn(),width:"100%"},onClick:()=>window.location.reload()},"Retry")
+    )
+  );
+
+  // Computed
+  const acqExp    =expenses.filter(ex=>ACQUISITION_CATEGORIES.includes(ex.category));
+  const rehabExp  =expenses.filter(ex=>REHAB_CATEGORIES.includes(ex.category));
+  const acqSpent  =acqExp.reduce((s,ex)=>s+parseFloat(ex.amount||0),0);
+  const rehabSpent=rehabExp.reduce((s,ex)=>s+parseFloat(ex.amount||0),0);
+  const pp        =parseFloat(activeProject?.purchasePrice)||0;
+  const rb        =parseFloat(activeProject?.rehabBudget)||0;
+  const dpAmt     =parseFloat(expenses.find(ex=>ex.category==="Down Payment")?.amount||0);
+  const loanAmt   =Math.max(0,pp-dpAmt);
+  const totalCost =pp+rb;
+  const rehabRem  =rb-rehabSpent;
+  const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
+  const over      =rehabRem<0;
+  const acqByCat  =ACQUISITION_CATEGORIES.map(c=>({name:c,total:acqExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
+  const rehabByCat=REHAB_CATEGORIES.map(c=>({name:c,total:rehabExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
+  const recent    =[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  const filtered  =expenses.filter(ex=>{
+    if(filter.category&&ex.category!==filter.category)return false;
+    if(filter.search&&!ex.description?.toLowerCase().includes(filter.search.toLowerCase())&&!ex.vendor?.toLowerCase().includes(filter.search.toLowerCase()))return false;
+    return true;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // ── FORM VIEWS ──
+  if(view==="add-expense"||view==="add-project"||view==="edit-project"){
+    const isExpense=view==="add-expense";
+    const isEditProj=view==="edit-project";
+    return e("div",{style:{minHeight:"100vh",background:"#0a1628"}},
+      e("div",{style:S.header},
+        e("button",{style:{background:"none",border:"none",color:"#d4a017",fontSize:22,padding:"0 8px 0 0",lineHeight:1},onClick:()=>setView(isExpense?"expenses":activeProject?"dashboard":"home")},"←"),
+        e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8"}},isExpense?(form.id?"Edit Expense":"Add Expense"):isEditProj?"Edit Project":"New Project")
+      ),
+      e("div",{style:{maxWidth:560,margin:"0 auto",padding:"24px 16px"}},
+        e("div",{style:{...S.card,display:"flex",flexDirection:"column",gap:16}},
+          isExpense?[
+            e("div",{key:"desc"},e("label",{style:S.label},"Description *"),e("input",{style:S.input,placeholder:"e.g. Drywall materials",value:form.description||"",onChange:ev=>setForm({...form,description:ev.target.value})})),
+            e("div",{key:"amtdate",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Amount ($) *"),e("input",{style:S.input,type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Date *"),e("input",{style:S.input,type:"date",value:form.date||"",onChange:ev=>setForm({...form,date:ev.target.value})}))
+            ),
+            e("div",{key:"catven",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Category"),
+                e("select",{style:S.input,value:form.category||CATEGORIES[0],onChange:ev=>setForm({...form,category:ev.target.value})},
+                  e("optgroup",{label:"── Acquisition ──"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
+                  e("optgroup",{label:"── Rehab ──"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
+                )
+              ),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Vendor"),e("input",{style:S.input,placeholder:"e.g. Home Depot",value:form.vendor||"",onChange:ev=>setForm({...form,vendor:ev.target.value})}))
+            ),
+            e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
+          ]:[
+            e("div",{key:"name"},e("label",{style:S.label},"Project Name *"),e("input",{style:S.input,placeholder:"e.g. 123 Oak Street",value:form.name||"",onChange:ev=>setForm({...form,name:ev.target.value})})),
+            e("div",{key:"desc"},e("label",{style:S.label},"Description"),e("input",{style:S.input,placeholder:"e.g. Richmond, VA — Fix & Flip",value:form.description||"",onChange:ev=>setForm({...form,description:ev.target.value})})),
+            e("div",{key:"budgets",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Purchase Price ($)"),e("input",{style:S.input,type:"number",placeholder:"e.g. 320000",value:form.purchasePrice||"",onChange:ev=>setForm({...form,purchasePrice:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Rehab Budget ($)"),e("input",{style:S.input,type:"number",placeholder:"e.g. 120000",value:form.rehabBudget||"",onChange:ev=>setForm({...form,rehabBudget:ev.target.value})}))
+            )
+          ],
+          e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
+            e("button",{style:S.btn("ghost"),onClick:()=>setView(isExpense?"expenses":activeProject?"dashboard":"home"),disabled:saving},"Cancel"),
+            e("button",{style:{...S.btn(),minWidth:120},onClick:isExpense?saveExpense:saveProject,disabled:saving},saving?"Saving…":isExpense?(form.id?"Save Changes":"Add Expense"):(form.id?"Save Changes":"Create Project"))
+          )
+        )
+      )
+    );
+  }
+
+  // ── SIDEBAR ──
+  const Sidebar=()=>e("div",{style:S.sidebar,className:"desktop-sidebar"},
+    e("div",{style:S.sideLabel},"Navigation"),
+    e("div",{style:S.sideItem(view==="home"),onClick:()=>navTo("home")},"🏠 All Projects"),
+    activeProject&&e("div",{style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
+    activeProject&&e("div",{style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
+    e("div",{style:{marginTop:16}},
+      e("div",{style:S.sideLabel},"Projects"),
+      ...projects.map(p=>e("div",{key:p.id,
+        style:{...S.sideItem(p.id===activeId&&view!=="home"),paddingLeft:20,fontSize:12},
+        onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+        e("span",{style:{width:7,height:7,borderRadius:"50%",background:p.id===activeId?"#d4a017":"#1e3a5f",flexShrink:0}}),
+        e("span",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name)
+      )),
+      e("div",{style:{padding:"10px 16px"}},
+        e("button",{style:{...S.btn("ghost"),width:"100%",fontSize:12,padding:"7px 10px"},onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
+      )
+    )
+  );
+
+  // ── BOTTOM NAV (mobile) ──
+  const BottomNav=()=>e("div",{style:{display:"flex"},className:"bottom-nav"},
+    ...[
+      {icon:"🏠",label:"Projects",v:"home"},
+      {icon:"📊",label:"Dashboard",v:"dashboard"},
+      {icon:"📋",label:"Expenses",v:"expenses"},
+      {icon:"➕",label:"Add",v:"add-expense"},
+    ].map(item=>e("div",{key:item.v,
+      style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"10px 0",cursor:"pointer",
+        color:view===item.v?"#d4a017":"#4a6fa5",fontSize:10,fontWeight:view===item.v?700:400,gap:3},
+      onClick:()=>{
+        if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
+        if((item.v==="dashboard"||item.v==="expenses")&&!activeProject)return;
+        if(item.v==="add-expense"){openAddExpense();return;}
+        navTo(item.v);
+      }},
+      e("span",{style:{fontSize:18}},item.icon),
+      item.label
+    ))
+  );
+
+  // ── HOME VIEW ──
+  const HomeView=()=>e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
+      e("div",null,
+        e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Projects"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},projects.length+" project"+(projects.length!==1?"s":""))
+      ),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
+      )
+    ),
+    projects.length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"48px 16px"}},
+          e("div",{style:{fontSize:36,marginBottom:10}},"🏗️"),
+          e("div",{style:{fontWeight:700,color:"#f8f0d8",marginBottom:8}},"No projects yet"),
+          e("button",{style:{...S.btn(),marginTop:8},onClick:()=>{setForm({});navTo("add-project");}},"Create Project")
+        )
+      :e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14},className:"project-grid"},
+          ...projects.map(p=>e("div",{key:p.id,
+            style:{...S.card,cursor:"pointer",borderColor:p.id===activeId?"#d4a017":"#1e3a5f",transition:"border-color .15s"},
+            onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+            e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}},
+              e("div",null,
+                e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8",marginBottom:2}},p.name),
+                e("div",{style:{fontSize:12,color:"#4a6fa5"}},p.description||"Fix & Flip")
+              ),
+              e("div",{style:{width:9,height:9,borderRadius:"50%",background:"#10b981",marginTop:3}})
+            ),
+            e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
+              e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Purchase"),
+                e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(p.purchasePrice))
+              ),
+              e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Rehab Budget"),
+                e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
+              )
+            ),
+            e("div",{style:{marginTop:12,fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →")
+          ))
+        )
+  );
+
+  // ── DASHBOARD VIEW ──
+  const DashboardView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:12,flexWrap:"wrap"}},
+      e("div",null,
+        e("h1",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},activeProject?.name),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},activeProject?.description||"Fix & Flip")
+      ),
+      e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+        e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
+        e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("expenses")},"Expenses"),
+        e("button",{style:{...S.btn("danger"),fontSize:12},onClick:()=>setDelConfirm({type:"project",id:activeId,name:activeProject?.name})},"Delete")
+      )
+    ),
+
+    // Cost Summary
+    e("div",{style:{...S.card,marginBottom:16,background:"linear-gradient(135deg,#0d1f3c,#0f2548)",border:"1px solid #2a4a7f"}},
+      e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14}},"Project Cost Summary"),
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12},className:"summary-grid"},
+        ...[
+          {label:"Purchase Price",value:fmt(pp),color:"#f8f0d8"},
+          {label:"Loan Amount",value:fmt(loanAmt),color:"#a78bfa"},
+          {label:"Rehab Budget",value:fmt(rb),color:"#d4a017"},
+          {label:"Total Project",value:fmt(totalCost),color:"#10b981"},
+        ].map((item,i)=>e("div",{key:i,style:{background:"#071020",borderRadius:8,padding:"12px 14px"}},
+          e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}},item.label),
+          e("div",{style:{fontSize:18,fontWeight:800,color:item.color,lineHeight:1}},item.value)
+        ))
+      )
+    ),
+
+    // Rehab Budget
+    e("div",{style:{...S.card,marginBottom:16,padding:"20px"}},
+      e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}},
+        e("div",null,
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"🔨 Rehab Budget"),
+          e("div",{style:{display:"flex",alignItems:"baseline",gap:8}},
+            e("span",{style:{fontSize:32,fontWeight:900,color:over?"#ef4444":rehabPct>80?"#f59e0b":"#d4a017",lineHeight:1},className:"rehab-amount"},fmt(rehabSpent)),
+            e("span",{style:{fontSize:13,color:"#4a6fa5"}},"of "+fmt(rb))
+          )
+        ),
+        e("div",{style:{textAlign:"right"}},
+          e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},over?"Over Budget":"Remaining"),
+          e("div",{style:{fontSize:24,fontWeight:800,color:over?"#ef4444":"#10b981"},className:"rehab-remaining"},fmt(Math.abs(rehabRem))),
+          e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},rehabPct.toFixed(1)+"% used")
+        )
+      ),
+      e("div",{style:{background:"#071020",borderRadius:99,height:16,overflow:"hidden",marginBottom:14}},
+        e("div",{style:{width:rehabPct+"%",height:"100%",background:over?"#ef4444":rehabPct>80?"#f59e0b":"#d4a017",borderRadius:99,transition:"width .6s",position:"relative"}},
+          rehabPct>12&&e("span",{style:{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:10,fontWeight:700,color:"rgba(0,0,0,0.7)"}},rehabPct.toFixed(0)+"%")
+        )
+      ),
+      rehabByCat.length>0
+        ?e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px"},className:"rehab-grid"},
+            ...rehabByCat.sort((a,b)=>b.total-a.total).map(c=>{
+              const pct=rb>0?(c.total/rb)*100:0;
+              return e("div",{key:c.name},
+                e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}},
+                  e("span",{style:{color:"#7a9cc5",display:"flex",alignItems:"center",gap:5}},
+                    e("span",{style:{width:6,height:6,borderRadius:"50%",background:CATEGORY_COLORS[c.name]||"#d4a017",display:"inline-block"}}),
+                    c.name
+                  ),
+                  e("span",{style:{color:"#f8f0d8",fontWeight:700}},fmt(c.total))
+                ),
+                e("div",{style:{background:"#071020",borderRadius:99,height:5}},
+                  e("div",{style:{width:Math.min(100,pct)+"%",height:"100%",background:CATEGORY_COLORS[c.name]||"#d4a017",borderRadius:99}})
+                )
+              );
+            })
+          )
+        :e("div",{style:{fontSize:13,color:"#4a6fa5",textAlign:"center",padding:"8px 0"}},"No rehab expenses yet.")
+    ),
+
+    // Acquisition
+    e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
+        e("div",{style:{fontSize:13,fontWeight:700,color:"#06b6d4"}},"🏦 Acquisition Costs"),
+        e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(acqSpent))
+      ),
+      acqByCat.length===0
+        ?e("div",{style:{fontSize:13,color:"#4a6fa5"}},"No acquisition expenses yet.")
+        :acqByCat.map(c=>e("div",{key:c.name,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1e3a5f"}},
+            e("span",{style:{display:"flex",alignItems:"center",gap:7,fontSize:13,color:"#cbd5e1"}},
+              e("span",{style:{width:8,height:8,borderRadius:"50%",background:CATEGORY_COLORS[c.name]||"#6b7280",flexShrink:0}}),
+              c.name
+            ),
+            e("span",{style:{fontWeight:700,color:"#f8f0d8"}},fmt(c.total))
+          )),
+      e("div",{style:{fontSize:11,color:"#2a4a7f",marginTop:8,fontStyle:"italic"}},"Excluded from rehab budget.")
+    ),
+
+    // Recent
+    recent.length>0&&e("div",{style:S.card},
+      e("div",{style:{fontSize:13,fontWeight:700,color:"#7a9cc5",marginBottom:12}},"Recent Expenses"),
+      ...recent.map(ex=>e("div",{key:ex.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #1e3a5f"}},
+        e("div",null,
+          e("div",{style:{fontSize:13,color:"#e2e8f0"}},ex.description),
+          e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.category+" · "+fmtDateShort(ex.date))
+        ),
+        e("span",{style:{fontWeight:700,fontSize:14,color:"#f8f0d8",whiteSpace:"nowrap",marginLeft:8}},fmt(ex.amount))
+      ))
+    )
+  );
+
+  // ── EXPENSES VIEW ──
+  const ExpensesView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
+      e("h2",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},"All Expenses"),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>openAddExpense()},"+ Add Expense")
+      )
+    ),
+    e("div",{style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
+      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,onChange:ev=>setFilter({...filter,search:ev.target.value})}),
+      e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>setFilter({...filter,category:ev.target.value})},
+        e("option",{value:""},"All Categories"),
+        e("optgroup",{label:"Acquisition"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
+        e("optgroup",{label:"Rehab"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
+      )
+    ),
+    filtered.length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"36px 16px",color:"#4a6fa5"}},
+          e("div",{style:{fontSize:28,marginBottom:8}},"🔍"),
+          e("div",{style:{fontWeight:600}},"No expenses found")
+        )
+      :e("div",null,
+          // Desktop table
+          e("div",{style:{...S.card,padding:0,overflow:"hidden"},className:"desktop-table"},
+            e("table",null,
+              e("thead",null,e("tr",null,
+                ...["Date","Description","Category","Vendor","Amount",""].map((h,i)=>e("th",{key:i,style:{...S.th,textAlign:h==="Amount"?"right":"left"}},h))
+              )),
+              e("tbody",null,...filtered.map(ex=>
+                e("tr",{key:ex.id,
+                  onMouseEnter:ev=>ev.currentTarget.style.background="#0f2548",
+                  onMouseLeave:ev=>ev.currentTarget.style.background=""},
+                  e("td",{style:S.td},e("span",{style:{fontSize:12,color:"#4a6fa5",whiteSpace:"nowrap"}},fmtDate(ex.date))),
+                  e("td",{style:S.td},
+                    e("div",null,ex.description),
+                    ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                  ),
+                  e("td",{style:S.td},e("span",{style:S.badge(ex.category)},ex.category)),
+                  e("td",{style:{...S.td,color:"#4a6fa5"}},ex.vendor||"—"),
+                  e("td",{style:{...S.td,textAlign:"right",fontWeight:700,color:"#f8f0d8",whiteSpace:"nowrap"}},fmt(ex.amount)),
+                  e("td",{style:{...S.td,whiteSpace:"nowrap"}},
+                    e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>openAddExpense(ex)},"✏️"),
+                    e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"🗑️")
+                  )
+                )
+              ))
+            )
+          ),
+          // Mobile cards
+          e("div",{className:"mobile-cards"},
+            ...filtered.map(ex=>e("div",{key:ex.id,style:{...S.card,marginBottom:10}},
+              e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}},
+                e("div",{style:{flex:1}},
+                  e("div",{style:{fontWeight:600,color:"#f8f0d8",fontSize:14}},ex.description),
+                  ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                ),
+                e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginLeft:8,whiteSpace:"nowrap"}},fmt(ex.amount))
+              ),
+              e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}},
+                e("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
+                  e("span",{style:S.badge(ex.category)},ex.category),
+                  e("span",{style:{fontSize:12,color:"#4a6fa5"}},fmtDateShort(ex.date)),
+                  ex.vendor&&e("span",{style:{fontSize:12,color:"#4a6fa5"}},ex.vendor)
+                ),
+                e("div",{style:{display:"flex",gap:4}},
+                  e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openAddExpense(ex)},"Edit"),
+                  e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"Delete")
+                )
+              )
+            ))
+          )
+        )
+  );
+
+  return e("div",{style:S.root},
+    e("div",{style:S.header},
+      e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8",display:"flex",alignItems:"center",gap:8,cursor:"pointer"},onClick:()=>navTo("home"),className:"header-title"},
+        e("div",{style:{width:28,height:28,background:"#1e3a5f",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#d4a017",flexShrink:0}},"N"),
+        "NextPhase Ventures"
+      ),
+      saving&&e("span",{style:{fontSize:12,color:"#d4a017",marginLeft:4}},"Saving…"),
+      activeProject&&view!=="home"&&e("div",{style:{marginLeft:"auto"}},
+        e("button",{style:{...S.btn(),fontSize:13},onClick:()=>openAddExpense()},"+ Add")
+      )
+    ),
+
+    e("div",{style:{display:"flex",flex:1,minHeight:0}},
+      e(Sidebar),
+      e("div",{style:{...S.content},className:"main-content"},
+        view==="home"      ?e(HomeView):
+        view==="dashboard" ?e(DashboardView):
+        view==="expenses"  ?e(ExpensesView):null
+      )
+    ),
+
+    e(BottomNav),
+
+    delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
+        e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":"Expense")+"?"),
+        e("p",{style:{fontSize:13,color:"#4a6fa5",marginBottom:20}},'"'+delConfirm.name+'" will be permanently removed'+(delConfirm.type==="project"?" and all its expenses":"")+"."),
+        e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
+          e("button",{style:S.btn("ghost"),onClick:()=>setDelConfirm(null),disabled:saving},"Cancel"),
+          e("button",{style:S.btn("danger"),disabled:saving,onClick:()=>delConfirm.type==="project"?deleteProject(delConfirm.id):deleteExpense(delConfirm.id)},saving?"Deleting…":"Delete")
+        )
+      )
+    ),
+
+    toast&&e("div",{style:{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?"#ef4444":"#10b981",color:"#fff",padding:"10px 20px",borderRadius:8,fontSize:13,fontWeight:600,zIndex:100,boxShadow:"0 4px 20px #0006",whiteSpace:"nowrap"}},toast.msg)
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
