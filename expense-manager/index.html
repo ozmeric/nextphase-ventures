@@ -49,7 +49,7 @@ option{color:#e2e8f0;background:#071020}
 <script>
 const { useState, useEffect, useRef } = React;
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwXs0y2pTDQpaTQcV-aN6k30F8x1eAmCLLJdLAQY3dAmyIYaISt2EHH_-KABxaGeVBj/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyM_JXq56rzfVdKz2ZWV9gksNIZ3_06ydYviygabO8bKJwr60w3wFYfMmT_UE9zO28I/exec";
 
 const ACQUISITION_CATEGORIES = ["Down Payment","Closing Costs","Loan Expenses"];
 const REHAB_CATEGORIES = ["Labor","Demo/Cleanup","Materials","Permits","Utilities","Equipment","Professional Fees","Other"];
@@ -401,7 +401,11 @@ function App() {
                 e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8",marginBottom:2}},p.name),
                 e("div",{style:{fontSize:12,color:"#4a6fa5"}},p.description||"Fix & Flip")
               ),
-              e("div",{style:{width:9,height:9,borderRadius:"50%",background:"#10b981",marginTop:3}})
+              e("div",{style:{
+                width:"auto",padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,marginTop:2,
+                background:p.description?.includes("Sold")?"#ef444422":p.description?.includes("No budget")?"#1e3a5f":"#10b98122",
+                color:p.description?.includes("Sold")?"#ef4444":p.description?.includes("No budget")?"#4a6fa5":"#10b981"
+              }},p.description?.includes("Sold")?"Sold":p.description?.includes("No budget")?"General":"Active")
             ),
             e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
               e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
@@ -420,10 +424,16 @@ function App() {
 
   // ── DASHBOARD VIEW ──
   const DashboardView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    const isGeneral = activeProject?.description?.includes("No budget");
+    const isSold    = activeProject?.description?.includes("Sold");
     e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:12,flexWrap:"wrap"}},
       e("div",null,
-        e("h1",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},activeProject?.name),
-        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},activeProject?.description||"Fix & Flip")
+        e("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:4}},
+          e("h1",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},activeProject?.name),
+          isSold&&e("span",{style:{background:"#ef444422",color:"#ef4444",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"Sold"),
+          isGeneral&&e("span",{style:{background:"#1e3a5f",color:"#4a6fa5",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"General")
+        ),
+        e("p",{style:{color:"#4a6fa5",fontSize:13}},activeProject?.description?.split("|")[0]?.trim()||"Fix & Flip")
       ),
       e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
@@ -432,8 +442,8 @@ function App() {
       )
     ),
 
-    // Cost Summary
-    e("div",{style:{...S.card,marginBottom:16,background:"linear-gradient(135deg,#0d1f3c,#0f2548)",border:"1px solid #2a4a7f"}},
+    // Cost Summary — hidden for General Expenses
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16,background:"linear-gradient(135deg,#0d1f3c,#0f2548)",border:"1px solid #2a4a7f"}},
       e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14}},"Project Cost Summary"),
       e("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12},className:"summary-grid"},
         ...[
@@ -448,8 +458,8 @@ function App() {
       )
     ),
 
-    // Rehab Budget
-    e("div",{style:{...S.card,marginBottom:16,padding:"20px"}},
+    // Rehab Budget — hidden for General Expenses
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16,padding:"20px"}},
       e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}},
         e("div",null,
           e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"🔨 Rehab Budget"),
@@ -490,8 +500,14 @@ function App() {
         :e("div",{style:{fontSize:13,color:"#4a6fa5",textAlign:"center",padding:"8px 0"}},"No rehab expenses yet.")
     ),
 
-    // Acquisition
-    e("div",{style:{...S.card,marginBottom:16}},
+    // For General Expenses show simple total; for projects show acquisition
+    isGeneral&&e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        e("div",{style:{fontSize:13,fontWeight:700,color:"#7a9cc5"}},"💼 Total Expenses"),
+        e("div",{style:{fontSize:22,fontWeight:800,color:"#f8f0d8"}},fmt(expenses.reduce((s,ex)=>s+parseFloat(ex.amount||0),0)))
+      )
+    ),
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16}},
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
         e("div",{style:{fontSize:13,fontWeight:700,color:"#06b6d4"}},"🏦 Acquisition Costs"),
         e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(acqSpent))
