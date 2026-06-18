@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NextPhase Ventures</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%}
+body{background:#0a1628;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(212,160,23,0.1)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-mark{width:34px;height:34px;background:#1e3a5f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#d4a017;flex-shrink:0}
+.nav-name{font-weight:800;font-size:15px;color:#f8f0d8;letter-spacing:-0.3px}
+.nav-cta{background:#d4a017;color:#0a1628;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;text-decoration:none;transition:opacity .2s}
+.nav-cta:hover{opacity:0.85}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;position:relative;overflow:hidden}
+
+/* Geometric background elements */
+.hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:600px;border:1px solid rgba(212,160,23,0.06);border-radius:50%;pointer-events:none}
+.hero::after{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:400px;height:400px;border:1px solid rgba(212,160,23,0.08);border-radius:50%;pointer-events:none}
+
+.hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#d4a017;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';display:block;width:32px;height:1px;background:#d4a017;opacity:0.5}
+
+.hero h1{font-size:clamp(40px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-2px;color:#f8f0d8;margin-bottom:12px;max-width:800px}
+.hero h1 em{font-style:normal;color:#d4a017}
+
+.hero-sub{font-size:clamp(16px,2.5vw,22px);color:#4a6fa5;font-weight:400;margin-bottom:48px;max-width:480px;line-height:1.5}
+
+.hero-rule{width:1px;height:60px;background:linear-gradient(to bottom,#d4a017,transparent);margin:0 auto 32px}
+
+.tagline{font-size:clamp(14px,2vw,18px);color:#7a9cc5;font-weight:500;letter-spacing:0.02em;margin-bottom:48px}
+.tagline strong{color:#f8f0d8;font-weight:700}
+
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.btn-primary{background:#d4a017;color:#0a1628;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;transition:opacity .2s;border:none;cursor:pointer}
+.btn-primary:hover{opacity:0.85}
+.btn-ghost{background:transparent;color:#7a9cc5;font-weight:600;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;border:1px solid #1e3a5f;transition:all .2s}
+.btn-ghost:hover{border-color:#d4a017;color:#f8f0d8}
+
+/* ── PILLARS ── */
+.pillars{padding:80px 24px;max-width:1000px;margin:0 auto}
+.pillars-label{font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4a6fa5;text-align:center;margin-bottom:48px}
+.pillars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border:1px solid #1e3a5f;border-radius:12px;overflow:hidden}
+.pillar{background:#0d1f3c;padding:36px 28px;position:relative}
+.pillar+.pillar{border-left:1px solid #1e3a5f}
+.pillar-num{font-size:11px;font-weight:700;color:#d4a017;letter-spacing:0.1em;margin-bottom:16px}
+.pillar-title{font-size:22px;font-weight:800;color:#f8f0d8;margin-bottom:10px;letter-spacing:-0.5px}
+.pillar-body{font-size:14px;color:#4a6fa5;line-height:1.6}
+
+/* ── MISSION ── */
+.mission{padding:80px 24px;text-align:center;max-width:700px;margin:0 auto}
+.mission-line{width:40px;height:2px;background:#d4a017;margin:0 auto 32px}
+.mission blockquote{font-size:clamp(22px,4vw,36px);font-weight:800;color:#f8f0d8;line-height:1.2;letter-spacing:-0.5px;margin-bottom:20px}
+.mission blockquote em{font-style:normal;color:#d4a017}
+.mission p{font-size:15px;color:#4a6fa5;line-height:1.6}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid #1e3a5f;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-logo{display:flex;align-items:center;gap:8px}
+.footer-mark{width:28px;height:28px;background:#1e3a5f;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#d4a017}
+.footer-name{font-size:13px;font-weight:700;color:#f8f0d8}
+.footer-right{font-size:12px;color:#2a4a7f}
+
+/* ── LOGO MARK SVG ── */
+.hero-logo{margin-bottom:32px}
+
+@media(max-width:700px){
+  .pillars-grid{grid-template-columns:1fr}
+  .pillar+.pillar{border-left:none;border-top:1px solid #1e3a5f}
+  nav{padding:0 20px}
+  footer{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-mark">N</div>
+    <span class="nav-name">NextPhase Ventures</span>
+  </a>
+
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+
+  <!-- Logo mark -->
+  <div class="hero-logo">
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="72" height="72" rx="16" fill="#1e3a5f"/>
+      <!-- Roof outline -->
+      <polyline points="10,38 36,14 62,38" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round"/>
+      <!-- Arrow spike -->
+      <rect x="31" y="4" width="10" height="14" rx="2" fill="#d4a017"/>
+      <polygon points="36,0 42,8 30,8" fill="#d4a017"/>
+      <!-- N letterform -->
+      <rect x="14" y="38" width="9" height="24" rx="2" fill="#f8f0d8"/>
+      <polygon points="23,38 30,38 58,62 51,62" fill="#f8f0d8"/>
+      <rect x="49" y="38" width="9" height="24" rx="2" fill="#f8f0d8"/>
+      <!-- Gold slash -->
+      <polygon points="25,38 33,38 44,62 36,62" fill="#d4a017"/>
+    </svg>
+  </div>
+
+  <div class="hero-eyebrow">NextPhase Ventures</div>
+
+  <h1>We turn houses<br/>into <em>homes.</em></h1>
+
+  <p class="hero-sub">Fix &amp; flip done with purpose — giving families a new home, a fresh start, a new life.</p>
+
+  <div class="hero-rule"></div>
+
+  <p class="tagline"><strong>Fix it.</strong> &nbsp;·&nbsp; <strong>Flip it.</strong> &nbsp;·&nbsp; <strong>Build wealth.</strong></p>
+
+  <div class="hero-btns">
+    <a href="mailto:nextphase.ventures25@gmail.com" class="btn-primary">Get in touch</a>
+  </div>
+
+</section>
+
+<!-- PILLARS -->
+<section class="pillars">
+  <div class="pillars-label">What we do</div>
+  <div class="pillars-grid">
+    <div class="pillar">
+      <div class="pillar-num">01</div>
+      <div class="pillar-title">Fix &amp; Flip</div>
+      <div class="pillar-body">We find undervalued properties, renovate them to their full potential, and bring them back to life for the next family.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">02</div>
+      <div class="pillar-title">New Homes</div>
+      <div class="pillar-body">Every house we touch becomes someone's home. We take pride in quality finishes that families will love for years to come.</div>
+    </div>
+    <div class="pillar">
+      <div class="pillar-num">03</div>
+      <div class="pillar-title">New Life</div>
+      <div class="pillar-body">We believe in second chances — for properties and for people. A new home means a new chapter, a new beginning.</div>
+    </div>
+  </div>
+</section>
+
+<!-- MISSION -->
+<section class="mission">
+  <div class="mission-line"></div>
+  <blockquote>"Families deserve a place to call <em>home.</em>"</blockquote>
+  <p>NextPhase Ventures is built on the belief that real estate investment can do more than build wealth — it can transform communities and change lives, one home at a time.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    <div class="footer-mark">N</div>
+    <span class="footer-name">NextPhase Ventures</span>
+  </div>
+  <div class="footer-right">© 2026 NextPhase Ventures · nextphaseventures.co</div>
+</footer>
+
+</body>
+</html>
