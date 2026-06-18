@@ -423,9 +423,9 @@ function App() {
   );
 
   // ── DASHBOARD VIEW ──
+  const isGeneral = activeProject?.description?.includes("No budget");
+  const isSold    = activeProject?.description?.includes("Sold");
   const DashboardView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
-    const isGeneral = activeProject?.description?.includes("No budget");
-    const isSold    = activeProject?.description?.includes("Sold");
     e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:12,flexWrap:"wrap"}},
       e("div",null,
         e("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:4}},
