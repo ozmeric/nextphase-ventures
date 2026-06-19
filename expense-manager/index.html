@@ -399,7 +399,7 @@ function App() {
             e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}},
               e("div",null,
                 e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8",marginBottom:2}},p.name),
-                e("div",{style:{fontSize:12,color:"#4a6fa5"}},p.description||"Fix & Flip")
+                e("div",{style:{fontSize:12,color:"#4a6fa5"}},( p.description?.split("|")[0]?.trim() )||"Fix & Flip")
               ),
               e("div",{style:{
                 width:"auto",padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,marginTop:2,
@@ -407,16 +407,21 @@ function App() {
                 color:p.description?.includes("Sold")?"#ef4444":p.description?.includes("No budget")?"#4a6fa5":"#10b981"
               }},p.description?.includes("Sold")?"Sold":p.description?.includes("No budget")?"General":"Active")
             ),
-            e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
-              e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
-                e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Purchase"),
-                e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(p.purchasePrice))
-              ),
-              e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
-                e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Rehab Budget"),
-                e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
-              )
-            ),
+            p.description?.includes("No budget")
+              ? e("div",{style:{background:"#071020",borderRadius:7,padding:"12px 14px"}},
+                  e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Type"),
+                  e("div",{style:{fontSize:15,fontWeight:800,color:"#7a9cc5"}},"General Expenses")
+                )
+              : e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
+                  e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                    e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Purchase"),
+                    e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(p.purchasePrice))
+                  ),
+                  e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                    e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Rehab Budget"),
+                    e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
+                  )
+                ),
             e("div",{style:{marginTop:12,fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →")
           ))
         )
