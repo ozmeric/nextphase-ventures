@@ -72,7 +72,8 @@ const CATEGORY_COLORS = {
 const TASK_STATUSES = ["To Do","In Progress","Blocked","Done"];
 const TASK_STATUS_COLORS = {"To Do":"#6b7280","In Progress":"#f59e0b","Blocked":"#ef4444","Done":"#10b981"};
 const ASSIGNEES = ["Me","Partner","Contractor","Other"];
-const TASK_CATEGORIES = ["Financing","Reno","Admin","Inspection","Legal","Other"];
+const TASK_CATEGORIES = ["Financing","Reno","Admin","Inspection","Legal","Other","Interior","Exterior"];
+const TASK_WORK_TYPES = ["Interior","Exterior"];
 const PRIORITIES = ["High","Med","Low"];
 const PRIORITY_COLORS = {"High":"#ef4444","Med":"#f59e0b","Low":"#6b7280"};
 const QUOTE_STATUSES = ["Pending","Accepted","Rejected"];
@@ -165,6 +166,7 @@ function App() {
   const [tasks,setTasks]           = useState([]);
   const [loadingTasks,setLoadingTasks] = useState(false);
   const [taskFilter,setTaskFilter] = useState("");
+  const [taskWorkFilter,setTaskWorkFilter] = useState("");
   const [quotes,setQuotes]         = useState([]);
   const [loadingQuotes,setLoadingQuotes] = useState(false);
   const [quoteGroupFilter,setQuoteGroupFilter] = useState("");
@@ -821,8 +823,10 @@ function App() {
 
   // ── TASKS VIEW ──
   const taskStatusOrder={"To Do":0,"In Progress":1,"Blocked":2,"Done":3};
-  const filteredTasks=tasks.filter(t=>!taskFilter||t.status===taskFilter)
-    .sort((a,b)=>(taskStatusOrder[a.status]||0)-(taskStatusOrder[b.status]||0));
+  const filteredTasks=tasks.filter(t=>
+    (!taskFilter||t.status===taskFilter) &&
+    (!taskWorkFilter||t.category===taskWorkFilter)
+  ).sort((a,b)=>(taskStatusOrder[a.status]||0)-(taskStatusOrder[b.status]||0));
 
   const TasksView=()=>loadingTasks?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
     e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
@@ -837,6 +841,11 @@ function App() {
     e("div",{style:{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}},
       e("button",{style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:600,border:"1px solid "+(taskFilter===""?"#d4a017":"#1e3a5f"),background:taskFilter===""?"#d4a01722":"transparent",color:taskFilter===""?"#d4a017":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskFilter("")},"All"),
       ...TASK_STATUSES.map(s=>e("button",{key:s,style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:600,border:"1px solid "+(taskFilter===s?TASK_STATUS_COLORS[s]:"#1e3a5f"),background:taskFilter===s?TASK_STATUS_COLORS[s]+"22":"transparent",color:taskFilter===s?TASK_STATUS_COLORS[s]:"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskFilter(s)},s))
+    ),
+    e("div",{style:{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}},
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter===""?"#10b981":"#1e3a5f"),background:taskWorkFilter===""?"#10b98122":"transparent",color:taskWorkFilter===""?"#10b981":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter("")},"All Work"),
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter==="Interior"?"#06b6d4":"#1e3a5f"),background:taskWorkFilter==="Interior"?"#06b6d422":"transparent",color:taskWorkFilter==="Interior"?"#06b6d4":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter(taskWorkFilter==="Interior"?"":"Interior")},"🏠 Interior"),
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter==="Exterior"?"#f59e0b":"#1e3a5f"),background:taskWorkFilter==="Exterior"?"#f59e0b22":"transparent",color:taskWorkFilter==="Exterior"?"#f59e0b":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter(taskWorkFilter==="Exterior"?"":"Exterior")},"🏗️ Exterior")
     ),
     filteredTasks.length===0
       ?e("div",{style:{...S.card,textAlign:"center",padding:"40px 16px",color:"#4a6fa5"}},
