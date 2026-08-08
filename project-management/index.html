@@ -516,6 +516,15 @@ function App() {
               )
             ),
             e("div",{key:"due"},e("label",{style:S.label},"Due Date"),e("input",{style:S.input,type:"date",value:form.dueDate||"",onChange:ev=>setForm({...form,dueDate:ev.target.value})})),
+            e("div",{key:"milestone"},
+              e("label",{style:S.label},"Milestone"),
+              e("select",{style:S.input,value:form.milestone||"",onChange:ev=>setForm({...form,milestone:ev.target.value})},
+                e("option",{value:""},"— No milestone —"),
+                milestones.map(ms=>e("option",{key:ms.id,value:ms.id},
+                  ms.week+" — "+new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
+                ))
+              )
+            ),
             e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:70,resize:"vertical"},placeholder:"Optional details…",value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
           ]:isQuote?[
             e("div",{key:"item"},e("label",{style:S.label},"Item / Project *"),e("input",{style:S.input,placeholder:"e.g. Windows, Roofing, Plumbing fixtures",value:form.item||"",onChange:ev=>setForm({...form,item:ev.target.value})})),
@@ -892,7 +901,10 @@ function App() {
               e("div",{style:{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",fontSize:12,color:"#4a6fa5"}},
                 t.category&&e("span",{style:{background:"#1e3a5f",padding:"2px 8px",borderRadius:99,fontSize:11,color:"#7a9cc5"}},t.category),
                 t.assignee&&e("span",null,"👤 "+t.assignee),
-                t.dueDate&&e("span",{style:{color:isOverdue?"#ef4444":"#4a6fa5",fontWeight:isOverdue?700:400}},(isOverdue?"⚠️ ":"📅 ")+fmtDateShort(t.dueDate))
+                t.dueDate&&e("span",{style:{color:isOverdue?"#ef4444":"#4a6fa5",fontWeight:isOverdue?700:400}},(isOverdue?"⚠️ ":"📅 ")+fmtDateShort(t.dueDate)),
+                t.milestone&&milestones.find(m=>m.id===t.milestone)&&e("span",{style:{background:"#8b5cf622",color:"#a78bfa",padding:"2px 8px",borderRadius:99,fontSize:11,fontWeight:600}},
+                  "🏁 "+(milestones.find(m=>m.id===t.milestone)?.week||"")
+                )
               ),
               e("div",{style:{display:"flex",gap:4}},
                 e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openAddTask(t)},"Edit"),
@@ -999,6 +1011,11 @@ function App() {
           const dateStr=new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
           const comments=msComments[ms.id]||[];
           const cInput=commentInput[ms.id]||"";
+          // Task progress for this milestone
+          const msTasks=tasks.filter(t=>t.milestone===ms.id);
+          const msDone=msTasks.filter(t=>t.status==="Done").length;
+          const msTotal=msTasks.length;
+          const msPct=msTotal>0?Math.round((msDone/msTotal)*100):0;
           return e("div",{key:ms.id,style:{display:"flex",gap:16,marginBottom:20,position:"relative"}},
             e("div",{style:{flexShrink:0,width:38,height:38,borderRadius:"50%",background:col+"22",border:`2px solid ${col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,zIndex:2,cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},sIcon[st]),
             e("div",{style:{flex:1,background:"#0d1f3c",border:`1px solid ${isSel?col:"#1e3a5f"}`,borderRadius:12,padding:"14px 16px"}},
@@ -1026,8 +1043,27 @@ function App() {
                   e("span",{style:{fontSize:13,color:"#cbd5e1",lineHeight:1.4}},item.text)
                 ))
               ),
+              // Task progress bar
+              msTotal>0&&e("div",{style:{marginTop:12,cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
+                e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:11,color:"#4a6fa5",marginBottom:4}},
+                  e("span",null,"🏁 Tasks"),
+                  e("span",{style:{fontWeight:700,color:msPct===100?"#10b981":"#f8f0d8"}},msDone+"/"+msTotal+" done ("+msPct+"%)")
+                ),
+                e("div",{style:{background:"#071020",borderRadius:99,height:6}},
+                  e("div",{style:{width:msPct+"%",height:"100%",background:msPct===100?"#10b981":msPct>50?"#f59e0b":"#4a6fa5",borderRadius:99,transition:"width .4s"}})
+                )
+              ),
               // Expanded section
               isSel&&e("div",null,
+                // Linked tasks list
+                msTotal>0&&e("div",{style:{marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"🏁 Linked Tasks"),
+                  msTasks.map(t=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid #071020"}},
+                    e("span",{style:{width:8,height:8,borderRadius:"50%",background:TASK_STATUS_COLORS[t.status||"To Do"],flexShrink:0}}),
+                    e("span",{style:{fontSize:12,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",flex:1,textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+                    e("span",{style:{fontSize:10,fontWeight:700,color:TASK_STATUS_COLORS[t.status||"To Do"]}},t.status||"To Do")
+                  ))
+                ),
                 // Status buttons
                 e("div",{style:{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
                   e("span",{style:{fontSize:11,color:"#4a6fa5",alignSelf:"center"}},"Mark as:"),
