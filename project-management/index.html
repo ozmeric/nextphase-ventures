@@ -170,11 +170,11 @@ function App() {
   const [quotes,setQuotes]         = useState([]);
   // ── PLANNING STATE ──
   const [milestones,setMilestones] = useState([
-    {id:"ms-1",date:"2026-08-14",week:"Week 1",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
-    {id:"ms-2",date:"2026-08-21",week:"Week 2",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
-    {id:"ms-3",date:"2026-08-28",week:"Week 3",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
-    {id:"ms-4",date:"2026-09-04",week:"Week 4",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
-    {id:"ms-5",date:"2026-09-11",week:"Week 5",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
+    {id:"ms-1",date:"2026-08-14",week:"Demo & Remediation",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
+    {id:"ms-2",date:"2026-08-21",week:"Rough-In",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
+    {id:"ms-3",date:"2026-08-28",week:"Drywall & Exterior",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
+    {id:"ms-4",date:"2026-09-04",week:"Finishes",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
+    {id:"ms-5",date:"2026-09-11",week:"Final & Staging",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
   ]);
   const [planView,setPlanView] = useState("weekly");
   const [selMs,setSelMs] = useState(null);
@@ -521,7 +521,7 @@ function App() {
               e("select",{style:S.input,value:form.milestone||"",onChange:ev=>setForm({...form,milestone:ev.target.value})},
                 e("option",{value:""},"— No milestone —"),
                 milestones.map(ms=>e("option",{key:ms.id,value:ms.id},
-                  ms.week+" — "+new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
+                  new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})+" — "+ms.week
                 ))
               )
             ),
@@ -903,7 +903,7 @@ function App() {
                 t.assignee&&e("span",null,"👤 "+t.assignee),
                 t.dueDate&&e("span",{style:{color:isOverdue?"#ef4444":"#4a6fa5",fontWeight:isOverdue?700:400}},(isOverdue?"⚠️ ":"📅 ")+fmtDateShort(t.dueDate)),
                 t.milestone&&milestones.find(m=>m.id===t.milestone)&&e("span",{style:{background:"#8b5cf622",color:"#a78bfa",padding:"2px 8px",borderRadius:99,fontSize:11,fontWeight:600}},
-                  "🏁 "+(milestones.find(m=>m.id===t.milestone)?.week||"")
+                  "🏁 "+new Date(milestones.find(m=>m.id===t.milestone)?.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
                 )
               ),
               e("div",{style:{display:"flex",gap:4}},
@@ -1022,8 +1022,8 @@ function App() {
               // Header row
               e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}},
                 e("div",{style:{cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:col,letterSpacing:"0.08em",textTransform:"uppercase"}},ms.week),
-                  e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8",marginTop:2}},dateStr)
+                  e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8",letterSpacing:"-0.3px"}},dateStr),
+                  e("div",{style:{fontSize:11,fontWeight:700,color:col,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2}},ms.week)
                 ),
                 e("div",{style:{display:"flex",gap:6,alignItems:"center"}},
                   e("span",{style:{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:99,background:col+"22",color:col}},sIcon[st]+" "+(st==="in-progress"?"In Progress":st.charAt(0).toUpperCase()+st.slice(1))),
@@ -1104,7 +1104,7 @@ function App() {
         showAddMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
           e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
             e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Milestone"),
-            [["week","Week Label","e.g. Week 6","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","e.g. Paint touchups completed","text"],["exterior","🏗️ Exterior Work","e.g. Final walkthrough","text"]].map(([k,label,ph,t])=>
+            [["week","Phase Name","e.g. Rough-In, Finishes","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","e.g. Paint touchups completed","text"],["exterior","🏗️ Exterior Work","e.g. Final walkthrough","text"]].map(([k,label,ph,t])=>
               e("div",{key:k,style:{marginBottom:12}},
                 e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}},label),
                 e("input",{type:t,style:S.input,placeholder:ph,value:msForm[k],onChange:ev=>setMsForm(f=>({...f,[k]:ev.target.value}))})
@@ -1126,7 +1126,7 @@ function App() {
         editMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
           e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
             e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Milestone"),
-            [["week","Week Label","e.g. Week 6","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","","text"],["exterior","🏗️ Exterior Work","","text"]].map(([k,label,ph,t])=>
+            [["week","Phase Name","e.g. Rough-In, Finishes","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","","text"],["exterior","🏗️ Exterior Work","","text"]].map(([k,label,ph,t])=>
               e("div",{key:k,style:{marginBottom:12}},
                 e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}},label),
                 e("input",{type:t,style:S.input,placeholder:ph,value:editMsForm[k],onChange:ev=>setEditMsForm(f=>({...f,[k]:ev.target.value}))})
