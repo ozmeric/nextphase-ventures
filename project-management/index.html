@@ -168,25 +168,45 @@ function App() {
   const [taskFilter,setTaskFilter] = useState("");
   const [taskWorkFilter,setTaskWorkFilter] = useState("");
   const [quotes,setQuotes]         = useState([]);
-  // ── PLANNING STATE ──
-  const [milestones,setMilestones] = useState([
-    {id:"ms-1",date:"2026-08-14",week:"Demo & Remediation",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
-    {id:"ms-2",date:"2026-08-21",week:"Rough-In",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
-    {id:"ms-3",date:"2026-08-28",week:"Drywall & Exterior",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
-    {id:"ms-4",date:"2026-09-04",week:"Finishes",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
-    {id:"ms-5",date:"2026-09-11",week:"Final & Staging",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
-  ]);
+  // ── PLANNING STATE — keyed by projectId ──
+  const [allMilestones,setAllMilestones] = useState({
+    "lincoln-2701": [
+      {id:"ms-1",date:"2026-08-14",week:"Demo & Remediation",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
+      {id:"ms-2",date:"2026-08-21",week:"Rough-In",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
+      {id:"ms-3",date:"2026-08-28",week:"Drywall & Exterior",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
+      {id:"ms-4",date:"2026-09-04",week:"Finishes",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
+      {id:"ms-5",date:"2026-09-11",week:"Final & Staging",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
+    ]
+  });
+  // ── MANAGEMENT CARD STATE ──
+  const [mgmtMilestones,setMgmtMilestones] = useState([]);
+  const [mgmtTasks,setMgmtTasks] = useState([]);
+  const [showMgmt,setShowMgmt] = useState(false);
+  const [mgmtSelMs,setMgmtSelMs] = useState(null);
+  const [mgmtMsStatus,setMgmtMsStatus] = useState({});
+  const [mgmtMsComments,setMgmtMsComments] = useState({});
+  const [mgmtCommentInput,setMgmtCommentInput] = useState({});
+  const [showAddMgmtMs,setShowAddMgmtMs] = useState(false);
+  const [mgmtMsForm,setMgmtMsForm] = useState({date:"",week:"",notes:""});
+  const [editMgmtMs,setEditMgmtMs] = useState(null);
+  const [showAddMgmtTask,setShowAddMgmtTask] = useState(false);
+  const [mgmtTaskForm,setMgmtTaskForm] = useState({task:"",status:"To Do",notes:""});
+
   const [planView,setPlanView] = useState("weekly");
   const [selMs,setSelMs] = useState(null);
   const [showAddMs,setShowAddMs] = useState(false);
   const [msForm,setMsForm] = useState({date:"",week:"",interior:"",exterior:""});
   const [msStatus,setMsStatus] = useState({});
-  const [msComments,setMsComments] = useState({}); // {ms-id: [{text, ts}]}
-  const [editMs,setEditMs] = useState(null); // milestone being edited
+  const [msComments,setMsComments] = useState({});
+  const [editMs,setEditMs] = useState(null);
   const [editMsForm,setEditMsForm] = useState({date:"",week:"",interior:"",exterior:""});
-  const [commentInput,setCommentInput] = useState({}); // {ms-id: text}
+  const [commentInput,setCommentInput] = useState({});
   const [loadingQuotes,setLoadingQuotes] = useState(false);
   const [quoteGroupFilter,setQuoteGroupFilter] = useState("");
+
+  // Derived — per-project milestones
+  const milestones = allMilestones[activeId]||[];
+  const setMilestones = (updater) => setAllMilestones(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||[]):updater}));
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
   const unlock=(pin)=>{SESSION_PIN=pin;try{sessionStorage.setItem("npv-auth","ok");sessionStorage.setItem("npv-pin",pin);}catch{}setAuthed(true);};
@@ -618,6 +638,197 @@ function App() {
         e("button",{style:S.btn(),onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
       )
     ),
+  const HomeView=()=>e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
+      e("div",null,
+        e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Projects"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},projects.length+" project"+(projects.length!==1?"s":""))
+      ),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
+      )
+    ),
+
+    // ── MANAGEMENT CARD ──
+    e("div",{style:{...S.card,marginBottom:20,borderColor:"#d4a017",position:"relative"}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showMgmt?16:0},
+        onClick:()=>setShowMgmt(p=>!p),style:{cursor:"pointer"}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("div",{style:{width:32,height:32,borderRadius:8,background:"#d4a01722",border:"1px solid #d4a017",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}},"📋"),
+          e("div",null,
+            e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8"}},"Management"),
+            e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:1}},"Pipeline planning, upcoming projects & general tasks")
+          )
+        ),
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("div",{style:{display:"flex",gap:6}},
+            e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#8b5cf622",color:"#a78bfa"}},mgmtMilestones.length+" milestones"),
+            e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#06b6d422",color:"#06b6d4"}},mgmtTasks.length+" tasks")
+          ),
+          e("span",{style:{color:"#d4a017",fontSize:18,transition:"transform .2s",display:"inline-block",transform:showMgmt?"rotate(180deg)":"none"}},"⌄")
+        )
+      ),
+      showMgmt&&e("div",null,
+        // Milestones section
+        e("div",{style:{marginBottom:16}},
+          e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+            e("div",{style:{fontSize:12,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em"}},"🏁 Upcoming Projects & Milestones"),
+            e("button",{style:{...S.btn(),fontSize:11,padding:"5px 12px"},onClick:()=>setShowAddMgmtMs(true)},"+ Add")
+          ),
+          mgmtMilestones.length===0
+            ?e("div",{style:{fontSize:12,color:"#2a4a7f",textAlign:"center",padding:"12px 0"}},"No milestones yet — add upcoming deals or project goals")
+            :mgmtMilestones.map(ms=>{
+              const isSel=mgmtSelMs===ms.id;
+              const st=mgmtMsStatus[ms.id]||"upcoming";
+              const sCol2={done:"#10b981","in-progress":"#f59e0b",upcoming:"#4a6fa5"};
+              const col=sCol2[st];
+              const comments=mgmtMsComments[ms.id]||[];
+              const cIn=mgmtCommentInput[ms.id]||"";
+              return e("div",{key:ms.id,style:{background:"#071020",borderRadius:10,padding:"12px 14px",marginBottom:8,border:`1px solid ${isSel?col:"#1e3a5f"}`}},
+                e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"},onClick:()=>setMgmtSelMs(isSel?null:ms.id)},
+                  e("div",null,
+                    e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8"}},ms.week),
+                    ms.date&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}))
+                  ),
+                  e("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                    e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:col+"22",color:col}},st==="in-progress"?"🔄 Active":st==="done"?"✅ Done":"📅 Planned"),
+                    e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11},
+                      onClick:ev=>{ev.stopPropagation();setEditMgmtMs(ms.id);}
+                    },"Edit")
+                  )
+                ),
+                ms.notes&&e("div",{style:{fontSize:12,color:"#7a9cc5",marginTop:6}},ms.notes),
+                isSel&&e("div",null,
+                  e("div",{style:{display:"flex",gap:8,marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
+                    e("span",{style:{fontSize:11,color:"#4a6fa5",alignSelf:"center"}},"Status:"),
+                    ["in-progress","done"].map(s=>e("button",{key:s,style:{padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:`1px solid ${sCol2[s]}`,background:mgmtMsStatus[ms.id]===s?sCol2[s]+"33":"transparent",color:sCol2[s],cursor:"pointer"},
+                      onClick:ev=>{ev.stopPropagation();setMgmtMsStatus(p=>({...p,[ms.id]:p[ms.id]===s?"upcoming":s}));}},
+                      s==="in-progress"?"🔄 Active":"✅ Done"
+                    ))
+                  ),
+                  e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
+                    e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:6}},"💬 Notes & Comments"),
+                    comments.map((c,ci)=>e("div",{key:ci,style:{fontSize:12,color:"#7a9cc5",padding:"4px 0",borderBottom:"1px solid #071020"}},
+                      c.text+" · "+c.ts
+                    )),
+                    e("div",{style:{display:"flex",gap:6,marginTop:6}},
+                      e("input",{style:{...S.input,flex:1,padding:"6px 10px",fontSize:12},placeholder:"Add note…",value:cIn,
+                        onChange:ev=>setMgmtCommentInput(p=>({...p,[ms.id]:ev.target.value})),
+                        onKeyDown:ev=>{if(ev.key==="Enter"&&cIn.trim()){
+                          const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+                          setMgmtMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cIn.trim(),ts}]}));
+                          setMgmtCommentInput(p=>({...p,[ms.id]:""}));
+                        }}
+                      }),
+                      e("button",{style:{...S.btn(),padding:"6px 12px",fontSize:12},onClick:()=>{
+                        if(!cIn.trim())return;
+                        const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+                        setMgmtMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cIn.trim(),ts}]}));
+                        setMgmtCommentInput(p=>({...p,[ms.id]:""}));
+                      }},"Add")
+                    )
+                  )
+                )
+              );
+            })
+        ),
+
+        // Tasks section
+        e("div",{style:{borderTop:"1px solid #1e3a5f",paddingTop:14}},
+          e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+            e("div",{style:{fontSize:12,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em"}},"✅ General Tasks"),
+            e("button",{style:{...S.btn(),fontSize:11,padding:"5px 12px"},onClick:()=>setShowAddMgmtTask(true)},"+ Task")
+          ),
+          mgmtTasks.length===0
+            ?e("div",{style:{fontSize:12,color:"#2a4a7f",textAlign:"center",padding:"8px 0"}},"No tasks yet")
+            :mgmtTasks.map(t=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #071020"}},
+                e("button",{style:{width:20,height:20,borderRadius:4,border:`2px solid ${t.status==="Done"?"#10b981":"#1e3a5f"}`,background:t.status==="Done"?"#10b98133":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12},
+                  onClick:()=>setMgmtTasks(p=>p.map(mt=>mt.id===t.id?{...mt,status:mt.status==="Done"?"To Do":"Done"}:mt))
+                },t.status==="Done"?"✓":""),
+                e("span",{style:{flex:1,fontSize:13,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+                e("button",{style:{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:12,padding:"2px 6px"},
+                  onClick:()=>setMgmtTasks(p=>p.filter(mt=>mt.id!==t.id))},"×")
+              ))
+        )
+      ),
+
+      // Add Mgmt Milestone modal
+      showAddMgmtMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Pipeline Milestone"),
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:S.label},"Project / Goal Name *"),
+            e("input",{style:S.input,placeholder:"e.g. 4503 Monument Ave, New Market Deal",value:mgmtMsForm.week,onChange:ev=>setMgmtMsForm(f=>({...f,week:ev.target.value}))})
+          ),
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:S.label},"Target Date"),
+            e("input",{type:"date",style:S.input,value:mgmtMsForm.date,onChange:ev=>setMgmtMsForm(f=>({...f,date:ev.target.value}))})
+          ),
+          e("div",{style:{marginBottom:20}},
+            e("label",{style:S.label},"Notes"),
+            e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"e.g. ARV ~$450K, targeting Q4 close",value:mgmtMsForm.notes,onChange:ev=>setMgmtMsForm(f=>({...f,notes:ev.target.value}))})
+          ),
+          e("div",{style:{display:"flex",gap:10}},
+            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtMs(false);setMgmtMsForm({date:"",week:"",notes:""});}},"Cancel"),
+            e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+              if(!mgmtMsForm.week)return;
+              setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:mgmtMsForm.date,week:mgmtMsForm.week,notes:mgmtMsForm.notes}].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)));
+              setShowAddMgmtMs(false);setMgmtMsForm({date:"",week:"",notes:""});
+            }},"Add")
+          )
+        )
+      ),
+
+      // Edit Mgmt Milestone modal
+      editMgmtMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Milestone"),
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:S.label},"Project / Goal Name"),
+            e("input",{style:S.input,value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).week||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,week:ev.target.value}:m))})
+          ),
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:S.label},"Target Date"),
+            e("input",{type:"date",style:S.input,value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).date||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,date:ev.target.value}:m))})
+          ),
+          e("div",{style:{marginBottom:20}},
+            e("label",{style:S.label},"Notes"),
+            e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).notes||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,notes:ev.target.value}:m))})
+          ),
+          e("div",{style:{display:"flex",gap:10}},
+            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditMgmtMs(null)},"Cancel"),
+            e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},
+              onClick:()=>{setMgmtMilestones(p=>p.filter(m=>m.id!==editMgmtMs));setEditMgmtMs(null);}
+            },"Delete"),
+            e("button",{style:{...S.btn(),flex:1},onClick:()=>setEditMgmtMs(null)},"Save")
+          )
+        )
+      ),
+
+      // Add Mgmt Task modal
+      showAddMgmtTask&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
+          e("div",{style:{marginBottom:12}},
+            e("label",{style:S.label},"Task *"),
+            e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value}))})
+          ),
+          e("div",{style:{marginBottom:20}},
+            e("label",{style:S.label},"Notes"),
+            e("input",{style:S.input,placeholder:"Optional",value:mgmtTaskForm.notes,onChange:ev=>setMgmtTaskForm(f=>({...f,notes:ev.target.value}))})
+          ),
+          e("div",{style:{display:"flex",gap:10}},
+            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});}},"Cancel"),
+            e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+              if(!mgmtTaskForm.task)return;
+              setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",notes:mgmtTaskForm.notes}]);
+              setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});
+            }},"Add")
+          )
+        )
+      )
+    ),
+
     projects.length===0
       ?e("div",{style:{...S.card,textAlign:"center",padding:"48px 16px"}},
           e("div",{style:{fontSize:36,marginBottom:10}},"🏗️"),
