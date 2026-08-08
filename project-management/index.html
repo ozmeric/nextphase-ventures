@@ -539,6 +539,7 @@ function App() {
     activeProject&&e("div",{style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
     activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
     activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
+    activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
     e("div",{style:{marginTop:16}},
       e("div",{style:S.sideLabel},"Projects"),
       ...projects.map(p=>e("div",{key:p.id,
@@ -559,7 +560,7 @@ function App() {
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📊",label:"Dashboard",v:"dashboard"},
       {icon:"✅",label:"Tasks",v:"tasks"},
-      {icon:"💬",label:"Quotes",v:"quotes"},
+      {icon:"📅",label:"Planning",v:"planning"},
       {icon:"➕",label:"Add",v:"add-expense"},
     ]:[
       {icon:"🏠",label:"Projects",v:"home"},
@@ -571,7 +572,7 @@ function App() {
         color:view===item.v?"#d4a017":"#4a6fa5",fontSize:10,fontWeight:view===item.v?700:400,gap:3},
       onClick:()=>{
         if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
-        if((item.v==="dashboard"||item.v==="expenses"||item.v==="tasks"||item.v==="quotes")&&!activeProject)return;
+        if((item.v==="dashboard"||item.v==="expenses"||item.v==="tasks"||item.v==="quotes"||item.v==="planning")&&!activeProject)return;
         if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
         navTo(item.v);
       }},
@@ -951,6 +952,97 @@ function App() {
         }))
   );
 
+  // ── PLANNING VIEW ──
+  const [milestones,setMilestones] = useState([
+    {id:"ms-1",date:"2026-08-14",week:"Week 1",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
+    {id:"ms-2",date:"2026-08-21",week:"Week 2",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
+    {id:"ms-3",date:"2026-08-28",week:"Week 3",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
+    {id:"ms-4",date:"2026-09-04",week:"Week 4",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
+    {id:"ms-5",date:"2026-09-11",week:"Week 5",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
+  ]);
+  const [planView,setPlanView] = useState("weekly");
+  const [selMs,setSelMs] = useState(null);
+  const [showAddMs,setShowAddMs] = useState(false);
+  const [msForm,setMsForm] = useState({date:"",week:"",interior:"",exterior:""});
+  const [msStatus,setMsStatus] = useState({});
+
+  const PlanningView=()=>{
+    const today=new Date();
+    const getStatus=ms=>{
+      if(msStatus[ms.id]==="done") return "done";
+      if(msStatus[ms.id]==="in-progress") return "in-progress";
+      return new Date(ms.date)<today?"overdue":"upcoming";
+    };
+    const sCol={done:"#10b981","in-progress":"#f59e0b",overdue:"#ef4444",upcoming:"#4a6fa5"};
+    const sIcon={done:"✅","in-progress":"🔄",overdue:"⚠️",upcoming:"📅"};
+    return e("div",null,
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}},
+        e("div",null,
+          e("div",{style:{fontSize:20,fontWeight:900,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Project Planning"),
+          e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},activeProject?.name||"")
+        ),
+        e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>setShowAddMs(true)},"+ Milestone")
+      ),
+      e("div",{style:{display:"flex",gap:8,marginBottom:24}},
+        ["weekly","daily"].map(v=>e("button",{key:v,style:{padding:"7px 18px",borderRadius:99,fontSize:12,fontWeight:700,border:"1px solid "+(planView===v?"#d4a017":"#1e3a5f"),background:planView===v?"#d4a01722":"transparent",color:planView===v?"#d4a017":"#7a9cc5",cursor:"pointer"},onClick:()=>setPlanView(v)},v.charAt(0).toUpperCase()+v.slice(1)))
+      ),
+      e("div",{style:{position:"relative"}},
+        e("div",{style:{position:"absolute",left:18,top:0,bottom:0,width:2,background:"#1e3a5f"}}),
+        milestones.map(ms=>{
+          const st=getStatus(ms);
+          const col=sCol[st];
+          const isSel=selMs===ms.id;
+          const dateStr=new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+          return e("div",{key:ms.id,style:{display:"flex",gap:16,marginBottom:20,position:"relative"}},
+            e("div",{style:{flexShrink:0,width:38,height:38,borderRadius:"50%",background:col+"22",border:`2px solid ${col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,zIndex:2,cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},sIcon[st]),
+            e("div",{style:{flex:1,background:"#0d1f3c",border:`1px solid ${isSel?col:"#1e3a5f"}`,borderRadius:12,padding:"14px 16px",cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
+              e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}},
+                e("div",null,
+                  e("div",{style:{fontSize:11,fontWeight:700,color:col,letterSpacing:"0.08em",textTransform:"uppercase"}},ms.week),
+                  e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8",marginTop:2}},dateStr)
+                ),
+                e("span",{style:{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:99,background:col+"22",color:col}},sIcon[st]+" "+(st==="in-progress"?"In Progress":st.charAt(0).toUpperCase()+st.slice(1)))
+              ),
+              ms.items.map((item,j)=>e("div",{key:j,style:{display:"flex",gap:8,alignItems:"flex-start",marginTop:6}},
+                e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99,background:item.type==="Interior"?"#06b6d422":"#f59e0b22",color:item.type==="Interior"?"#06b6d4":"#f59e0b",flexShrink:0}},item.type),
+                e("span",{style:{fontSize:13,color:"#cbd5e1",lineHeight:1.4}},item.text)
+              )),
+              isSel&&e("div",{style:{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+                e("span",{style:{fontSize:11,color:"#4a6fa5",alignSelf:"center"}},"Mark as:"),
+                ["in-progress","done"].map(s=>e("button",{key:s,style:{padding:"4px 12px",borderRadius:99,fontSize:11,fontWeight:700,border:`1px solid ${sCol[s]}`,background:msStatus[ms.id]===s?sCol[s]+"33":"transparent",color:sCol[s],cursor:"pointer"},
+                  onClick:ev=>{ev.stopPropagation();setMsStatus(p=>({...p,[ms.id]:p[ms.id]===s?"":s}));}},
+                  s==="in-progress"?"🔄 In Progress":"✅ Done"
+                ))
+              )
+            )
+          );
+        }),
+        showAddMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+          e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+            e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Milestone"),
+            [["week","Week Label","e.g. Week 6","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","e.g. Paint touchups completed","text"],["exterior","🏗️ Exterior Work","e.g. Final walkthrough","text"]].map(([k,label,ph,t])=>
+              e("div",{key:k,style:{marginBottom:12}},
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}},label),
+                e("input",{type:t,style:S.input,placeholder:ph,value:msForm[k],onChange:ev=>setMsForm(f=>({...f,[k]:ev.target.value}))})
+              )
+            ),
+            e("div",{style:{display:"flex",gap:10,marginTop:8}},
+              e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMs(false);setMsForm({date:"",week:"",interior:"",exterior:""});}},"Cancel"),
+              e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+                if(!msForm.date||!msForm.week)return;
+                const items=[];
+                if(msForm.interior)items.push({type:"Interior",text:msForm.interior});
+                if(msForm.exterior)items.push({type:"Exterior",text:msForm.exterior});
+                setMilestones(p=>[...p,{id:"ms-"+Date.now(),date:msForm.date,week:msForm.week,items}].sort((a,b)=>new Date(a.date)-new Date(b.date)));
+                setShowAddMs(false);setMsForm({date:"",week:"",interior:"",exterior:""});
+              }},"Add")
+            )
+          )
+        )
+      )
+    );
+  };
+
   return e("div",{style:S.root},
     e("div",{style:S.header},
       e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8",display:"flex",alignItems:"center",gap:8,cursor:"pointer"},onClick:()=>navTo("home"),className:"header-title"},
@@ -970,7 +1062,8 @@ function App() {
         view==="dashboard" ?e(DashboardView):
         view==="expenses"  ?e(ExpensesView):
         view==="tasks"     ?e(TasksView):
-        view==="quotes"    ?e(QuotesView):null
+        view==="quotes"    ?e(QuotesView):
+        view==="planning"  ?e(PlanningView):null
       )
     ),
 
