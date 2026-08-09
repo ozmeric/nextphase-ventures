@@ -55,6 +55,7 @@ option{color:#e2e8f0;background:#071020}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
+//<![CDATA[
 const { useState, useEffect, useRef } = React;
 
 const API_URL = "https://nextphaseventures.weblinallc.workers.dev/";
@@ -153,6 +154,7 @@ function App() {
   const [authed,setAuthed]         = useState(()=>{try{return sessionStorage.getItem("npv-auth")==="ok"}catch{return false}});
   const [projects,setProjects]     = useState([]);
   const [activeId,setActiveId]     = useState(null);
+  const [reloadTick,setReloadTick] = useState(0);
   const [expenses,setExpenses]     = useState([]);
   const [loading,setLoading]       = useState(true);
   const [loadingExp,setLoadingExp] = useState(false);
@@ -193,20 +195,28 @@ function App() {
   const [mgmtTaskForm,setMgmtTaskForm] = useState({task:"",status:"To Do",notes:""});
 
   const [planView,setPlanView] = useState("weekly");
-  const [selMs,setSelMs] = useState(null);
+  const [allSelMs,setAllSelMs] = useState({});
   const [showAddMs,setShowAddMs] = useState(false);
   const [msForm,setMsForm] = useState({date:"",week:"",interior:"",exterior:""});
-  const [msStatus,setMsStatus] = useState({});
-  const [msComments,setMsComments] = useState({});
+  const [allMsStatus,setAllMsStatus] = useState({});
+  const [allMsComments,setAllMsComments] = useState({});
   const [editMs,setEditMs] = useState(null);
   const [editMsForm,setEditMsForm] = useState({date:"",week:"",interior:"",exterior:""});
-  const [commentInput,setCommentInput] = useState({});
+  const [allCommentInput,setAllCommentInput] = useState({});
   const [loadingQuotes,setLoadingQuotes] = useState(false);
   const [quoteGroupFilter,setQuoteGroupFilter] = useState("");
 
-  // Derived — per-project milestones
+  // Derived — per-project planning state
   const milestones = allMilestones[activeId]||[];
   const setMilestones = (updater) => setAllMilestones(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||[]):updater}));
+  const selMs = allSelMs[activeId]||null;
+  const setSelMs = (v) => setAllSelMs(prev=>({...prev,[activeId]:typeof v==="function"?v(prev[activeId]):v}));
+  const msStatus = allMsStatus[activeId]||{};
+  const setMsStatus = (updater) => setAllMsStatus(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
+  const msComments = allMsComments[activeId]||{};
+  const setMsComments = (updater) => setAllMsComments(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
+  const commentInput = allCommentInput[activeId]||{};
+  const setCommentInput = (updater) => setAllCommentInput(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
   const unlock=(pin)=>{SESSION_PIN=pin;try{sessionStorage.setItem("npv-auth","ok");sessionStorage.setItem("npv-pin",pin);}catch{}setAuthed(true);};
@@ -234,7 +244,7 @@ function App() {
       .then(data=>setExpenses(data.expenses||[]))
       .catch(e=>showToast("Failed to load expenses","error"))
       .finally(()=>setLoadingExp(false));
-  },[activeId]);
+  },[activeId,reloadTick]);
 
   useEffect(()=>{
     if(!activeId)return;
@@ -243,7 +253,7 @@ function App() {
       .then(data=>setTasks(data.tasks||[]))
       .catch(e=>{})
       .finally(()=>setLoadingTasks(false));
-  },[activeId]);
+  },[activeId,reloadTick]);
 
   useEffect(()=>{
     if(!activeId)return;
@@ -252,7 +262,7 @@ function App() {
       .then(data=>setQuotes(data.quotes||[]))
       .catch(e=>{})
       .finally(()=>setLoadingQuotes(false));
-  },[activeId]);
+  },[activeId,reloadTick]);
 
   const activeProject=projects.find(p=>String(p.id)===String(activeId))||null;
 
@@ -590,7 +600,7 @@ function App() {
       e("div",{style:S.sideLabel},"Projects"),
       ...projects.map(p=>e("div",{key:p.id,
         style:{...S.sideItem(p.id===activeId&&view!=="home"),paddingLeft:20,fontSize:12},
-        onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+        onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
         e("span",{style:{width:7,height:7,borderRadius:"50%",background:p.id===activeId?"#d4a017":"#1e3a5f",flexShrink:0}}),
         e("span",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name)
       )),
@@ -667,7 +677,7 @@ function App() {
       :e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14},className:"project-grid"},
           ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>e("div",{key:p.id,
             style:{...S.card,cursor:"pointer",borderColor:p.id===activeId?"#d4a017":"#1e3a5f",transition:"border-color .15s"},
-            onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+            onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
             e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}},
               e("div",null,
                 e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8",marginBottom:2}},p.name),
@@ -922,7 +932,7 @@ function App() {
         )
       :e("div",null,...filteredTasks.map(t=>{
           const isDone=t.status==="Done";
-          const isOverdue=t.dueDate&&!isDone&&new Date(t.dueDate)<new Date(new Date().toDateString());
+          const isOverdue=t.dueDate&&!isDone&&!(new Date(t.dueDate).getTime()>=new Date(new Date().toDateString()).getTime());
           return e("div",{key:t.id,style:{...S.card,marginBottom:10,opacity:isDone?0.65:1,borderColor:isOverdue?"#ef444455":"#1e3a5f"}},
             e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}},
               e("div",{style:{flex:1}},
@@ -1027,7 +1037,7 @@ function App() {
     const getStatus=ms=>{
       if(msStatus[ms.id]==="done") return "done";
       if(msStatus[ms.id]==="in-progress") return "in-progress";
-      return new Date(ms.date)<today?"overdue":"upcoming";
+      return !(new Date(ms.date).getTime()>=today.getTime())?"overdue":"upcoming";
     };
     const sCol={done:"#10b981","in-progress":"#f59e0b",overdue:"#ef4444",upcoming:"#4a6fa5"};
     const sIcon={done:"✅","in-progress":"🔄",overdue:"⚠️",upcoming:"📅"};
@@ -1230,7 +1240,7 @@ function App() {
       inProgress.length>0&&e("div",{style:{...S.card,marginBottom:16}},
         e("div",{style:{fontSize:12,fontWeight:700,color:"#f59e0b",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"🔨 In Progress"),
         inProgress.map(p=>e("div",{key:p.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #1e3a5f",cursor:"pointer"},
-          onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+          onClick:()=>{setActiveId(p.id);setExpenses([]);setTasks([]);setQuotes([]);setReloadTick(t=>t+1);navTo("dashboard");}},
           e("div",null,
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},p.name),
             e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},p.description?.split("|")[0]?.trim()||"Fix & Flip")
@@ -1320,7 +1330,7 @@ function App() {
       ),
 
       // General Expenses link
-      genProj&&e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(genProj.id);navTo("expenses");}},
+      genProj&&e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(genProj.id);setExpenses([]);setReloadTick(t=>t+1);navTo("expenses");}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
           e("div",{style:{display:"flex",alignItems:"center",gap:10}},
             e("div",{style:{fontSize:20}},"💼"),
@@ -1337,7 +1347,7 @@ function App() {
       completed.length>0&&e("div",{style:{...S.card,marginBottom:16}},
         e("div",{style:{fontSize:12,fontWeight:700,color:"#10b981",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"✅ Completed Projects"),
         completed.map(p=>e("div",{key:p.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #1e3a5f",cursor:"pointer"},
-          onClick:()=>{setActiveId(p.id);navTo("dashboard");}},
+          onClick:()=>{setActiveId(p.id);setExpenses([]);setTasks([]);setQuotes([]);setReloadTick(t=>t+1);navTo("dashboard");}},
           e("div",null,
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},p.name),
             e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},p.description?.split("|")[0]?.trim()||"Fix & Flip")
@@ -1454,6 +1464,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
+//]]>
 </script>
 </body>
 </html>
