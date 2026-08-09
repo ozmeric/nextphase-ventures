@@ -1408,7 +1408,7 @@ function App() {
       showAddMgmtTask&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
         e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
           e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value}))})),
+          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter"&&mgmtTaskForm.task){setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",notes:mgmtTaskForm.notes}]);setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});}}})),
           e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("input",{style:S.input,placeholder:"Optional",value:mgmtTaskForm.notes,onChange:ev=>setMgmtTaskForm(f=>({...f,notes:ev.target.value}))})),
           e("div",{style:{display:"flex",gap:10}},
             e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});}},"Cancel"),
