@@ -1221,7 +1221,110 @@ function App() {
     );
   };
 
-  // ── MANAGEMENT VIEW ──
+  // ── ADD GENERAL TASK MODAL — own component so typing doesn't re-render parent ──
+  const AddMgmtTaskModal=()=>{
+    const [localForm,setLocalForm] = useState({task:"",assignee:"",notes:""});
+    const submit=()=>{
+      if(!localForm.task)return;
+      setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:localForm.task,status:"To Do",assignee:localForm.assignee,notes:localForm.notes}]);
+      setShowAddMgmtTask(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Task *"),
+          e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,
+            value:localForm.task,
+            onChange:ev=>setLocalForm(f=>({...f,task:ev.target.value})),
+            onKeyDown:ev=>{if(ev.key==="Enter")submit();}
+          })
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Assign To"),
+          e("input",{style:S.input,placeholder:"e.g. Me, Malik, Partner",
+            value:localForm.assignee,
+            onChange:ev=>setLocalForm(f=>({...f,assignee:ev.target.value}))
+          })
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("input",{style:S.input,placeholder:"Optional",
+            value:localForm.notes,
+            onChange:ev=>setLocalForm(f=>({...f,notes:ev.target.value}))
+          })
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddMgmtTask(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── ADD PIPELINE MODAL ──
+  const AddMgmtMsModal=()=>{
+    const [lf,setLf]=useState({week:"",date:"",notes:""});
+    const submit=()=>{
+      if(!lf.week)return;
+      setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:lf.date,week:lf.week,notes:lf.notes}].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)));
+      setShowAddMgmtMs(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Pipeline Item"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Project / Goal Name *"),
+          e("input",{style:S.input,placeholder:"e.g. 4503 Monument Ave",autoFocus:true,value:lf.week,onChange:ev=>setLf(f=>({...f,week:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter")submit();}})
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Target Date"),
+          e("input",{type:"date",style:S.input,value:lf.date,onChange:ev=>setLf(f=>({...f,date:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"e.g. ARV ~$450K, targeting Q4",value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddMgmtMs(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── EDIT PIPELINE MODAL ──
+  const EditMgmtMsModal=({msId})=>{
+    const ms=mgmtMilestones.find(m=>m.id===msId)||{};
+    const [lf,setLf]=useState({week:ms.week||"",date:ms.date||"",notes:ms.notes||""});
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Pipeline Item"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Name"),
+          e("input",{style:S.input,autoFocus:true,value:lf.week,onChange:ev=>setLf(f=>({...f,week:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Target Date"),
+          e("input",{type:"date",style:S.input,value:lf.date,onChange:ev=>setLf(f=>({...f,date:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditMgmtMs(null)},"Cancel"),
+          e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},
+            onClick:()=>{setMgmtMilestones(p=>p.filter(m=>m.id!==msId));setEditMgmtMs(null);}},"Delete"),
+          e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+            setMgmtMilestones(p=>p.map(m=>m.id===msId?{...m,week:lf.week,date:lf.date,notes:lf.notes}:m));
+            setEditMgmtMs(null);
+          }},"Save")
+        )
+      )
+    );
+  };
+
   const ManagementView=()=>{
     const completed=projects.filter(p=>p.description?.includes("Sold"));
     const inProgress=projects.filter(p=>!p.description?.includes("Sold")&&!p.description?.includes("No budget"));
@@ -1379,51 +1482,9 @@ function App() {
       ),
 
       // Modals
-      showAddMgmtMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
-        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
-          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Pipeline Item"),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Project / Goal Name *"),e("input",{style:S.input,placeholder:"e.g. 4503 Monument Ave",value:mgmtMsForm.week,onChange:ev=>setMgmtMsForm(f=>({...f,week:ev.target.value}))})),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Target Date"),e("input",{type:"date",style:S.input,value:mgmtMsForm.date,onChange:ev=>setMgmtMsForm(f=>({...f,date:ev.target.value}))})),
-          e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"e.g. ARV ~$450K, targeting Q4",value:mgmtMsForm.notes,onChange:ev=>setMgmtMsForm(f=>({...f,notes:ev.target.value}))})),
-          e("div",{style:{display:"flex",gap:10}},
-            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtMs(false);setMgmtMsForm({date:"",week:"",notes:""});}},"Cancel"),
-            e("button",{style:{...S.btn(),flex:1},onClick:()=>{
-              if(!mgmtMsForm.week)return;
-              setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:mgmtMsForm.date,week:mgmtMsForm.week,notes:mgmtMsForm.notes}].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)));
-              setShowAddMgmtMs(false);setMgmtMsForm({date:"",week:"",notes:""});
-            }},"Add")
-          )
-        )
-      ),
-      editMgmtMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
-        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
-          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Pipeline Item"),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Name"),e("input",{style:S.input,value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).week||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,week:ev.target.value}:m))})),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Target Date"),e("input",{type:"date",style:S.input,value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).date||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,date:ev.target.value}:m))})),
-          e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:(mgmtMilestones.find(m=>m.id===editMgmtMs)||{}).notes||"",onChange:ev=>setMgmtMilestones(p=>p.map(m=>m.id===editMgmtMs?{...m,notes:ev.target.value}:m))})),
-          e("div",{style:{display:"flex",gap:10}},
-            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditMgmtMs(null)},"Cancel"),
-            e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},onClick:()=>{setMgmtMilestones(p=>p.filter(m=>m.id!==editMgmtMs));setEditMgmtMs(null);}},"Delete"),
-            e("button",{style:{...S.btn(),flex:1},onClick:()=>setEditMgmtMs(null)},"Save")
-          )
-        )
-      ),
-      showAddMgmtTask&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
-        e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
-          e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter"&&mgmtTaskForm.task){setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",assignee:mgmtTaskForm.assignee,notes:mgmtTaskForm.notes}]);setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});}}})),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Assign To"),e("input",{style:S.input,placeholder:"e.g. Me, Malik, Partner",value:mgmtTaskForm.assignee||"",onChange:ev=>setMgmtTaskForm(f=>({...f,assignee:ev.target.value}))})),
-          e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("input",{style:S.input,placeholder:"Optional",value:mgmtTaskForm.notes,onChange:ev=>setMgmtTaskForm(f=>({...f,notes:ev.target.value}))})),
-          e("div",{style:{display:"flex",gap:10}},
-            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});}},"Cancel"),
-            e("button",{style:{...S.btn(),flex:1},onClick:()=>{
-              if(!mgmtTaskForm.task)return;
-              setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",assignee:mgmtTaskForm.assignee,notes:mgmtTaskForm.notes}]);
-              setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});
-            }},"Add")
-          )
-        )
-      )
+      showAddMgmtMs&&e(AddMgmtMsModal,{key:"add-mgmt-ms-modal"}),
+      editMgmtMs&&e(EditMgmtMsModal,{key:"edit-mgmt-ms-modal",msId:editMgmtMs}),
+      showAddMgmtTask&&e(AddMgmtTaskModal,{key:"add-mgmt-task-modal"})
     );
   };
 
