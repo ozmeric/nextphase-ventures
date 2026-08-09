@@ -1342,7 +1342,10 @@ function App() {
             e("button",{style:{width:20,height:20,borderRadius:4,border:`2px solid ${t.status==="Done"?"#10b981":"#1e3a5f"}`,background:t.status==="Done"?"#10b98133":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12},
               onClick:()=>setMgmtTasks(p=>p.map(mt=>mt.id===t.id?{...mt,status:mt.status==="Done"?"To Do":"Done"}:mt))
             },t.status==="Done"?"✓":""),
-            e("span",{style:{flex:1,fontSize:13,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+            e("div",{style:{flex:1}},
+              e("div",{style:{fontSize:13,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+              t.assignee&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"👤 "+t.assignee)
+            ),
             e("button",{style:{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:12,padding:"2px 6px"},
               onClick:()=>setMgmtTasks(p=>p.filter(mt=>mt.id!==t.id))},"×")
           ))
@@ -1408,14 +1411,15 @@ function App() {
       showAddMgmtTask&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
         e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
           e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
-          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter"&&mgmtTaskForm.task){setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",notes:mgmtTaskForm.notes}]);setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});}}})),
+          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,value:mgmtTaskForm.task,onChange:ev=>setMgmtTaskForm(f=>({...f,task:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter"&&mgmtTaskForm.task){setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",assignee:mgmtTaskForm.assignee,notes:mgmtTaskForm.notes}]);setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});}}})),
+          e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Assign To"),e("input",{style:S.input,placeholder:"e.g. Me, Malik, Partner",value:mgmtTaskForm.assignee||"",onChange:ev=>setMgmtTaskForm(f=>({...f,assignee:ev.target.value}))})),
           e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("input",{style:S.input,placeholder:"Optional",value:mgmtTaskForm.notes,onChange:ev=>setMgmtTaskForm(f=>({...f,notes:ev.target.value}))})),
           e("div",{style:{display:"flex",gap:10}},
-            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});}},"Cancel"),
+            e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});}},"Cancel"),
             e("button",{style:{...S.btn(),flex:1},onClick:()=>{
               if(!mgmtTaskForm.task)return;
-              setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",notes:mgmtTaskForm.notes}]);
-              setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",notes:""});
+              setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:mgmtTaskForm.task,status:"To Do",assignee:mgmtTaskForm.assignee,notes:mgmtTaskForm.notes}]);
+              setShowAddMgmtTask(false);setMgmtTaskForm({task:"",status:"To Do",assignee:"",notes:""});
             }},"Add")
           )
         )
