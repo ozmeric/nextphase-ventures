@@ -591,17 +591,18 @@ function App() {
   const Sidebar=()=>e("div",{style:S.sidebar,className:"desktop-sidebar"},
     e("div",{style:S.sideLabel},"Navigation"),
     e("div",{style:S.sideItem(view==="home"),onClick:()=>navTo("home")},"🏠 All Projects"),
-    activeProject&&e("div",{style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
-    activeProject&&e("div",{style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
+    e("div",{style:S.sideItem(view==="management"),onClick:()=>navTo("management")},"📋 Management"),
+    activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
+    activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
     activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
     activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
     activeProject&&!activeProject.description?.includes("No budget")&&e("div",{style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
     e("div",{style:{marginTop:16}},
       e("div",{style:S.sideLabel},"Projects"),
-      ...projects.map(p=>e("div",{key:p.id,
-        style:{...S.sideItem(p.id===activeId&&view!=="home"),paddingLeft:20,fontSize:12},
+      ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>e("div",{key:p.id,
+        style:{...S.sideItem(p.id===activeId&&!["home","management"].includes(view)),paddingLeft:20,fontSize:12},
         onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
-        e("span",{style:{width:7,height:7,borderRadius:"50%",background:p.id===activeId?"#d4a017":"#1e3a5f",flexShrink:0}}),
+        e("span",{style:{width:7,height:7,borderRadius:"50%",background:p.id===activeId&&!["home","management"].includes(view)?"#d4a017":"#1e3a5f",flexShrink:0}}),
         e("span",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name)
       )),
       e("div",{style:{padding:"10px 16px"}},
@@ -611,31 +612,36 @@ function App() {
   );
 
   // ── BOTTOM NAV (mobile) ──
-  const BottomNav=()=>e("div",{style:{display:"flex"},className:"bottom-nav"},
-    ...(activeProject&&!activeProject.description?.includes("No budget")?[
+  const BottomNav=()=>{
+    const isProject = activeProject&&!activeProject.description?.includes("No budget");
+    const isMgmt = view==="management";
+    const items = isProject ? [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📊",label:"Dashboard",v:"dashboard"},
       {icon:"✅",label:"Tasks",v:"tasks"},
       {icon:"📅",label:"Planning",v:"planning"},
       {icon:"➕",label:"Add",v:"add-expense"},
-    ]:[
+    ] : isMgmt ? [
       {icon:"🏠",label:"Projects",v:"home"},
-      {icon:"📊",label:"Dashboard",v:"dashboard"},
-      {icon:"📋",label:"Expenses",v:"expenses"},
-      {icon:"➕",label:"Add",v:"add-expense"},
-    ]).map(item=>e("div",{key:item.v,
-      style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"10px 0",cursor:"pointer",
-        color:view===item.v?"#d4a017":"#4a6fa5",fontSize:10,fontWeight:view===item.v?700:400,gap:3},
-      onClick:()=>{
-        if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
-        if((item.v==="dashboard"||item.v==="expenses"||item.v==="tasks"||item.v==="quotes"||item.v==="planning")&&!activeProject)return;
-        if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
-        navTo(item.v);
-      }},
-      e("span",{style:{fontSize:18}},item.icon),
-      item.label
-    ))
-  );
+      {icon:"📋",label:"Management",v:"management"},
+    ] : [
+      {icon:"🏠",label:"Projects",v:"home"},
+      {icon:"📋",label:"Management",v:"management"},
+    ];
+    return e("div",{style:{display:"flex"},className:"bottom-nav"},
+      ...items.map(item=>e("div",{key:item.v,
+        style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"10px 0",cursor:"pointer",
+          color:view===item.v?"#d4a017":"#4a6fa5",fontSize:10,fontWeight:view===item.v?700:400,gap:3},
+        onClick:()=>{
+          if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
+          if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
+          navTo(item.v);
+        }},
+        e("span",{style:{fontSize:18}},item.icon),
+        item.label
+      ))
+    );
+  };
 
   const HomeView=()=>e("div",null,
     e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
