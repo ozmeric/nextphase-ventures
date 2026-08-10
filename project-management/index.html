@@ -194,6 +194,24 @@ function App() {
   const [showAddMgmtTask,setShowAddMgmtTask] = useState(false);
   const [mgmtTaskForm,setMgmtTaskForm] = useState({task:"",status:"To Do",notes:""});
 
+  // ── VENDORS STATE ──
+  const DEFAULT_VENDOR_CATEGORIES = [
+    "Dumpster Companies","Landscapers","Electricians","HVAC","Plumbing",
+    "Carpenters","Interior Paint","Exterior Paint","Loan Providers",
+    "Title Companies","Real Estate Agents","Inspectors","General Contractors","Other"
+  ];
+  const [vendorCategories,setVendorCategories] = useState(DEFAULT_VENDOR_CATEGORIES);
+  const VENDOR_CATEGORIES = vendorCategories;
+  const [vendors,setVendors] = useState({
+    "Dumpster Companies":[{id:"v1",name:"Choice Dumpster",phone:"",email:"",notes:"Currently using"}],
+    "Loan Providers":[{id:"v2",name:"Kiavi",phone:"",email:"",notes:"Fix & flip lender"}],
+    "Title Companies":[{id:"v3",name:"Three Lions Title",phone:"",email:"",notes:""}],
+  });
+  const [vendorCat,setVendorCat] = useState("All");
+  const [showNewVendorCat,setShowNewVendorCat] = useState(false);
+  const [showAddVendor,setShowAddVendor] = useState(false);
+  const [editVendorId,setEditVendorId] = useState(null);
+
   const [planView,setPlanView] = useState("weekly");
   const [allSelMs,setAllSelMs] = useState({});
   const [showAddMs,setShowAddMs] = useState(false);
@@ -597,6 +615,7 @@ function App() {
       e("div",{key:"mgmt",style:S.sideItem(isMgmt),onClick:()=>{setActiveId(null);navTo("management");}},"📋 Management"),
       isMgmt&&e("div",{key:"mgmt-ms",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtMs(true)},"🏁 + Milestone"),
       isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
+      e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"dashboard",style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"expenses",style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"tasks",style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
@@ -628,7 +647,8 @@ function App() {
   const BottomNav=()=>{
     const isProject = activeProject&&!activeProject.description?.includes("No budget");
     const isMgmt = view==="management";
-    const items = isProject ? [
+    const isVendors = view==="vendors";
+    const items = (isProject&&!isVendors) ? [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📊",label:"Dashboard",v:"dashboard"},
       {icon:"✅",label:"Tasks",v:"tasks"},
@@ -637,9 +657,11 @@ function App() {
     ] : isMgmt ? [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📋",label:"Management",v:"management"},
+      {icon:"📇",label:"Vendors",v:"vendors"},
     ] : [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📋",label:"Management",v:"management"},
+      {icon:"📇",label:"Vendors",v:"vendors"},
     ];
     return e("div",{style:{display:"flex"},className:"bottom-nav"},
       ...items.map(item=>e("div",{key:item.v,
@@ -1262,6 +1284,175 @@ function App() {
     );
   };
 
+  // ── NEW CATEGORY INLINE INPUT ──
+  const NewCategoryInput=({onSave,onCancel})=>{
+    const [val,setVal]=useState("");
+    return e("div",{style:{display:"flex",gap:8,marginTop:8}},
+      e("input",{style:{...S.input,flex:1,fontSize:12,padding:"7px 10px"},
+        placeholder:"Category name…",autoFocus:true,value:val,
+        onChange:ev=>setVal(ev.target.value),
+        onKeyDown:ev=>{if(ev.key==="Enter"&&val.trim())onSave(val.trim());if(ev.key==="Escape")onCancel();}
+      }),
+      e("button",{style:{...S.btn(),padding:"7px 12px",fontSize:12},onClick:()=>{if(val.trim())onSave(val.trim());}},"Add"),
+      e("button",{style:{...S.btn("ghost"),padding:"7px 10px",fontSize:12},onClick:onCancel},"✕")
+    );
+  };
+
+  // ── ADD VENDOR MODAL ──
+  const AddVendorModal=()=>{
+    const defaultCat = vendorCat==="All" ? VENDOR_CATEGORIES[0] : vendorCat;
+    const [lf,setLf]=useState({name:"",phone:"",email:"",notes:"",category:defaultCat});
+    const [showNewCat,setShowNewCat]=useState(false);
+    const submit=()=>{
+      if(!lf.name)return;
+      setVendors(prev=>({...prev,[lf.category]:[...(prev[lf.category]||[]),{id:"v-"+Date.now(),name:lf.name,phone:lf.phone,email:lf.email,notes:lf.notes}]}));
+      setShowAddVendor(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Vendor"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Category"),
+          e("select",{style:S.input,value:lf.category,onChange:ev=>{
+            if(ev.target.value==="__new__") setShowNewCat(true);
+            else{setLf(f=>({...f,category:ev.target.value}));setShowNewCat(false);}
+          }},
+            VENDOR_CATEGORIES.map(cat=>e("option",{key:cat,value:cat},cat)),
+            e("option",{value:"__new__"},"+ Add New Category…")
+          ),
+          showNewCat&&e(NewCategoryInput,{key:"new-cat-modal",
+            onSave:(name)=>{setVendorCategories(prev=>[...prev,name]);setLf(f=>({...f,category:name}));setShowNewCat(false);},
+            onCancel:()=>setShowNewCat(false)
+          })
+        ),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Name *"),e("input",{style:S.input,placeholder:"Company or person name",autoFocus:true,value:lf.name,onChange:ev=>setLf(f=>({...f,name:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter")submit();}})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Phone"),e("input",{style:S.input,placeholder:"(804) 555-0000",type:"tel",value:lf.phone,onChange:ev=>setLf(f=>({...f,phone:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Email"),e("input",{style:S.input,placeholder:"contact@example.com",type:"email",value:lf.email,onChange:ev=>setLf(f=>({...f,email:ev.target.value}))})),
+        e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"Pricing, ratings, notes…",value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddVendor(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── EDIT VENDOR MODAL ──
+  const EditVendorModal=({vendorId,category})=>{
+    const existing=(vendors[category]||[]).find(v=>v.id===vendorId)||{};
+    const [lf,setLf]=useState({name:existing.name||"",phone:existing.phone||"",email:existing.email||"",notes:existing.notes||""});
+    const save=()=>{
+      setVendors(prev=>({...prev,[category]:(prev[category]||[]).map(v=>v.id===vendorId?{...v,...lf}:v)}));
+      setEditVendorId(null);
+    };
+    const del=()=>{
+      setVendors(prev=>({...prev,[category]:(prev[category]||[]).filter(v=>v.id!==vendorId)}));
+      setEditVendorId(null);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:4}},"Edit Vendor"),
+        e("div",{style:{fontSize:12,color:"#4a6fa5",marginBottom:16}},category),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Name *"),e("input",{style:S.input,autoFocus:true,value:lf.name,onChange:ev=>setLf(f=>({...f,name:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Phone"),e("input",{style:S.input,type:"tel",value:lf.phone,onChange:ev=>setLf(f=>({...f,phone:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Email"),e("input",{style:S.input,type:"email",value:lf.email,onChange:ev=>setLf(f=>({...f,email:ev.target.value}))})),
+        e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})),
+        e("div",{style:{display:"flex",gap:8}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditVendorId(null)},"Cancel"),
+          e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},onClick:del},"Delete"),
+          e("button",{style:{...S.btn(),flex:1},onClick:save},"Save")
+        )
+      )
+    );
+  };
+
+  // ── VENDORS VIEW ──
+  const VendorsView=()=>{
+    const allVendors = VENDOR_CATEGORIES.flatMap(cat=>(vendors[cat]||[]).map(v=>({...v,category:cat})));
+    const isAll = vendorCat==="All";
+    const displayVendors = isAll ? allVendors : (vendors[vendorCat]||[]).map(v=>({...v,category:vendorCat}));
+
+    return e("div",null,
+      // Header
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("div",{style:{width:36,height:36,borderRadius:8,background:"#06b6d422",border:"1px solid #06b6d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}},"📇"),
+          e("div",null,
+            e("div",{style:{fontWeight:900,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Vendors & Contacts"),
+            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},allVendors.length+" vendors across "+VENDOR_CATEGORIES.filter(c=>(vendors[c]||[]).length>0).length+" categories")
+          )
+        ),
+        e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>setShowAddVendor(true)},"+ Add Vendor")
+      ),
+
+      // Dropdown + new category
+      e("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:20}},
+        e("div",{style:{display:"flex",gap:8}},
+          e("select",{style:{...S.input,flex:1,fontSize:13},value:vendorCat,onChange:ev=>{
+            if(ev.target.value==="__new__"){setShowNewVendorCat(true);}
+            else{setVendorCat(ev.target.value);setShowNewVendorCat(false);}
+          }},
+            e("option",{value:"All"},"All Vendors ("+allVendors.length+")"),
+            VENDOR_CATEGORIES.map(cat=>e("option",{key:cat,value:cat},
+              cat+(vendors[cat]?.length?" ("+vendors[cat].length+")":"")
+            )),
+            e("option",{value:"__new__"},"+ Add New Category…")
+          ),
+          vendorCat!=="All"&&e("button",{
+            style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"0 12px",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0,whiteSpace:"nowrap"},
+            onClick:()=>{
+              if((vendors[vendorCat]||[]).length>0){
+                if(!window.confirm("This will also delete all "+vendors[vendorCat].length+" vendor(s) in \""+vendorCat+"\". Continue?"))return;
+              }
+              setVendorCategories(prev=>prev.filter(c=>c!==vendorCat));
+              setVendors(prev=>{const n={...prev};delete n[vendorCat];return n;});
+              setVendorCat("All");
+            }},"🗑 Remove")
+        ),
+        showNewVendorCat&&e(NewCategoryInput,{key:"new-cat-vendor",
+          onSave:(name)=>{setVendorCategories(prev=>[...prev,name]);setVendorCat(name);setShowNewVendorCat(false);},
+          onCancel:()=>setShowNewVendorCat(false)
+        })
+      ),
+
+      // Vendor cards
+      displayVendors.length===0
+        ?e("div",{style:{...S.card,textAlign:"center",padding:"40px 16px"}},
+            e("div",{style:{fontSize:32,marginBottom:10}},"📇"),
+            e("div",{style:{color:"#4a6fa5",fontSize:13,marginBottom:12}},
+              isAll?"No vendors added yet":"No "+vendorCat.toLowerCase()+" added yet"
+            ),
+            e("button",{style:{...S.btn(),fontSize:12},onClick:()=>setShowAddVendor(true)},"Add First Vendor")
+          )
+        :e("div",{style:{display:"flex",flexDirection:"column",gap:10}},
+            displayVendors.map(v=>e("div",{key:v.id,style:{...S.card,padding:"14px 16px"}},
+              e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}},
+                e("div",{style:{flex:1}},
+                  e("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:6}},
+                    e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8"}},v.name),
+                    isAll&&e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#06b6d422",color:"#06b6d4"}},v.category)
+                  ),
+                  e("div",{style:{display:"flex",flexWrap:"wrap",gap:10}},
+                    v.phone&&e("a",{href:"tel:"+v.phone,style:{display:"flex",alignItems:"center",gap:5,fontSize:13,color:"#10b981",textDecoration:"none",fontWeight:600}},
+                      "📞 ",v.phone
+                    ),
+                    v.email&&e("a",{href:"mailto:"+v.email,style:{display:"flex",alignItems:"center",gap:5,fontSize:13,color:"#06b6d4",textDecoration:"none",fontWeight:600}},
+                      "✉️ ",v.email
+                    )
+                  ),
+                  v.notes&&e("div",{style:{fontSize:12,color:"#7a9cc5",marginTop:8,lineHeight:1.5}},v.notes)
+                ),
+                e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:11,fontWeight:600,flexShrink:0,marginLeft:10},
+                  onClick:()=>{setVendorCat(v.category);setEditVendorId(v.id);}},"Edit")
+              )
+            ))
+          ),
+
+      showAddVendor&&e(AddVendorModal,{key:"add-vendor-modal"}),
+      editVendorId&&e(EditVendorModal,{key:"edit-vendor-modal",vendorId:editVendorId,category:vendorCat})
+    );
+  };
+
   // ── ADD PIPELINE MODAL ──
   const AddMgmtMsModal=()=>{
     const [lf,setLf]=useState({week:"",date:"",notes:""});
@@ -1505,6 +1696,7 @@ function App() {
       e("div",{style:{...S.content},className:"main-content"},
         view==="home"      ?e(HomeView):
         view==="management"?e(ManagementView):
+        view==="vendors"   ?e(VendorsView):
         view==="dashboard" ?e(DashboardView):
         view==="expenses"  ?e(ExpensesView):
         view==="tasks"     ?e(TasksView):
