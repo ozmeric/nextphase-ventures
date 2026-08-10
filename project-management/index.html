@@ -292,9 +292,10 @@ function App() {
     if(!vendorsLoadedRef.current){vendorsLoadedRef.current=vendorsLoaded;if(!vendorsLoaded)return;}
     const timer=setTimeout(()=>{
       setSaving(true);
+      console.log("Saving vendors:", JSON.stringify({vendors,categories:vendorCategories}).substring(0,200));
       api("saveVendors",{vendors,categories:vendorCategories})
-        .then(()=>showToast("Vendors saved","success"))
-        .catch(e=>showToast("Failed: "+e.message,"error"))
+        .then(r=>{console.log("Save result:",r);showToast("Vendors saved","success");})
+        .catch(e=>{console.error("Save error:",e);showToast("Failed: "+e.message,"error");})
         .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
