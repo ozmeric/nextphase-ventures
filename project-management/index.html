@@ -272,30 +272,33 @@ function App() {
     }).catch(()=>setVendorsLoaded(true));
   },[authed]);
 
-  // Save milestones to Sheet when they change (debounced)
+  // Save milestones to Sheet when they change (debounced, only after initial load)
+  const milestonesLoadedRef = useRef(false);
   useEffect(()=>{
-    if(!authed||!milestonesLoaded)return;
+    if(!authed)return;
+    if(!milestonesLoadedRef.current){milestonesLoadedRef.current=milestonesLoaded;if(!milestonesLoaded)return;}
     const timer=setTimeout(()=>{
       Object.entries(allMilestones).forEach(([pid,ms])=>{
-        if(ms&&ms.length>=0){
-          api("saveMilestones",{projectId:pid,milestones:ms}).catch(()=>{});
-        }
+        if(ms&&ms.length>=0) api("saveMilestones",{projectId:pid,milestones:ms}).catch(()=>{});
       });
     },1500);
     return ()=>clearTimeout(timer);
-  },[allMilestones]);
+  },[allMilestones,milestonesLoaded]);
 
-  // Save vendors to Sheet when they change (debounced)
+  // Save vendors to Sheet when they change (debounced, only after initial load)
+  const vendorsLoadedRef = useRef(false);
   useEffect(()=>{
-    if(!authed||!vendorsLoaded)return;
+    if(!authed)return;
+    if(!vendorsLoadedRef.current){vendorsLoadedRef.current=vendorsLoaded;if(!vendorsLoaded)return;}
     const timer=setTimeout(()=>{
       setSaving(true);
       api("saveVendors",{vendors,categories:vendorCategories})
-        .catch(()=>{})
+        .then(()=>showToast("Vendors saved","success"))
+        .catch(()=>showToast("Failed to save vendors","error"))
         .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
-  },[vendors,vendorCategories]);
+  },[vendors,vendorCategories,vendorsLoaded]);
 
   useEffect(()=>{
     if(!activeId)return;
