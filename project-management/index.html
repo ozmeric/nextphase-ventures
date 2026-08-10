@@ -211,6 +211,7 @@ function App() {
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
   const [vendorsLoaded,setVendorsLoaded] = useState(false);
   const [milestonesLoaded,setMilestonesLoaded] = useState(false);
+  const [mgmtLoaded,setMgmtLoaded] = useState(false);
   const [showAddVendor,setShowAddVendor] = useState(false);
   const [editVendorId,setEditVendorId] = useState(null);
 
@@ -270,6 +271,15 @@ function App() {
       if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
       setVendorsLoaded(true);
     }).catch(()=>setVendorsLoaded(true));
+
+    // Load management data from Sheet
+    api("getMgmtData").then(data=>{
+      const d=data.data||{};
+      if(d.mgmtTasks) setMgmtTasks(d.mgmtTasks);
+      if(d.mgmtMilestones) setMgmtMilestones(d.mgmtMilestones);
+      if(d.mgmtMsStatus) setMgmtMsStatus(d.mgmtMsStatus);
+      setMgmtLoaded(true);
+    }).catch(()=>setMgmtLoaded(true));
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced, only after initial load)
@@ -292,14 +302,26 @@ function App() {
     if(!vendorsLoadedRef.current){vendorsLoadedRef.current=vendorsLoaded;if(!vendorsLoaded)return;}
     const timer=setTimeout(()=>{
       setSaving(true);
-      console.log("Saving vendors:", JSON.stringify({vendors,categories:vendorCategories}).substring(0,200));
       api("saveVendors",{vendors,categories:vendorCategories})
-        .then(r=>{console.log("Save result:",r);showToast("Vendors saved","success");})
-        .catch(e=>{console.error("Save error:",e);showToast("Failed: "+e.message,"error");})
+        .then(()=>showToast("Vendors saved","success"))
+        .catch(e=>showToast("Failed: "+e.message,"error"))
         .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
   },[vendors,vendorCategories,vendorsLoaded]);
+
+  // Save management tasks + milestones (debounced, only after initial load)
+  const mgmtLoadedRef = useRef(false);
+  useEffect(()=>{
+    if(!authed)return;
+    if(!mgmtLoadedRef.current){mgmtLoadedRef.current=mgmtLoaded;if(!mgmtLoaded)return;}
+    const timer=setTimeout(()=>{
+      api("saveMgmtData",{key:"mgmtTasks",value:mgmtTasks}).catch(()=>{});
+      api("saveMgmtData",{key:"mgmtMilestones",value:mgmtMilestones}).catch(()=>{});
+      api("saveMgmtData",{key:"mgmtMsStatus",value:mgmtMsStatus}).catch(()=>{});
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[mgmtTasks,mgmtMilestones,mgmtMsStatus,mgmtLoaded]);
 
   useEffect(()=>{
     if(!activeId)return;
