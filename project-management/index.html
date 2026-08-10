@@ -294,7 +294,7 @@ function App() {
       setSaving(true);
       api("saveVendors",{vendors,categories:vendorCategories})
         .then(()=>showToast("Vendors saved","success"))
-        .catch(()=>showToast("Failed to save vendors","error"))
+        .catch(e=>showToast("Failed: "+e.message,"error"))
         .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
