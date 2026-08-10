@@ -179,7 +179,7 @@ function App() {
       {id:"ms-4",date:"2026-09-04",week:"Finishes",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
       {id:"ms-5",date:"2026-09-11",week:"Final & Staging",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
     ]
-  });
+  }); // Will be overwritten by Sheet data on load
   // ── MANAGEMENT CARD STATE ──
   const [mgmtMilestones,setMgmtMilestones] = useState([]);
   const [mgmtTasks,setMgmtTasks] = useState([]);
@@ -253,7 +253,42 @@ function App() {
       if(projs.length>0)setActiveId(projs[0].id);
       setError(null);
     }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+
+    // Load all milestones from Sheet
+    api("getMilestones").then(data=>{
+      if(data.milestones&&Object.keys(data.milestones).length>0){
+        setAllMilestones(prev=>({...prev,...data.milestones}));
+      }
+    }).catch(()=>{});
+
+    // Load vendors from Sheet
+    api("getVendors").then(data=>{
+      if(data.vendors&&Object.keys(data.vendors).length>0) setVendors(data.vendors);
+      if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
+    }).catch(()=>{});
   },[authed]);
+
+  // Save milestones to Sheet when they change (debounced)
+  useEffect(()=>{
+    if(!authed)return;
+    const timer=setTimeout(()=>{
+      Object.entries(allMilestones).forEach(([pid,ms])=>{
+        if(ms&&ms.length>=0){
+          api("saveMilestones",{projectId:pid,milestones:ms}).catch(()=>{});
+        }
+      });
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[allMilestones]);
+
+  // Save vendors to Sheet when they change (debounced)
+  useEffect(()=>{
+    if(!authed)return;
+    const timer=setTimeout(()=>{
+      api("saveVendors",{vendors,categories:vendorCategories}).catch(()=>{});
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[vendors,vendorCategories]);
 
   useEffect(()=>{
     if(!activeId)return;
