@@ -209,6 +209,8 @@ function App() {
   });
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
+  const [vendorsLoaded,setVendorsLoaded] = useState(false);
+  const [milestonesLoaded,setMilestonesLoaded] = useState(false);
   const [showAddVendor,setShowAddVendor] = useState(false);
   const [editVendorId,setEditVendorId] = useState(null);
 
@@ -259,18 +261,20 @@ function App() {
       if(data.milestones&&Object.keys(data.milestones).length>0){
         setAllMilestones(prev=>({...prev,...data.milestones}));
       }
-    }).catch(()=>{});
+      setMilestonesLoaded(true);
+    }).catch(()=>setMilestonesLoaded(true));
 
     // Load vendors from Sheet
     api("getVendors").then(data=>{
       if(data.vendors&&Object.keys(data.vendors).length>0) setVendors(data.vendors);
       if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
-    }).catch(()=>{});
+      setVendorsLoaded(true);
+    }).catch(()=>setVendorsLoaded(true));
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced)
   useEffect(()=>{
-    if(!authed)return;
+    if(!authed||!milestonesLoaded)return;
     const timer=setTimeout(()=>{
       Object.entries(allMilestones).forEach(([pid,ms])=>{
         if(ms&&ms.length>=0){
@@ -283,9 +287,12 @@ function App() {
 
   // Save vendors to Sheet when they change (debounced)
   useEffect(()=>{
-    if(!authed)return;
+    if(!authed||!vendorsLoaded)return;
     const timer=setTimeout(()=>{
-      api("saveVendors",{vendors,categories:vendorCategories}).catch(()=>{});
+      setSaving(true);
+      api("saveVendors",{vendors,categories:vendorCategories})
+        .catch(()=>{})
+        .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
   },[vendors,vendorCategories]);
