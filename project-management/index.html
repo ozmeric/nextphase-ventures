@@ -85,7 +85,7 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",d
 const fmtDateShort = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
 const genId   = () => Math.random().toString(36).slice(2,10);
 
-let SESSION_PIN = "";
+let SESSION_PIN = (()=>{try{return sessionStorage.getItem("npv-pin")||"";}catch{return "";}})();
 
 async function api(action, extra={}) {
   const res = await fetch(API_URL, {
@@ -270,7 +270,8 @@ function App() {
       if(data.vendors&&Object.keys(data.vendors).length>0) setVendors(data.vendors);
       if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
       setVendorsLoaded(true);
-    }).catch(()=>setVendorsLoaded(true));
+      vendorsLoadedRef.current=true;
+    }).catch(()=>{setVendorsLoaded(true);vendorsLoadedRef.current=true;});
 
     // Load management data from Sheet
     api("getMgmtData").then(data=>{
@@ -279,7 +280,8 @@ function App() {
       if(d.mgmtMilestones) setMgmtMilestones(d.mgmtMilestones);
       if(d.mgmtMsStatus) setMgmtMsStatus(d.mgmtMsStatus);
       setMgmtLoaded(true);
-    }).catch(()=>setMgmtLoaded(true));
+      mgmtLoadedRef.current=true;
+    }).catch(()=>{setMgmtLoaded(true);mgmtLoadedRef.current=true;});
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced, only after initial load)
@@ -297,10 +299,6 @@ function App() {
 
   // Save vendors to Sheet when they change (only after initial load)
   const vendorsLoadedRef = useRef(false);
-  useEffect(()=>{
-    if(!authed||!vendorsLoaded)return;
-    vendorsLoadedRef.current=true;
-  },[vendorsLoaded,authed]);
 
   useEffect(()=>{
     if(!authed||!vendorsLoadedRef.current)return;
@@ -316,10 +314,6 @@ function App() {
 
   // Save management data (only after initial load)
   const mgmtLoadedRef = useRef(false);
-  useEffect(()=>{
-    if(!authed||!mgmtLoaded)return;
-    mgmtLoadedRef.current=true;
-  },[mgmtLoaded,authed]);
 
   useEffect(()=>{
     if(!authed||!mgmtLoadedRef.current)return;
