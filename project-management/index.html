@@ -295,33 +295,41 @@ function App() {
     return ()=>clearTimeout(timer);
   },[allMilestones,milestonesLoaded]);
 
-  // Save vendors to Sheet when they change (debounced, only after initial load)
+  // Save vendors to Sheet when they change (only after initial load)
   const vendorsLoadedRef = useRef(false);
   useEffect(()=>{
-    if(!authed)return;
-    if(!vendorsLoadedRef.current){vendorsLoadedRef.current=vendorsLoaded;if(!vendorsLoaded)return;}
+    if(!authed||!vendorsLoaded)return;
+    vendorsLoadedRef.current=true;
+  },[vendorsLoaded,authed]);
+
+  useEffect(()=>{
+    if(!authed||!vendorsLoadedRef.current)return;
     const timer=setTimeout(()=>{
       setSaving(true);
       api("saveVendors",{vendors,categories:vendorCategories})
-        .then(()=>showToast("Vendors saved","success"))
+        .then(()=>showToast("Vendors saved ✓","success"))
         .catch(e=>showToast("Failed: "+e.message,"error"))
         .finally(()=>setSaving(false));
     },1500);
     return ()=>clearTimeout(timer);
-  },[vendors,vendorCategories,vendorsLoaded]);
+  },[vendors,vendorCategories]);
 
-  // Save management tasks + milestones (debounced, only after initial load)
+  // Save management data (only after initial load)
   const mgmtLoadedRef = useRef(false);
   useEffect(()=>{
-    if(!authed)return;
-    if(!mgmtLoadedRef.current){mgmtLoadedRef.current=mgmtLoaded;if(!mgmtLoaded)return;}
+    if(!authed||!mgmtLoaded)return;
+    mgmtLoadedRef.current=true;
+  },[mgmtLoaded,authed]);
+
+  useEffect(()=>{
+    if(!authed||!mgmtLoadedRef.current)return;
     const timer=setTimeout(()=>{
       api("saveMgmtData",{key:"mgmtTasks",value:mgmtTasks}).catch(()=>{});
       api("saveMgmtData",{key:"mgmtMilestones",value:mgmtMilestones}).catch(()=>{});
       api("saveMgmtData",{key:"mgmtMsStatus",value:mgmtMsStatus}).catch(()=>{});
     },1500);
     return ()=>clearTimeout(timer);
-  },[mgmtTasks,mgmtMilestones,mgmtMsStatus,mgmtLoaded]);
+  },[mgmtTasks,mgmtMilestones,mgmtMsStatus]);
 
   useEffect(()=>{
     if(!activeId)return;
