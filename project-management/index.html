@@ -202,11 +202,7 @@ function App() {
   ];
   const [vendorCategories,setVendorCategories] = useState(DEFAULT_VENDOR_CATEGORIES);
   const VENDOR_CATEGORIES = vendorCategories;
-  const [vendors,setVendors] = useState({
-    "Dumpster Companies":[{id:"v1",name:"Choice Dumpster",phone:"",email:"",notes:"Currently using"}],
-    "Loan Providers":[{id:"v2",name:"Kiavi",phone:"",email:"",notes:"Fix & flip lender"}],
-    "Title Companies":[{id:"v3",name:"Three Lions Title",phone:"",email:"",notes:""}],
-  });
+  const [vendors,setVendors] = useState({});
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
   const [vendorsLoaded,setVendorsLoaded] = useState(false);
