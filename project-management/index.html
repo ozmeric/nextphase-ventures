@@ -135,9 +135,18 @@ function PinScreen({onUnlock}) {
   };
   return React.createElement("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
     React.createElement("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:16,padding:"40px 36px",textAlign:"center",width:"100%",maxWidth:340}},
-      React.createElement("div",{style:{fontSize:36,marginBottom:12}},"🏗️"),
-      React.createElement("div",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",marginBottom:4,letterSpacing:"-0.5px"}},"NextPhase Ventures"),
-      React.createElement("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:28}},"Enter PIN to continue"),
+      React.createElement("div",{style:{marginBottom:24,display:"flex",flexDirection:"column",alignItems:"center",gap:8}},
+        e("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 200 50",style:{height:28,width:"auto"}},
+          e("rect",{width:"200",height:"50",fill:"#0a1628",rx:"8"}),
+          e("rect",{x:"8",y:"7",width:"36",height:"36",rx:"7",fill:"#0a1628",stroke:"#d4a017","strokeWidth":"1.5"}),
+          e("path",{d:"M14,14 L20,36 L26,22 L32,36 L38,14",fill:"none",stroke:"#d4a017","strokeWidth":"5","strokeLinecap":"round","strokeLinejoin":"round"}),
+          e("text",{x:"54",y:"28",fontFamily:"system-ui,sans-serif",fontSize:"16",fontWeight:"700",letterSpacing:"-0.5",fill:"#f8f0d8"},"Weblina"),
+          e("text",{x:"126",y:"34",fontFamily:"system-ui,sans-serif",fontSize:"8",fontWeight:"500",letterSpacing:"2",fill:"#d4a017"},"LLC")
+        ),
+        React.createElement("div",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},"NextPhase Ventures"),
+        React.createElement("div",{style:{fontSize:11,color:"#4a6fa5",letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:600}})
+      ),
+      React.createElement("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:28,textAlign:"center"}},"Enter PIN to continue"),
       React.createElement("input",{type:"password",maxLength:6,placeholder:"••••",value:pin,autoFocus:true,
         style:{...S.input,fontSize:28,textAlign:"center",letterSpacing:10,padding:14,marginBottom:err?8:16,border:err?"1px solid #ef4444":"1px solid #1e3a5f"},
         onChange:ev=>{setPin(ev.target.value);setErr(false);},
@@ -718,8 +727,8 @@ function App() {
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📊",label:"Dashboard",v:"dashboard"},
       {icon:"✅",label:"Tasks",v:"tasks"},
+      {icon:"💬",label:"Quotes",v:"quotes"},
       {icon:"📅",label:"Planning",v:"planning"},
-      {icon:"➕",label:"Add",v:"add-expense"},
     ] : [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📋",label:"Management",v:"management"},
@@ -727,8 +736,8 @@ function App() {
     ];
     return e("div",{style:{display:"flex"},className:"bottom-nav"},
       ...items.map(item=>e("div",{key:item.v,
-        style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"10px 0",cursor:"pointer",
-          color:view===item.v?"#d4a017":"#4a6fa5",fontSize:10,fontWeight:view===item.v?700:400,gap:3},
+        style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px",cursor:"pointer",
+          color:view===item.v?"#d4a017":"#4a6fa5",fontSize:9,fontWeight:view===item.v?700:400,gap:2},
         onClick:()=>{
           if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
           if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
@@ -807,7 +816,17 @@ function App() {
                     e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
                   )
                 ),
-            e("div",{style:{marginTop:12,fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →")
+            e("div",{style:{marginTop:12,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+              e("div",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →"),
+              e("div",{style:{display:"flex",gap:6}},
+                e("button",{style:{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer"},
+                  onClick:ev=>{ev.stopPropagation();setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("tasks");}
+                },"✅ Tasks"),
+                e("button",{style:{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer"},
+                  onClick:ev=>{ev.stopPropagation();setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("planning");}
+                },"📅 Plan")
+              )
+            )
           ))
         )
   );
@@ -1768,6 +1787,16 @@ function App() {
     ),
 
     e(BottomNav),
+    e("div",{style:{background:"#071020",borderTop:"1px solid #1e3a5f",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,flexShrink:0}},
+      e("span",{style:{fontSize:10,color:"#2a4a7f",fontFamily:"system-ui,sans-serif"}},"Powered by"),
+      e("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 200 50",style:{height:18,width:"auto"}},
+        e("rect",{width:"200",height:"50",fill:"#0a1628",rx:"8"}),
+        e("rect",{x:"8",y:"7",width:"36",height:"36",rx:"7",fill:"#0a1628",stroke:"#d4a017","strokeWidth":"1.5"}),
+        e("path",{d:"M14,14 L20,36 L26,22 L32,36 L38,14",fill:"none",stroke:"#d4a017","strokeWidth":"5","strokeLinecap":"round","strokeLinejoin":"round"}),
+        e("text",{x:"54",y:"28",fontFamily:"system-ui,sans-serif",fontSize:"16",fontWeight:"700",letterSpacing:"-0.5",fill:"#f8f0d8"},"Weblina"),
+        e("text",{x:"126",y:"34",fontFamily:"system-ui,sans-serif",fontSize:"8",fontWeight:"500",letterSpacing:"2",fill:"#d4a017"},"LLC")
+      )
+    ),
 
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
