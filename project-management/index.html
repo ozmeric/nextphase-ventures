@@ -60,6 +60,7 @@ const { useState, useEffect, useRef } = React;
 const e = React.createElement;
 
 const API_URL = "https://nextphaseventures.weblinallc.workers.dev/";
+const PUSH_SERVER_URL = "https://npv-push-server.weblinallc.workers.dev";
 
 const ACQUISITION_CATEGORIES = ["Down Payment","Closing Costs","Loan Expenses"];
 const REHAB_CATEGORIES = ["Labor","Demo/Cleanup","Materials","Permits","Utilities","Equipment","Professional Fees","Other"];
@@ -300,15 +301,37 @@ function App() {
   };
 
   const requestNotificationPermission=async()=>{
-    if(!("Notification" in window)){showToast("Notifications not supported in this browser","error");return;}
+    if(!("Notification" in window)){showToast("Notifications not supported","error");return;}
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)){showToast("Push not supported","error");return;}
     const perm=await Notification.requestPermission();
-    if(perm==="granted"){
-      showToast("Notifications enabled! You'll get alerts for new leads.");
-      new Notification("📬 NPV Notifications On",{body:"You'll be notified when new deals arrive.",icon:"./icon-192.png"});
-    } else {
-      showToast("Notification permission denied.","error");
-    }
+    if(perm!=="granted"){showToast("Permission denied.","error");return;}
+    try{
+      const keyRes=await fetch(PUSH_SERVER_URL+"/vapid-public-key");
+      const {publicKey}=await keyRes.json();
+      const reg=await navigator.serviceWorker.ready;
+      const subscription=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(publicKey)
+      });
+      let deviceId=localStorage.getItem("npv-device-id");
+      if(!deviceId){deviceId="dev-"+Math.random().toString(36).slice(2,10)+"-"+Date.now();localStorage.setItem("npv-device-id",deviceId);}
+      const res=await fetch(PUSH_SERVER_URL+"/subscribe",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({subscription,deviceId})
+      });
+      if(res.ok){showToast("🔔 Push notifications enabled!");localStorage.setItem("npv-push-enabled","true");}
+      else showToast("Failed to register push.","error");
+    }catch(err){showToast("Push error: "+err.message,"error");}
   };
+
+  function urlBase64ToUint8Array(base64String){
+    const padding="=".repeat((4-(base64String.length%4))%4);
+    const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw=window.atob(base64);
+    const arr=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+    return arr;
+  }
 
   // Auto-poll leads every 2 minutes when app is open
   useEffect(()=>{
@@ -354,13 +377,34 @@ function App() {
       setLeads(data.leads||[]);
     }).catch(function(){});
 
-    api("getLeads").then(function(data){
-      setLeads(data.leads||[]);
-    }).catch(function(){});
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.addEventListener("message",function(ev){
+        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
+      });
+    }
 
     api("getLeads").then(function(data){
       setLeads(data.leads||[]);
     }).catch(function(){});
+
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.addEventListener("message",function(ev){
+        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
+      });
+    }
+
+    api("getLeads").then(function(data){
+      setLeads(data.leads||[]);
+    }).catch(function(){});
+
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.addEventListener("message",function(ev){
+        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
+      });
+    }
 
     // Load management data from Sheet
     api("getMgmtData").then(data=>{
@@ -786,8 +830,13 @@ function App() {
           e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},leads.length+" total · "+counts.New+" new · "+counts.Pursue+" pursue · "+counts.Negotiate+" negotiate")
         ),
         e("div",{style:{display:"flex",gap:8},className:"page-header-actions"},
-          typeof Notification!=="undefined"&&Notification.permission!=="granted"&&
-            e("button",{style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},onClick:requestNotificationPermission},"🔔 Enable Alerts"),
+          typeof Notification!=="undefined"&&
+            e("button",{
+              style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},
+              onClick:Notification.permission==="granted"&&localStorage.getItem("npv-push-enabled")
+                ?()=>showToast("Push notifications are enabled on this device ✅")
+                :requestNotificationPermission
+            },Notification.permission==="granted"&&localStorage.getItem("npv-push-enabled")?"🔔 Alerts On":"🔔 Enable Alerts"),
           e("button",{style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},onClick:()=>refreshLeads(false),disabled:loadingLeads},loadingLeads?"Refreshing…":"🔄 Refresh")
         )
       ),
@@ -857,26 +906,24 @@ function App() {
                   e("span",{style:{background:"#1e3a5f",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#7a9cc5"}},"🏠 "+lead.condition+" condition"),
                   lead.yearBuilt&&e("span",{style:{background:"#1e3a5f",borderRadius:99,padding:"3px 10px",fontSize:12,color:"#7a9cc5"}},"📅 Built "+lead.yearBuilt)
                 ),
-                (lead.mao70||lead.maoNew)&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"📊 MAO Comparison"),
+                lead.suggestedOffer&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"💰 Offer Analysis"),
                   e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
                     e("div",null,
-                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"70% Rule"),
-                      e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},lead.mao70?"$"+Number(lead.mao70).toLocaleString():"—")
-                    ),
-                    e("div",null,
-                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"New Formula (88% - $100K)"),
-                      e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},lead.maoNew?"$"+Number(lead.maoNew).toLocaleString():"—")
-                    ),
-                    e("div",null,
-                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"Wiggle Room"),
-                      e("div",{style:{fontSize:13,fontWeight:700,color:lead.wiggleRoom<0?"#ef4444":"#10b981"}},
-                        lead.wiggleRoom!=null?"$"+Number(lead.wiggleRoom).toLocaleString()+(lead.wiggleRoom<0?" (NF lower)":" (NF higher)"):"—"
-                      )
+                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"Ask Price"),
+                      e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},lead.askPrice?"$"+Number(lead.askPrice).toLocaleString():"—")
                     ),
                     e("div",null,
                       e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"Suggested Offer"),
                       e("div",{style:{fontSize:15,fontWeight:800,color:"#10b981"}},lead.suggestedOffer?"$"+Number(lead.suggestedOffer).toLocaleString():"—")
+                    ),
+                    e("div",null,
+                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"ARV Estimate"),
+                      e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},lead.arvEstimate?"$"+Number(lead.arvEstimate).toLocaleString():"—")
+                    ),
+                    e("div",null,
+                      e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"Rehab Estimate"),
+                      e("div",{style:{fontSize:15,fontWeight:800,color:"#a78bfa"}},lead.rehabEstimate?"$"+Number(lead.rehabEstimate).toLocaleString():"—")
                     )
                   )
                 ),
