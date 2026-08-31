@@ -402,9 +402,6 @@ function App() {
 
     // Listen for notification click → navigate to leads
     if("serviceWorker" in navigator){
-      navigator.serviceWorker.addEventListener("message",function(ev){
-        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
-      });
     }
 
     api("getLeads").then(function(data){
@@ -413,9 +410,6 @@ function App() {
 
     // Listen for notification click → navigate to leads
     if("serviceWorker" in navigator){
-      navigator.serviceWorker.addEventListener("message",function(ev){
-        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
-      });
     }
 
     // Load management data from Sheet
@@ -995,14 +989,6 @@ function App() {
       isMgmt&&e("div",{key:"mgmt-ms",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtMs(true)},"🏁 + Milestone"),
       isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
       e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
-      e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
-        e("span",null,"📬 Leads"),
-        leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
-      ),
-      e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
-        e("span",null,"📬 Leads"),
-        leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
-      ),
       e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
         e("span",null,"📬 Leads"),
         leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
