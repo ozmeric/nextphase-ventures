@@ -3,7 +3,7 @@
 
 const CACHE_NAME = "npv-v3";
 const STATIC = ["./", "./index.html", "./manifest.json", "./icon-192.png"];
-const PUSH_SERVER = "npv-push-server.weblinallc.workers.dev"; // ← update after deploy
+const PUSH_SERVER = "https://npv-push-server.weblinallc.workers.dev"; // ← update after deploy
 
 // ── Install ───────────────────────────────────────────────────────────────
 self.addEventListener("install", ev => {
