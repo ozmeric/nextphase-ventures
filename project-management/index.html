@@ -875,11 +875,10 @@ function App() {
       const profit   = netProc - totalCost;
       const margin   = a > 0 ? profit / a : null;
       const roi      = (p*0.20 + rehabTotal) > 0 ? profit / (p*0.20 + rehabTotal) : null;
-      const mao70    = a * 0.70 - rehabTotal;
       const maoNew   = a * 0.88 - rehabTotal - tp;
-      const suggested= Math.min(mao70, maoNew);
+      const suggested= maoNew;
       const rec      = profit < 0 ? "Pass" : p <= suggested ? "Pursue" : p <= suggested*1.15 ? "Negotiate" : "Pass";
-      setCalc({p,a,loan,closing,interest,points,selling,totalCost,netProc,profit,margin,roi,mao70,maoNew,suggested,rec,tp,h});
+      setCalc({p,a,loan,closing,interest,points,selling,totalCost,netProc,profit,margin,roi,maoNew,suggested,rec,tp,h});
     };
 
     const saveRevised = async () => {
@@ -936,7 +935,7 @@ function App() {
         statBox("Beds / Baths",  (beds||lead.beds||"?")+" bd / "+(baths||lead.baths||"?")+" ba"),
         statBox("Sqft / Year",   (sqft||lead.sqft||"—")+" SF · "+(lead.yearBuilt||"—")),
         statBox("Hold Period",   (holdMonths||4.5)+" mos"),
-        statBox("MAO New Formula",calc?fmt$(calc.maoNew):fmt$(lead.maoNew),"#d4a017"),
+        statBox("MAO (New Formula)",calc?fmt$(calc.maoNew):fmt$(lead.maoNew),"#d4a017"),
         statBox("Neighborhood",  lead.neighborhood||full.neighborhood||"—"),
       ),
 
