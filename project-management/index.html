@@ -104,14 +104,33 @@ function getRecColor(lead) {
 const LEAD_STATUSES=["New","Reviewing","Pursuing","Passed"];
 const LEAD_STATUS_COLORS={"New":"#06b6d4","Reviewing":"#f59e0b","Pursuing":"#10b981","Passed":"#6b7280"};
 
-async function api(action, extra={}) {
-  const res = await fetch(API_URL, {
-    method:"POST",
-    body: JSON.stringify({pin:SESSION_PIN, action, ...extra})
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data;
+async function api(action, extra={}, retries=2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(API_URL, {
+        method:"POST",
+        body: JSON.stringify({pin:SESSION_PIN, action, ...extra})
+      });
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (data.error) throw new Error(data.error);
+        return data;
+      } catch(parseErr) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw new Error("Server error — please retry");
+      }
+    } catch(err) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 const S = {
@@ -817,7 +836,7 @@ function App() {
   }
 
   // ── LEAD CALCULATOR COMPONENT ──────────────────────────────────────────
-  const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api})=>{
+  const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api,setLeads})=>{
     const full = lead._full || {};
     const rb   = full.rehabBreakdown || {};
     const pf   = full.proForma || {};
@@ -882,6 +901,7 @@ function App() {
     };
 
     const saveRevised = async () => {
+      if (!calc) { showToast("Run Recalculate first","error"); return; }
       setSaving2(true);
       try {
         const updated = {
@@ -890,19 +910,20 @@ function App() {
           askPrice:           parseFloat(askPrice)||lead.askPrice,
           arvEstimate:        parseFloat(arv)||lead.arvEstimate,
           rehabEstimate:      rehabTotal,
-          suggestedOffer:     calc ? calc.suggested : lead.suggestedOffer,
-          mao70:              calc ? calc.mao70 : lead.mao70,
-          maoNew:             calc ? calc.maoNew : lead.maoNew,
-          projectedProfit:    calc ? calc.profit : lead.projectedProfit,
-          profitMarginPct:    calc ? calc.margin : lead.profitMarginPct,
+          suggestedOffer:     calc.suggested,
+          maoNew:             calc.maoNew,
+          mao:                calc.maoNew,
+          projectedProfit:    calc.profit,
+          profitMarginPct:    calc.margin,
+          recommendation:     calc.rec,
           holdingPeriodMonths:parseFloat(holdMonths)||lead.holdingPeriodMonths,
           notes: notes2,
         };
-        // Update local state immediately so UI reflects saved values
-        setLeads(prev=>prev.map(l=>l.id===lead.id?updated:l));
         await api("updateLead",{lead:updated});
-        showToast("✅ Lead saved with revised numbers.");
-      } catch(err) { showToast("Save failed","error"); }
+        // Update parent leads array — preserves component state since key stays same
+        setLeads(prev=>prev.map(l=>l.id===lead.id?{...updated,_full:l._full}:l));
+        showToast("✅ Saved — "+calc.rec+" at "+fmt$(calc.suggested));
+      } catch(err) { showToast("Save failed: "+err.message,"error"); }
       setSaving2(false);
     };
 
@@ -1174,7 +1195,7 @@ function App() {
                 )
               ),
               isOpen&&e("div",{style:{marginTop:16,paddingTop:16,borderTop:"1px solid #1e3a5f"}},
-                e(LeadCalculator,{lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api}),
+                e(LeadCalculator,{key:"calc-"+lead.id,lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api,setLeads}),
               )
             );
           }))
