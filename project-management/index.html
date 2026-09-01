@@ -287,23 +287,26 @@ function App() {
   };
 
   const refreshLeads=async(silent=false)=>{
+    // Don't auto-refresh if a lead is expanded — user may be editing numbers
+    if(silent && expandedLead) return;
     setLoadingLeads(true);
     try{
       const prev=leads.length;
       const data=await api("getLeads");
       const fresh=data.leads||[];
       const newCount=fresh.filter(l=>l.status==="New").length;
-      const prevNew=leads.filter(l=>l.status==="New").length;
-      setLeads(fresh);
+      // Preserve local edits — if a lead has _edited flag keep local version
+      setLeads(prev2=>fresh.map(fl=>{
+        const local=prev2.find(l=>l.id===fl.id);
+        if(local&&local._edited) return local;
+        return fl;
+      }));
       if(!silent) showToast("Leads refreshed — "+fresh.length+" total.");
-      // Push notification if new leads arrived since last refresh
       if(fresh.length>prev&&"Notification" in window&&Notification.permission==="granted"){
         const added=fresh.length-prev;
         new Notification("📬 NPV Deal Alert",{
           body:added+" new deal"+(added>1?"s":"")+" arrived — "+newCount+" unreviewed",
-          icon:"./icon-192.png",
-          badge:"./icon-192.png",
-          tag:"npv-lead"
+          icon:"./icon-192.png",badge:"./icon-192.png",tag:"npv-lead"
         });
       }
     }
@@ -884,9 +887,10 @@ function App() {
       try {
         const updated = {
           ...lead,
+          _edited: true,
           askPrice:           parseFloat(askPrice)||lead.askPrice,
           arvEstimate:        parseFloat(arv)||lead.arvEstimate,
-          rehabEstimate:      calc ? rehabTotal : lead.rehabEstimate,
+          rehabEstimate:      rehabTotal,
           suggestedOffer:     calc ? calc.suggested : lead.suggestedOffer,
           mao70:              calc ? calc.mao70 : lead.mao70,
           maoNew:             calc ? calc.maoNew : lead.maoNew,
@@ -895,10 +899,19 @@ function App() {
           holdingPeriodMonths:parseFloat(holdMonths)||lead.holdingPeriodMonths,
           notes: notes2,
         };
+        // Update local state immediately so UI reflects saved values
+        setLeads(prev=>prev.map(l=>l.id===lead.id?updated:l));
         await api("updateLead",{lead:updated});
-        showToast("Lead saved with revised numbers.");
+        showToast("✅ Lead saved with revised numbers.");
       } catch(err) { showToast("Save failed","error"); }
       setSaving2(false);
+    };
+
+    // Auto-save notes on blur
+    const saveNotes = async (val) => {
+      try {
+        await api("updateLead",{lead:{...lead,notes:val}});
+      } catch(err) {}
     };
 
     const inputStyle = {background:"#071020",border:"1px solid #1e3a5f",borderRadius:6,padding:"7px 10px",color:"#e2e8f0",fontSize:13,width:"100%",outline:"none",MozAppearance:"textfield",WebkitAppearance:"none"};
@@ -1048,18 +1061,18 @@ function App() {
       // ── Notes ──
       e("div",{style:{marginBottom:12}},
         e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"Notes"),
-        e("textarea",{style:{...S.input,minHeight:70,resize:"vertical",fontSize:12},placeholder:"Add notes, counter offer, next steps…",value:notes2,onChange:ev=>setNotes2(ev.target.value)})
+        e("textarea",{style:{...S.input,minHeight:70,resize:"vertical",fontSize:12},placeholder:"Add notes, counter offer, next steps…",value:notes2,onChange:ev=>setNotes2(ev.target.value),onBlur:ev=>saveNotes(ev.target.value)})
       ),
 
       // ── Actions ──
       e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}},
         e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"7px 14px",borderRadius:6,fontSize:12,fontWeight:600},
           onClick:()=>setDelConfirm({type:"lead",id:lead.id,name:lead.address||"this lead"})},"Delete"),
-        calc&&e("button",{
+        e("button",{
           style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},
           disabled:saving2,
           onClick:saveRevised
-        },saving2?"Saving…":"💾 Save Revised Numbers"),
+        },saving2?"Saving…":"💾 Save Numbers"),
         e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},
           onClick:()=>{
             setMgmtMilestones(prev=>[...prev,{id:"mgmt-"+Date.now(),date:"",
