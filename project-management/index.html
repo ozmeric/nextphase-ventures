@@ -848,7 +848,7 @@ function App() {
 
     // Calculated results
     const [calc, setCalc] = useState(null);
-    const [saving, setSaving2] = useState(false);
+    const [saving2, setSaving2] = useState(false);
 
     const fmt$ = n => n!=null ? "$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}) : "—";
     const fmtPct = n => n!=null ? (n*100).toFixed(1)+"%" : "—";
