@@ -89,18 +89,15 @@ const genId   = () => Math.random().toString(36).slice(2,10);
 
 let SESSION_PIN = (()=>{try{return sessionStorage.getItem("npv-pin")||"";}catch{return "";}})();
 
-const RECOMMENDATION_COLORS={"Pursue":"#10b981","Negotiate":"#f59e0b","Pass":"#6b7280"};
+const RECOMMENDATION_COLORS={"Pursue":"#10b981","Negotiate":"#f59e0b","Pass":"#ef4444"};
 
-// Dynamic color based on recommendation + red flags
 function getRecColor(lead) {
   var rec = lead.recommendation || "Pass";
-  var flags = String(lead.redFlags||"");
-  var hasFlags = flags.length > 0 && !flags.includes("Not a deal");
-  if (rec === "Pursue")    return "#10b981"; // green
-  if (rec === "Negotiate") return "#f59e0b"; // yellow
-  if (rec === "Pass" && hasFlags) return "#f59e0b"; // yellow — pass with concerns
-  if (rec === "Pass")      return "#10b981"; // green — clean pass
-  return "#6b7280";
+  var pf  = lead.projectedProfit;
+  if (pf != null && pf < 0) return "#ef4444"; // negative profit = always red
+  if (rec === "Pursue")    return "#10b981";
+  if (rec === "Negotiate") return "#f59e0b";
+  return "#ef4444"; // Pass = red always
 }
 const LEAD_STATUSES=["New","Reviewing","Pursuing","Passed"];
 const LEAD_STATUS_COLORS={"New":"#06b6d4","Reviewing":"#f59e0b","Pursuing":"#10b981","Passed":"#6b7280"};
@@ -814,6 +811,256 @@ function App() {
     );
   }
 
+  // ── LEAD CALCULATOR COMPONENT ──────────────────────────────────────────
+  const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api})=>{
+    const full = lead._full || {};
+    const rb   = full.rehabBreakdown || {};
+    const pf   = full.proForma || {};
+
+    // Editable state — pre-fill from full analysis or lead columns
+    const [askPrice,    setAskPrice]    = useState(lead.askPrice    || "");
+    const [arv,         setArv]         = useState(lead.arvEstimate || "");
+    const [beds,        setBeds]        = useState(lead.beds        || "");
+    const [baths,       setBaths]       = useState(lead.baths       || "");
+    const [sqft,        setSqft]        = useState(lead.sqft        || "");
+    const [holdMonths,  setHoldMonths]  = useState(lead.holdingPeriodMonths || 4.5);
+    const [targetProfit,setTargetProfit]= useState(100000);
+    const [notes2,      setNotes2]      = useState(lead.notes || "");
+
+    // Editable rehab line items
+    const [rehab, setRehab] = useState({
+      demo:        rb.demo        || 0,
+      roof:        rb.roof        || 0,
+      hvac:        rb.hvac        || 0,
+      electrical:  rb.electrical  || 0,
+      plumbing:    rb.plumbing    || 0,
+      drywall:     rb.drywall     || 0,
+      flooring:    rb.flooring    || 0,
+      kitchen:     rb.kitchen     || 0,
+      bathrooms:   rb.bathrooms   || 0,
+      paint:       rb.paint       || 0,
+      exterior:    rb.exterior    || 0,
+      landscape:   rb.landscape   || rb.other || 0,
+      other:       0,
+    });
+
+    // Calculated results
+    const [calc, setCalc] = useState(null);
+    const [saving, setSaving2] = useState(false);
+
+    const fmt$ = n => n!=null ? "$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}) : "—";
+    const fmtPct = n => n!=null ? (n*100).toFixed(1)+"%" : "—";
+
+    const rehabSubtotal = Object.values(rehab).reduce((a,b)=>a+(parseFloat(b)||0),0);
+    const contingency   = Math.round(rehabSubtotal * 0.12);
+    const rehabTotal    = rehabSubtotal + contingency;
+
+    const calculate = () => {
+      const p   = parseFloat(askPrice) || 0;
+      const a   = parseFloat(arv)      || 0;
+      const h   = parseFloat(holdMonths)|| 4.5;
+      const tp  = parseFloat(targetProfit)||100000;
+      const loan = p * 0.80 + rehabTotal;
+      const closing  = p * 0.04;
+      const interest = loan * 0.10 / 12 * h;
+      const points   = loan * 0.02;
+      const selling  = a * 0.06;
+      const totalCost= p + closing + rehabTotal + interest + points;
+      const netProc  = a - selling;
+      const profit   = netProc - totalCost;
+      const margin   = a > 0 ? profit / a : null;
+      const roi      = (p*0.20 + rehabTotal) > 0 ? profit / (p*0.20 + rehabTotal) : null;
+      const mao70    = a * 0.70 - rehabTotal;
+      const maoNew   = a * 0.88 - rehabTotal - tp;
+      const suggested= Math.min(mao70, maoNew);
+      const rec      = profit < 0 ? "Pass" : p <= suggested ? "Pursue" : p <= suggested*1.15 ? "Negotiate" : "Pass";
+      setCalc({p,a,loan,closing,interest,points,selling,totalCost,netProc,profit,margin,roi,mao70,maoNew,suggested,rec,tp,h});
+    };
+
+    const saveRevised = async () => {
+      setSaving2(true);
+      try {
+        const updated = {
+          ...lead,
+          askPrice:           parseFloat(askPrice)||lead.askPrice,
+          arvEstimate:        parseFloat(arv)||lead.arvEstimate,
+          rehabEstimate:      calc ? rehabTotal : lead.rehabEstimate,
+          suggestedOffer:     calc ? calc.suggested : lead.suggestedOffer,
+          mao70:              calc ? calc.mao70 : lead.mao70,
+          maoNew:             calc ? calc.maoNew : lead.maoNew,
+          projectedProfit:    calc ? calc.profit : lead.projectedProfit,
+          profitMarginPct:    calc ? calc.margin : lead.profitMarginPct,
+          holdingPeriodMonths:parseFloat(holdMonths)||lead.holdingPeriodMonths,
+          notes: notes2,
+        };
+        await api("updateLead",{lead:updated});
+        showToast("Lead saved with revised numbers.");
+      } catch(err) { showToast("Save failed","error"); }
+      setSaving2(false);
+    };
+
+    const inputStyle = {background:"#071020",border:"1px solid #1e3a5f",borderRadius:6,padding:"7px 10px",color:"#e2e8f0",fontSize:13,width:"100%",outline:"none"};
+    const labelStyle = {fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4,display:"block"};
+    const statBox = (label,val,color="#f8f0d8") => e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px"}},
+      e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
+      e("div",{style:{fontSize:13,fontWeight:800,color}},val)
+    );
+
+    const recColor = calc ? (calc.rec==="Pursue"?"#10b981":calc.rec==="Negotiate"?"#f59e0b":"#ef4444") : getRecColor(lead);
+
+    return e("div",null,
+
+      // ── Summary stats ──
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}},
+        statBox("Ask Price",     fmt$(parseFloat(askPrice)||lead.askPrice)),
+        statBox("Suggested Offer",calc?fmt$(calc.suggested):fmt$(lead.suggestedOffer),"#10b981"),
+        statBox("ARV Estimate",  fmt$(parseFloat(arv)||lead.arvEstimate),"#d4a017"),
+        statBox("Rehab Total",   fmt$(rehabTotal),"#a78bfa"),
+        statBox("Projected Profit",calc?fmt$(calc.profit):fmt$(lead.projectedProfit),calc?(calc.profit<0?"#ef4444":"#10b981"):lead.projectedProfit<0?"#ef4444":"#10b981"),
+        statBox("Profit Margin", calc?fmtPct(calc.margin):fmtPct(lead.profitMarginPct), calc?(calc.margin<0?"#ef4444":calc.margin>=0.12?"#10b981":"#f59e0b"):"#6b7280"),
+        statBox("Beds / Baths",  (beds||lead.beds||"?")+" bd / "+(baths||lead.baths||"?")+" ba"),
+        statBox("Sqft / Year",   (sqft||lead.sqft||"—")+" SF · "+(lead.yearBuilt||"—")),
+        statBox("Hold Period",   (holdMonths||4.5)+" mos"),
+        statBox("MAO New Formula",calc?fmt$(calc.maoNew):fmt$(lead.maoNew),"#d4a017"),
+        statBox("Neighborhood",  lead.neighborhood||full.neighborhood||"—"),
+      ),
+
+      // ── Analysis Summary ──
+      (lead.summary||full.summary)&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"📋 Analysis Summary"),
+        e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},lead.summary||full.summary)
+      ),
+
+      // ── ARV Reasoning ──
+      full.arvReasoning&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"🏡 ARV Reasoning"),
+        e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},full.arvReasoning),
+        full.conditionNotes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Condition: "+full.conditionNotes)
+      ),
+
+      // ── EDITABLE DEAL INPUTS ──
+      e("div",{style:{background:"#071020",borderRadius:8,padding:"14px",marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"✏️ Edit Deal Inputs"),
+        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}},
+          e("div",null,e("label",{style:labelStyle},"Ask Price ($)"),e("input",{style:inputStyle,type:"number",value:askPrice,onChange:ev=>setAskPrice(ev.target.value),placeholder:"e.g. 450000"})),
+          e("div",null,e("label",{style:labelStyle},"ARV Estimate ($)"),e("input",{style:inputStyle,type:"number",value:arv,onChange:ev=>setArv(ev.target.value),placeholder:"e.g. 900000"})),
+          e("div",null,e("label",{style:labelStyle},"Hold Period (months)"),e("input",{style:inputStyle,type:"number",value:holdMonths,onChange:ev=>setHoldMonths(ev.target.value),step:"0.5"})),
+          e("div",null,e("label",{style:labelStyle},"Target Profit ($)"),e("input",{style:inputStyle,type:"number",value:targetProfit,onChange:ev=>setTargetProfit(ev.target.value),placeholder:"100000"})),
+        )
+      ),
+
+      // ── EDITABLE REHAB BREAKDOWN ──
+      e("div",{style:{background:"#071020",borderRadius:8,padding:"14px",marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#a78bfa",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"🔨 Rehab Breakdown (Editable)"),
+        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
+          ...Object.entries(rehab).map(([k,v])=>
+            e("div",{key:k},
+              e("label",{style:labelStyle},k.charAt(0).toUpperCase()+k.slice(1)+" ($)"),
+              e("input",{style:inputStyle,type:"number",value:v,onChange:ev=>setRehab(prev=>({...prev,[k]:parseFloat(ev.target.value)||0}))})
+            )
+          )
+        ),
+        e("div",{style:{marginTop:12,padding:"10px 12px",background:"#0a1628",borderRadius:6,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+          e("div",null,
+            e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"SUBTOTAL"),
+            e("div",{style:{fontWeight:800,color:"#f8f0d8"}},fmt$(rehabSubtotal))
+          ),
+          e("div",{style:{textAlign:"center"}},
+            e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"CONTINGENCY (12%)"),
+            e("div",{style:{fontWeight:800,color:"#f59e0b"}},fmt$(contingency))
+          ),
+          e("div",{style:{textAlign:"right"}},
+            e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"TOTAL REHAB"),
+            e("div",{style:{fontWeight:800,color:"#a78bfa",fontSize:16}},fmt$(rehabTotal))
+          )
+        )
+      ),
+
+      // ── CALCULATE BUTTON ──
+      e("button",{
+        style:{width:"100%",padding:"12px",borderRadius:8,border:"none",background:"#d4a017",color:"#0a1628",fontWeight:900,fontSize:14,cursor:"pointer",marginBottom:12},
+        onClick:calculate
+      },"⚡ Recalculate Deal"),
+
+      // ── CALCULATED RESULTS ──
+      calc&&e("div",{style:{background:"#071020",borderRadius:8,padding:"14px",marginBottom:12,border:"2px solid "+recColor}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:recColor,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}},"📊 Recalculated Pro Forma — "+calc.rec),
+        e("div",{style:{fontSize:13,color:"#cbd5e1",lineHeight:2.2}},
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"1px solid #1e3a5f"}},e("span","Closing Costs (4%)"),e("span",fmt$(calc.closing))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"1px solid #1e3a5f"}},e("span","Holding Costs ("+calc.h+" mos @ 10% HML)"),e("span",fmt$(calc.interest))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"1px solid #1e3a5f"}},e("span","Financing Points (2%)"),e("span",fmt$(calc.points))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"1px solid #1e3a5f"}},e("span","Selling Costs (6%)"),e("span",fmt$(calc.selling))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"2px solid #4a6fa5",fontWeight:700}},e("span","Total Project Cost"),e("span",fmt$(calc.totalCost))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",borderBottom:"1px solid #1e3a5f"}},e("span","Net Sale Proceeds"),e("span",fmt$(calc.netProc))),
+          e("div",{style:{display:"flex",justifyContent:"space-between",fontWeight:900,fontSize:15,color:recColor}},e("span","Projected Profit"),e("span",fmt$(calc.profit))),
+        ),
+        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:10}},
+          e("div",{style:{textAlign:"center"}},
+            e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"MAO (New Formula)"),
+            e("div",{style:{fontWeight:800,color:"#d4a017"}},fmt$(calc.maoNew))
+          ),
+          e("div",{style:{textAlign:"center"}},
+            e("div",{style:{fontSize:10,color:"#4a6fa5",marginBottom:2}},"Suggested Offer"),
+            e("div",{style:{fontWeight:800,color:"#10b981",fontSize:14}},fmt$(calc.suggested))
+          ),
+        )
+      ),
+
+      // ── Red Flags ──
+      (lead.redFlags||full.redFlags)&&String(lead.redFlags||full.redFlags||"").length>0&&!String(lead.redFlags||"").includes("Not a deal")&&
+        e("div",{style:{background:"#ef444411",border:"1px solid #ef444433",borderRadius:8,padding:"10px 14px",marginBottom:12}},
+          e("div",{style:{fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"⚠️ Red Flags"),
+          e("div",{style:{fontSize:12,color:"#ef4444",lineHeight:1.8}},String(lead.redFlags||full.redFlags||""))
+        ),
+
+      // ── Data Gaps ──
+      full.dataGaps&&full.dataGaps.length>0&&
+        e("div",{style:{background:"#f59e0b11",border:"1px solid #f59e0b33",borderRadius:8,padding:"10px 14px",marginBottom:12}},
+          e("div",{style:{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"📋 Data Gaps & Assumptions"),
+          e("div",{style:{fontSize:12,color:"#f59e0b",lineHeight:1.8}},Array.isArray(full.dataGaps)?full.dataGaps.join(", "):String(full.dataGaps))
+        ),
+
+      // ── Status ──
+      e("div",{style:{marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"Update Status"),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+          LEAD_STATUSES.map(st=>e("button",{key:st,
+            style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:700,
+              border:"1px solid "+(lead.status===st?LEAD_STATUS_COLORS[st]:"#1e3a5f"),
+              background:lead.status===st?LEAD_STATUS_COLORS[st]+"33":"transparent",
+              color:lead.status===st?LEAD_STATUS_COLORS[st]:"#7a9cc5",cursor:"pointer"},
+            onClick:()=>updateLeadStatus(lead,st)},st))
+        )
+      ),
+
+      // ── Notes ──
+      e("div",{style:{marginBottom:12}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"Notes"),
+        e("textarea",{style:{...S.input,minHeight:70,resize:"vertical",fontSize:12},placeholder:"Add notes, counter offer, next steps…",value:notes2,onChange:ev=>setNotes2(ev.target.value)})
+      ),
+
+      // ── Actions ──
+      e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}},
+        e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"7px 14px",borderRadius:6,fontSize:12,fontWeight:600},
+          onClick:()=>setDelConfirm({type:"lead",id:lead.id,name:lead.address||"this lead"})},"Delete"),
+        calc&&e("button",{
+          style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},
+          disabled:saving2,
+          onClick:saveRevised
+        },saving2?"Saving…":"💾 Save Revised Numbers"),
+        e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},
+          onClick:()=>{
+            setMgmtMilestones(prev=>[...prev,{id:"mgmt-"+Date.now(),date:"",
+              week:lead.address||"New Deal",
+              notes:"Ask: $"+(askPrice||lead.askPrice||"—")+" · Offer: $"+(calc?Math.round(calc.suggested).toLocaleString():lead.suggestedOffer||"—")+" · ARV: $"+(arv||lead.arvEstimate||"—")}]);
+            updateLeadStatus(lead,"Pursuing");
+            navTo("management");
+            showToast("Added to pipeline!");
+          }},"➕ Add to Pipeline")
+      )
+    );
+  };
+
   // ── LEADS VIEW ──────────────────────────────────────────────────────────
   const LeadsView=()=>{
     const fmt$=n=>n?"$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}):"—";
@@ -892,7 +1139,8 @@ function App() {
                     e("span",null,"Ask: ",e("span",{style:{color:"#f8f0d8",fontWeight:700}},lead.askPrice?"$"+Number(lead.askPrice).toLocaleString():"—")),
                     e("span",null,"Offer: ",e("span",{style:{color:"#10b981",fontWeight:700}},lead.suggestedOffer?"$"+Number(lead.suggestedOffer).toLocaleString():"—")),
                     e("span",null,"ARV: ",e("span",{style:{color:"#d4a017",fontWeight:700}},lead.arvEstimate?"$"+Number(lead.arvEstimate).toLocaleString():"—")),
-                    e("span",null,"Profit: ",e("span",{style:{color:lead.projectedProfit>=0?"#10b981":"#ef4444",fontWeight:700}},lead.projectedProfit!=null?"$"+Number(lead.projectedProfit).toLocaleString():"—"))
+                    e("span",null,"Profit: ",e("span",{style:{color:lead.projectedProfit!=null&&lead.projectedProfit<0?"#ef4444":"#10b981",fontWeight:700}},
+                      lead.projectedProfit!=null?(lead.projectedProfit<0?"-$":"+$")+Math.abs(Number(lead.projectedProfit)).toLocaleString():"—"))
                   ),
                   lead.summary&&e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:6,lineHeight:1.5}},lead.summary)
                 ),
@@ -902,76 +1150,7 @@ function App() {
                 )
               ),
               isOpen&&e("div",{style:{marginTop:16,paddingTop:16,borderTop:"1px solid #1e3a5f"}},
-
-                // ── Key numbers grid (matches email) ──
-                e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}},
-                  [
-                    ["Ask Price",      lead.askPrice       ? "$"+Number(lead.askPrice).toLocaleString()       : "—", "#f8f0d8"],
-                    ["Suggested Offer",lead.suggestedOffer ? "$"+Number(lead.suggestedOffer).toLocaleString() : "—", "#10b981"],
-                    ["ARV Estimate",   lead.arvEstimate    ? "$"+Number(lead.arvEstimate).toLocaleString()    : "—", "#d4a017"],
-                    ["Rehab Estimate", lead.rehabEstimate  ? "$"+Number(lead.rehabEstimate).toLocaleString()  : "—", "#a78bfa"],
-                    ["Projected Profit",lead.projectedProfit!=null ? "$"+Number(lead.projectedProfit).toLocaleString() : "—", lead.projectedProfit>=0?"#10b981":"#ef4444"],
-                    ["Profit Margin",  lead.profitMarginPct!=null  ? (lead.profitMarginPct*100).toFixed(1)+"%" : "—", lead.profitMarginPct>=0.12?"#10b981":lead.profitMarginPct>=0.08?"#f59e0b":"#ef4444"],
-                    ["Beds / Baths",   (lead.beds||"?")+" bd / "+(lead.baths||"?")+" ba", "#f8f0d8"],
-                    ["Sqft / Year",    (lead.sqft?Number(lead.sqft).toLocaleString()+" SF":"—")+" · "+(lead.yearBuilt||"—"), "#f8f0d8"],
-                    ["ARV $/SF",       lead.arvPPSF ? "$"+Number(lead.arvPPSF).toFixed(0)+"/SF" : "—", "#f8f0d8"],
-                    ["Hold Period",    (lead.holdingPeriodMonths||"?")+" months", "#f8f0d8"],
-                    ["Condition",      lead.condition||"Unknown", "#f8f0d8"],
-                    ["Neighborhood",   lead.neighborhood||"—", "#f8f0d8"],
-                  ].map(([label,val,color],i)=>e("div",{key:i,style:{background:"#071020",borderRadius:8,padding:"10px 12px"}},
-                    e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
-                    e("div",{style:{fontSize:13,fontWeight:800,color}},val)
-                  ))
-                ),
-
-                // ── Summary ──
-                lead.summary&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"📋 Analysis Summary"),
-                  e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},lead.summary)
-                ),
-
-                // ── ARV Reasoning ──
-                lead.arvReasoning&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"🏡 ARV Reasoning"),
-                  e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},lead.arvReasoning),
-                  lead.conditionNotes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Condition: "+lead.conditionNotes)
-                ),
-
-                // ── Red Flags ──
-                lead.redFlags&&String(lead.redFlags).length>0&&!String(lead.redFlags).includes("Not a deal")&&
-                  e("div",{style:{background:"#ef444411",border:"1px solid #ef444433",borderRadius:8,padding:"10px 14px",marginBottom:12}},
-                    e("div",{style:{fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"⚠️ Red Flags"),
-                    e("div",{style:{fontSize:12,color:"#ef4444",lineHeight:1.8}},String(lead.redFlags))
-                  ),
-
-                // ── Data Gaps ──
-                lead.dataGaps&&String(lead.dataGaps).length>0&&
-                  e("div",{style:{background:"#f59e0b11",border:"1px solid #f59e0b33",borderRadius:8,padding:"10px 14px",marginBottom:12}},
-                    e("div",{style:{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"📋 Data Gaps & Assumptions"),
-                    e("div",{style:{fontSize:12,color:"#f59e0b",lineHeight:1.8}},String(lead.dataGaps))
-                  ),
-                e("div",{style:{marginBottom:12}},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"Update Status"),
-                  e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
-                    LEAD_STATUSES.map(st=>e("button",{key:st,
-                      style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:700,border:"1px solid "+(lead.status===st?LEAD_STATUS_COLORS[st]:"#1e3a5f"),background:lead.status===st?LEAD_STATUS_COLORS[st]+"33":"transparent",color:lead.status===st?LEAD_STATUS_COLORS[st]:"#7a9cc5",cursor:"pointer"},
-                      onClick:()=>updateLeadStatus(lead,st)},st))
-                  )
-                ),
-                e("div",{style:{marginBottom:12}},
-                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"Notes"),
-                  e("textarea",{style:{...S.input,minHeight:70,resize:"vertical",fontSize:12},placeholder:"Add notes, counter offer, next steps…",defaultValue:lead.notes||"",onBlur:ev=>updateLeadNotes(lead,ev.target.value)})
-                ),
-                e("div",{style:{fontSize:11,color:"#2a4a7f",marginBottom:12}},"From: "+(lead.fromEmail||"—")+" · "+(lead.subject||"")),
-                e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}},
-                  e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"7px 14px",borderRadius:6,fontSize:12,fontWeight:600},onClick:()=>setDelConfirm({type:"lead",id:lead.id,name:lead.address||"this lead"})},"Delete"),
-                  e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>{
-                    setMgmtMilestones(prev=>[...prev,{id:"mgmt-"+Date.now(),date:"",week:lead.address||"New Deal",notes:"Ask: "+(lead.askPrice?"$"+Number(lead.askPrice).toLocaleString():"—")+" · ARV: "+(lead.arvEstimate?"$"+Number(lead.arvEstimate).toLocaleString():"—")+" · MAO: "+(lead.mao?"$"+Number(lead.mao).toLocaleString():"—")+" · "+(lead.recommendation||"")}]);
-                    updateLeadStatus(lead,"Pursuing");
-                    navTo("management");
-                    showToast("Added to pipeline!");
-                  }},"➕ Add to Pipeline")
-                )
+                e(LeadCalculator,{lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMgmtMilestones,navTo,showToast,api}),
               )
             );
           }))
