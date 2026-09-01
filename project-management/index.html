@@ -16,6 +16,8 @@
 html,body,#root{height:100%;width:100%}
 body{background:#0a1628;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 input,select,textarea,button{font-family:inherit}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
 button{cursor:pointer}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:#0a1628}
@@ -899,7 +901,7 @@ function App() {
       setSaving2(false);
     };
 
-    const inputStyle = {background:"#071020",border:"1px solid #1e3a5f",borderRadius:6,padding:"7px 10px",color:"#e2e8f0",fontSize:13,width:"100%",outline:"none"};
+    const inputStyle = {background:"#071020",border:"1px solid #1e3a5f",borderRadius:6,padding:"7px 10px",color:"#e2e8f0",fontSize:13,width:"100%",outline:"none",MozAppearance:"textfield",WebkitAppearance:"none"};
     const labelStyle = {fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4,display:"block"};
     const statBox = (label,val,color="#f8f0d8") => e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px"}},
       e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
@@ -942,10 +944,10 @@ function App() {
       e("div",{style:{background:"#071020",borderRadius:8,padding:"14px",marginBottom:12}},
         e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"✏️ Edit Deal Inputs"),
         e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}},
-          e("div",null,e("label",{style:labelStyle},"Ask Price ($)"),e("input",{style:inputStyle,type:"number",value:askPrice,onChange:ev=>setAskPrice(ev.target.value),placeholder:"e.g. 450000"})),
-          e("div",null,e("label",{style:labelStyle},"ARV Estimate ($)"),e("input",{style:inputStyle,type:"number",value:arv,onChange:ev=>setArv(ev.target.value),placeholder:"e.g. 900000"})),
-          e("div",null,e("label",{style:labelStyle},"Hold Period (months)"),e("input",{style:inputStyle,type:"number",value:holdMonths,onChange:ev=>setHoldMonths(ev.target.value),step:"0.5"})),
-          e("div",null,e("label",{style:labelStyle},"Target Profit ($)"),e("input",{style:inputStyle,type:"number",value:targetProfit,onChange:ev=>setTargetProfit(ev.target.value),placeholder:"100000"})),
+          e("div",null,e("label",{style:labelStyle},"Ask Price ($)"),e("input",{style:inputStyle,type:"text",inputMode:"numeric",value:askPrice,onChange:ev=>setAskPrice(ev.target.value.replace(/[^0-9.]/g,"")),placeholder:"e.g. 450000"})),
+          e("div",null,e("label",{style:labelStyle},"ARV Estimate ($)"),e("input",{style:inputStyle,type:"text",inputMode:"numeric",value:arv,onChange:ev=>setArv(ev.target.value.replace(/[^0-9.]/g,"")),placeholder:"e.g. 900000"})),
+          e("div",null,e("label",{style:labelStyle},"Hold Period (months)"),e("input",{style:inputStyle,type:"text",inputMode:"decimal",value:holdMonths,onChange:ev=>setHoldMonths(ev.target.value.replace(/[^0-9.]/g,"")),placeholder:"4.5"})),
+          e("div",null,e("label",{style:labelStyle},"Target Profit ($)"),e("input",{style:inputStyle,type:"text",inputMode:"numeric",value:targetProfit,onChange:ev=>setTargetProfit(ev.target.value.replace(/[^0-9.]/g,"")),placeholder:"100000"})),
         )
       ),
 
@@ -956,7 +958,17 @@ function App() {
           ...Object.entries(rehab).map(([k,v])=>
             e("div",{key:k},
               e("label",{style:labelStyle},k.charAt(0).toUpperCase()+k.slice(1)+" ($)"),
-              e("input",{style:inputStyle,type:"number",value:v,onChange:ev=>setRehab(prev=>({...prev,[k]:parseFloat(ev.target.value)||0}))})
+              e("input",{
+                style:inputStyle,
+                type:"text",
+                inputMode:"numeric",
+                value:v===0?"":v,
+                placeholder:"0",
+                onChange:ev=>{
+                  var raw=ev.target.value.replace(/[^0-9.]/g,"");
+                  setRehab(prev=>({...prev,[k]:raw===""?0:parseFloat(raw)||0}));
+                }
+              })
             )
           )
         ),
