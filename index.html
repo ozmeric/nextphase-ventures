@@ -2,313 +2,2133 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Home | NextPhase Ventures</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>NextPhase Ventures</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MiA3MiI+CiAgPHJlY3Qgd2lkdGg9IjcyIiBoZWlnaHQ9IjcyIiByeD0iMTQiIGZpbGw9IiMwYTE2MjgiLz4KICA8cG9seWxpbmUgcG9pbnRzPSIxMCwzOCAzNiwxNCA2MiwzOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDRhMDE3IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cmVjdCB4PSIzMSIgeT0iNCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiByeD0iMiIgZmlsbD0iI2Q0YTAxNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMzYsMCA0Miw4IDMwLDgiIGZpbGw9IiNkNGEwMTciLz4KICA8cmVjdCB4PSIxNCIgeT0iMzgiIHdpZHRoPSI5IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iI2Y4ZjBkOCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjMsMzggMzAsMzggNTgsNjIgNTEsNjIiIGZpbGw9IiNmOGYwZDgiLz4KICA8cmVjdCB4PSI0OSIgeT0iMzgiIHdpZHRoPSI5IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iI2Y4ZjBkOCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjUsMzggMzMsMzggNDQsNjIgMzYsNjIiIGZpbGw9IiNkNGEwMTciLz4KPC9zdmc+"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet"/>
-
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
+<meta name="theme-color" content="#0a1628"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="NextPhase"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;width:100%}
-body{background:#0a1628;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit}
+html,body,#root{height:100%;width:100%}
+body{background:#0a1628;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit}
+button{cursor:pointer}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#0a1628}
+::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+table{border-collapse:collapse;width:100%}
+optgroup{color:#94a3b8;font-size:11px}
+option{color:#e2e8f0;background:#071020}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,22,40,0.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(212,160,23,0.1)}
-.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.nav-mark{width:34px;height:34px;background:#1e3a5f;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#d4a017;flex-shrink:0}
-.nav-name{font-weight:800;font-size:15px;color:#f8f0d8;letter-spacing:-0.3px}
-.nav-links{display:flex;align-items:center;gap:28px}
-.nav-link{font-size:13px;font-weight:600;color:#7a9cc5;text-decoration:none;transition:color .2s;margin-right:28px}
-.nav-link:hover,.nav-link.active{color:#f8f0d8}
-.nav-cta{background:#d4a017;color:#0a1628;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;text-decoration:none;transition:opacity .2s;white-space:nowrap}
-.nav-cta:hover{opacity:0.85}
-.nav-toggle{display:none;flex-direction:column;gap:4px;background:none;border:none;cursor:pointer;padding:8px}
-.nav-toggle span{width:22px;height:2px;background:#f8f0d8;border-radius:2px}
-.nav-mobile{display:none;position:fixed;top:60px;left:0;right:0;background:#0d1f3c;border-bottom:1px solid #1e3a5f;z-index:99;flex-direction:column;padding:12px 24px 20px}
-.nav-mobile.open{display:flex}
-.nav-mobile a{padding:12px 0;font-size:15px;font-weight:600;color:#cbd5e1;text-decoration:none;border-bottom:1px solid #1e3a5f}
-.nav-mobile a:last-child{border-bottom:none}
-
-/* ── PAGE HERO (smaller, for inner pages) ── */
-.page-hero{padding:140px 24px 60px;text-align:center;max-width:800px;margin:0 auto}
-.page-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#d4a017;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:10px}
-.page-eyebrow::before,.page-eyebrow::after{content:'';display:block;width:32px;height:1px;background:#d4a017;opacity:0.5}
-.page-hero h1{font-size:clamp(32px,5vw,52px);font-weight:900;line-height:1.1;letter-spacing:-1.5px;color:#f8f0d8;margin-bottom:16px}
-.page-hero h1 em{font-style:normal;color:#d4a017}
-.page-hero p{font-size:clamp(15px,2vw,18px);color:#7a9cc5;line-height:1.6;max-width:560px;margin:0 auto}
-
-/* ── HOME HERO (full height) ── */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 60px;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:600px;border:1px solid rgba(212,160,23,0.06);border-radius:50%;pointer-events:none}
-.hero::after{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:400px;height:400px;border:1px solid rgba(212,160,23,0.08);border-radius:50%;pointer-events:none}
-.hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#d4a017;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.hero-eyebrow::before,.hero-eyebrow::after{content:'';display:block;width:32px;height:1px;background:#d4a017;opacity:0.5}
-.hero h1{font-size:clamp(40px,7vw,80px);font-weight:900;line-height:1.05;letter-spacing:-2px;color:#f8f0d8;margin-bottom:12px;max-width:800px}
-.hero h1 em{font-style:normal;color:#d4a017}
-.hero-sub{font-size:clamp(16px,2.5vw,22px);color:#4a6fa5;font-weight:400;margin-bottom:48px;max-width:480px;line-height:1.5}
-.hero-rule{width:1px;height:60px;background:linear-gradient(to bottom,#d4a017,transparent);margin:0 auto 32px}
-.tagline{font-size:clamp(14px,2vw,18px);color:#7a9cc5;font-weight:500;letter-spacing:0.02em;margin-bottom:48px}
-.tagline strong{color:#f8f0d8;font-weight:700}
-.hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-.btn-primary{background:#d4a017;color:#0a1628;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;transition:opacity .2s;border:none;cursor:pointer;display:inline-block}
-.btn-primary:hover{opacity:0.85}
-.btn-ghost{background:transparent;color:#7a9cc5;font-weight:600;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;border:1px solid #1e3a5f;transition:all .2s;display:inline-block}
-.btn-ghost:hover{border-color:#d4a017;color:#f8f0d8}
-
-/* ── PILLARS ── */
-.pillars{padding:80px 24px;max-width:1000px;margin:0 auto}
-.pillars-label{font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4a6fa5;text-align:center;margin-bottom:48px}
-.pillars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border:1px solid #1e3a5f;border-radius:12px;overflow:hidden}
-.pillar{background:#0d1f3c;padding:36px 28px;position:relative}
-.pillar+.pillar{border-left:1px solid #1e3a5f}
-.pillar-num{font-size:11px;font-weight:700;color:#d4a017;letter-spacing:0.1em;margin-bottom:16px}
-.pillar-title{font-size:22px;font-weight:800;color:#f8f0d8;margin-bottom:10px;letter-spacing:-0.5px}
-.pillar-body{font-size:14px;color:#4a6fa5;line-height:1.6}
-
-/* ── STEPS (How It Works) ── */
-.steps{padding:60px 24px 100px;max-width:840px;margin:0 auto}
-.step{display:flex;gap:28px;padding:32px 0;border-bottom:1px solid #1e3a5f}
-.step:last-child{border-bottom:none}
-.step-num{flex-shrink:0;width:52px;height:52px;border-radius:12px;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#d4a017}
-.step-content h3{font-size:19px;font-weight:800;color:#f8f0d8;margin-bottom:8px;letter-spacing:-0.3px}
-.step-content p{font-size:14px;color:#7a9cc5;line-height:1.65}
-
-/* ── BENEFITS COMPARISON ── */
-.compare{padding:20px 24px 100px;max-width:900px;margin:0 auto}
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.compare-card{border-radius:14px;padding:28px 26px}
-.compare-card.us{background:linear-gradient(135deg,#16233f,#0f2548);border:1px solid #d4a017}
-.compare-card.them{background:#0d1f3c;border:1px solid #1e3a5f}
-.compare-title{font-size:15px;font-weight:800;margin-bottom:18px;letter-spacing:-0.2px}
-.compare-card.us .compare-title{color:#d4a017}
-.compare-card.them .compare-title{color:#7a9cc5}
-.compare-list{list-style:none}
-.compare-list li{font-size:13px;color:#cbd5e1;padding:8px 0;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
-.compare-list li::before{content:'';flex-shrink:0;width:6px;height:6px;border-radius:50%;margin-top:6px}
-.compare-card.us .compare-list li::before{background:#d4a017}
-.compare-card.them .compare-list li::before{background:#4a6fa5}
-
-@media(max-width:640px){.compare-grid{grid-template-columns:1fr}}
-
-/* ── FAQ ── */
-.faq{padding:20px 24px 100px;max-width:760px;margin:0 auto}
-.faq-item{border-bottom:1px solid #1e3a5f}
-.faq-q{padding:22px 0;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:16px}
-.faq-q span:first-child{font-size:16px;font-weight:700;color:#f8f0d8;letter-spacing:-0.2px}
-.faq-icon{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:14px;color:#d4a017;transition:transform .2s}
-.faq-item.open .faq-icon{transform:rotate(45deg)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.faq-item.open .faq-a{max-height:300px}
-.faq-a p{font-size:14px;color:#7a9cc5;line-height:1.65;padding-bottom:22px}
-
-/* ── FORM ── */
-.form-section{padding:20px 24px 100px;max-width:640px;margin:0 auto}
-.form-card{background:#0d1f3c;border:1px solid #1e3a5f;border-radius:16px;padding:36px 32px}
-.form-row{display:flex;gap:14px;margin-bottom:16px}
-.form-group{flex:1;margin-bottom:16px}
-.form-row .form-group{margin-bottom:0}
-.form-label{display:block;font-size:11px;font-weight:700;color:#4a6fa5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
-.form-input,.form-select,.form-textarea{width:100%;background:#071020;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px;color:#f8f0d8;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#d4a017}
-.form-textarea{resize:vertical;min-height:90px}
-.form-submit{width:100%;background:#d4a017;color:#0a1628;font-weight:700;font-size:15px;padding:15px;border-radius:10px;border:none;cursor:pointer;margin-top:8px;transition:opacity .2s}
-.form-submit:hover{opacity:0.85}
-.form-submit:disabled{opacity:0.5;cursor:not-allowed}
-.form-note{font-size:12px;color:#4a6fa5;text-align:center;margin-top:14px;line-height:1.5}
-.form-success{display:none;text-align:center;padding:40px 20px}
-.form-success.show{display:block}
-.form-success-icon{font-size:44px;margin-bottom:16px}
-.form-success h3{font-size:20px;font-weight:800;color:#f8f0d8;margin-bottom:8px}
-.form-success p{font-size:14px;color:#7a9cc5;line-height:1.6}
-.form-error{color:#ef4444;font-size:13px;margin-top:10px;text-align:center;display:none}
-.form-error.show{display:block}
-@media(max-width:600px){.form-row{flex-direction:column;gap:16px}}
-
-/* ── CONTACT INFO CARDS ── */
-.contact-cards{padding:0 24px 60px;max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.contact-card{background:#0d1f3c;border:1px solid #1e3a5f;border-radius:12px;padding:24px;text-align:center}
-.contact-card-icon{font-size:24px;margin-bottom:10px}
-.contact-card-label{font-size:11px;font-weight:700;color:#4a6fa5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
-.contact-card-value{font-size:15px;font-weight:700;color:#f8f0d8}
-.contact-card-value a{text-decoration:none;color:#d4a017}
-@media(max-width:600px){.contact-cards{grid-template-columns:1fr}}
-
-/* ── ABOUT ── */
-.about-body{padding:20px 24px 100px;max-width:720px;margin:0 auto}
-.about-body p{font-size:16px;color:#cbd5e1;line-height:1.8;margin-bottom:24px}
-.about-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:48px 0}
-.about-stat{text-align:center;padding:20px;background:#0d1f3c;border:1px solid #1e3a5f;border-radius:12px}
-.about-stat-num{font-size:28px;font-weight:900;color:#d4a017;letter-spacing:-1px}
-.about-stat-label{font-size:11px;color:#4a6fa5;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-top:6px}
-@media(max-width:600px){.about-stats{grid-template-columns:1fr}}
-
-/* ── MISSION ── */
-.mission{padding:80px 24px;text-align:center;max-width:700px;margin:0 auto}
-.mission-line{width:40px;height:2px;background:#d4a017;margin:0 auto 32px}
-.mission blockquote{font-size:clamp(22px,4vw,36px);font-weight:800;color:#f8f0d8;line-height:1.2;letter-spacing:-0.5px;margin-bottom:20px}
-.mission blockquote em{font-style:normal;color:#d4a017}
-.mission p{font-size:15px;color:#4a6fa5;line-height:1.6}
-
-/* ── CTA BAND ── */
-.cta-band{padding:70px 24px;text-align:center;background:linear-gradient(135deg,#0d1f3c,#0f2548);border-top:1px solid #1e3a5f;border-bottom:1px solid #1e3a5f}
-.cta-band h2{font-size:clamp(24px,4vw,38px);font-weight:900;color:#f8f0d8;letter-spacing:-1px;margin-bottom:14px}
-.cta-band h2 em{font-style:normal;color:#d4a017}
-.cta-band p{font-size:15px;color:#7a9cc5;margin-bottom:28px}
-
-/* ── FOOTER ── */
-footer{border-top:1px solid #1e3a5f;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.footer-logo{display:flex;align-items:center;gap:8px}
-.footer-mark{width:28px;height:28px;background:#1e3a5f;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#d4a017}
-.footer-name{font-size:13px;font-weight:700;color:#f8f0d8}
-.footer-right{font-size:12px;color:#2a4a7f}
-.footer-links{display:flex;gap:18px}
-.footer-links a{font-size:12px;color:#4a6fa5;text-decoration:none}
-.footer-links a:hover{color:#d4a017}
-
-@media(max-width:700px){
-  .pillars-grid{grid-template-columns:1fr}
-  .pillar+.pillar{border-left:none;border-top:1px solid #1e3a5f}
-  nav{padding:0 20px}
-  .nav-links{display:none}
-  .nav-toggle{display:flex}
-  footer{flex-direction:column;text-align:center}
-  .step{gap:18px}
-  .step-num{width:42px;height:42px;font-size:16px}
+/* Mobile bottom nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0d1f3c;border-top:1px solid #1e3a5f;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav>div{min-width:0}
+.bottom-nav span:first-child{font-size:16px!important}
+@media(max-width:768px){
+  .bottom-nav{display:flex}
+  .desktop-sidebar{display:none!important}
+  .main-content{padding:16px 16px 80px!important}
+  .header-title{font-size:13px!important}
+  .stat-grid{grid-template-columns:1fr 1fr!important}
+  .summary-grid{grid-template-columns:1fr 1fr!important}
+  .rehab-amount{font-size:28px!important}
+  .rehab-remaining{font-size:20px!important}
+  .rehab-grid{grid-template-columns:1fr!important}
+  .project-grid{grid-template-columns:1fr!important}
+  .form-row{flex-direction:column!important}
+  .action-row{flex-wrap:wrap!important}
+  .desktop-table{display:none!important}
+  .mobile-cards{display:block!important}
+  .page-header{flex-direction:column!important;align-items:flex-start!important;gap:12px!important}
+  .page-header-actions{width:100%}
+  .page-header-actions button{width:100%}
 }
-
+.mobile-cards{display:none}
 </style>
 </head>
 <body>
-<nav>
-  <a href="index.html" class="nav-logo">
-    <div class="nav-mark">N</div>
-    <span class="nav-name">NextPhase Ventures</span>
-  </a>
-  <div class="nav-links">
-    <a href="index.html" class="nav-link active">Home</a>
-<a href="how-it-works.html" class="nav-link">How It Works</a>
-<a href="our-work.html" class="nav-link">Our Work</a>
-<a href="faq.html" class="nav-link">FAQ</a>
-<a href="our-company.html" class="nav-link">Our Company</a>
-<a href="contact.html" class="nav-link">Contact Us</a>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+//<![CDATA[
+const { useState, useEffect, useRef } = React;
+const e = React.createElement;
 
-    <a href="contact.html" class="nav-cta">Get a Cash Offer</a>
-  </div>
-  <button class="nav-toggle" onclick="document.getElementById('mobileNav').classList.toggle('open')">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
-<div class="nav-mobile" id="mobileNav">
-  <a href="index.html">Home</a>
-<a href="how-it-works.html">How It Works</a>
-<a href="our-work.html">Our Work</a>
-<a href="faq.html">FAQ</a>
-<a href="our-company.html">Our Company</a>
-<a href="contact.html">Contact Us</a>
+const API_URL = "https://nextphaseventures.weblinallc.workers.dev/";
+const PUSH_SERVER_URL = "https://npv-push-server.weblinallc.workers.dev";
 
-  <a href="contact.html" style="color:#d4a017">Get a Cash Offer →</a>
-</div>
+const ACQUISITION_CATEGORIES = ["Down Payment","Closing Costs","Loan Expenses"];
+const REHAB_CATEGORIES = ["Labor","Demo/Cleanup","Materials","Permits","Utilities","Equipment","Professional Fees","Other"];
+const CATEGORIES = [...ACQUISITION_CATEGORIES,...REHAB_CATEGORIES];
+const CATEGORY_COLORS = {
+  "Down Payment":"#f97316","Closing Costs":"#06b6d4","Loan Expenses":"#a78bfa",
+  "Labor":"#6366f1","Demo/Cleanup":"#e11d48","Materials":"#f59e0b",
+  "Permits":"#10b981","Utilities":"#3b82f6","Equipment":"#ef4444",
+  "Professional Fees":"#8b5cf6","Other":"#6b7280"
+};
 
-<section class="hero">
-  <div class="hero-logo">
-    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="72" height="72" rx="16" fill="#1e3a5f"/>
-      <polyline points="10,38 36,14 62,38" fill="none" stroke="#d4a017" stroke-width="3" stroke-linejoin="round"/>
-      <rect x="31" y="4" width="10" height="14" rx="2" fill="#d4a017"/>
-      <polygon points="36,0 42,8 30,8" fill="#d4a017"/>
-      <rect x="14" y="38" width="9" height="24" rx="2" fill="#f8f0d8"/>
-      <polygon points="23,38 30,38 58,62 51,62" fill="#f8f0d8"/>
-      <rect x="49" y="38" width="9" height="24" rx="2" fill="#f8f0d8"/>
-      <polygon points="25,38 33,38 44,62 36,62" fill="#d4a017"/>
-    </svg>
-  </div>
-  <div class="hero-eyebrow">NextPhase Ventures</div>
-  <h1>We turn houses<br/>into <em>homes.</em></h1>
-  <p class="hero-sub">Fix &amp; flip done with purpose &mdash; giving families a new home, a fresh start, a new life.</p>
-  <div class="hero-rule"></div>
-  <p class="tagline"><strong>Fix it.</strong> &nbsp;&middot;&nbsp; <strong>Flip it.</strong> &nbsp;&middot;&nbsp; <strong>Build wealth.</strong></p>
-  <div class="hero-btns">
-    <a href="contact.html" class="btn-primary">Get a Cash Offer</a>
-    <a href="how-it-works.html" class="btn-ghost">How It Works</a>
-  </div>
-</section>
+const TASK_STATUSES = ["To Do","In Progress","Blocked","Done"];
+const TASK_STATUS_COLORS = {"To Do":"#6b7280","In Progress":"#f59e0b","Blocked":"#ef4444","Done":"#10b981"};
+const ASSIGNEES = ["Me","Partner","Contractor","Other"];
+const TASK_CATEGORIES = ["Financing","Reno","Admin","Inspection","Legal","Other","Interior","Exterior"];
+const TASK_WORK_TYPES = ["Interior","Exterior"];
+const PRIORITIES = ["High","Med","Low"];
+const PRIORITY_COLORS = {"High":"#ef4444","Med":"#f59e0b","Low":"#6b7280"};
+const QUOTE_STATUSES = ["Pending","Accepted","Rejected"];
+const QUOTE_STATUS_COLORS = {"Pending":"#f59e0b","Accepted":"#10b981","Rejected":"#ef4444"};
 
-<section class="pillars">
-  <div class="pillars-label">What we do</div>
-  <div class="pillars-grid">
-    <div class="pillar">
-      <div class="pillar-num">01</div>
-      <div class="pillar-title">Fix &amp; Flip</div>
-      <div class="pillar-body">We find undervalued properties, renovate them to their full potential, and bring them back to life for the next family.</div>
-    </div>
-    <div class="pillar">
-      <div class="pillar-num">02</div>
-      <div class="pillar-title">New Homes</div>
-      <div class="pillar-body">Every house we touch becomes someone's home. We take pride in quality finishes that families will love for years to come.</div>
-    </div>
-    <div class="pillar">
-      <div class="pillar-num">03</div>
-      <div class="pillar-title">New Life</div>
-      <div class="pillar-body">We believe in second chances &mdash; for properties and for people. A new home means a new chapter, a new beginning.</div>
-    </div>
-  </div>
-</section>
+const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
+const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+const fmtDateShort = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+const genId   = () => Math.random().toString(36).slice(2,10);
 
-<section class="compare">
-  <div class="pillars-label">Why sell to us</div>
-  <div class="compare-grid">
-    <div class="compare-card us">
-      <div class="compare-title">Selling to NextPhase Ventures</div>
-      <ul class="compare-list">
-        <li>No repairs, cleaning, or showings needed</li>
-        <li>No agent commissions or closing fees</li>
-        <li>Choose your own closing date</li>
-        <li>Cash offer, no financing contingencies</li>
-        <li>We buy as-is, any condition</li>
-      </ul>
-    </div>
-    <div class="compare-card them">
-      <div class="compare-title">Traditional Sale</div>
-      <ul class="compare-list">
-        <li>Repairs and staging required</li>
-        <li>5&ndash;6% agent commission</li>
-        <li>Closing date depends on buyer's financing</li>
-        <li>Deals can fall through</li>
-        <li>Months of showings and uncertainty</li>
-      </ul>
-    </div>
-  </div>
-</section>
+let SESSION_PIN = (()=>{try{return sessionStorage.getItem("npv-pin")||"";}catch{return "";}})();
 
-<section class="mission">
-  <div class="mission-line"></div>
-  <blockquote>&ldquo;Families deserve a place to call <em>home.</em>&rdquo;</blockquote>
-  <p>NextPhase Ventures is built on the belief that real estate investment can do more than build wealth &mdash; it can transform communities and change lives, one home at a time.</p>
-</section>
+const RECOMMENDATION_COLORS={"Pursue":"#10b981","Negotiate":"#f59e0b","Pass":"#6b7280"};
 
-<section class="cta-band">
-  <h2>Ready for your <em>next phase?</em></h2>
-  <p>Tell us about your property and get a no-obligation cash offer.</p>
-  <a href="contact.html" class="btn-primary">Get My Cash Offer</a>
-</section>
+// Dynamic color based on recommendation + red flags
+function getRecColor(lead) {
+  var rec = lead.recommendation || "Pass";
+  var flags = String(lead.redFlags||"");
+  var hasFlags = flags.length > 0 && !flags.includes("Not a deal");
+  if (rec === "Pursue")    return "#10b981"; // green
+  if (rec === "Negotiate") return "#f59e0b"; // yellow
+  if (rec === "Pass" && hasFlags) return "#f59e0b"; // yellow — pass with concerns
+  if (rec === "Pass")      return "#10b981"; // green — clean pass
+  return "#6b7280";
+}
+const LEAD_STATUSES=["New","Reviewing","Pursuing","Passed"];
+const LEAD_STATUS_COLORS={"New":"#06b6d4","Reviewing":"#f59e0b","Pursuing":"#10b981","Passed":"#6b7280"};
 
-<footer>
-  <div class="footer-logo">
-    <div class="footer-mark">N</div>
-    <span class="footer-name">NextPhase Ventures</span>
-  </div>
-  <div class="footer-links">
-    <a href="how-it-works.html">How It Works</a>
-    <a href="faq.html">FAQ</a>
-    <a href="our-company.html">Our Company</a>
-    <a href="contact.html">Contact</a>
-  </div>
-  <div class="footer-right">&copy; 2026 NextPhase Ventures &middot; nextphaseventures.co</div>
-</footer>
-<div style="background:#0a1628;border-top:1px solid #1e3a5f;padding:14px 32px;display:flex;align-items:center;justify-content:center;gap:12px">
-  <span style="font-size:11px;color:#334155;font-family:system-ui,sans-serif">Designed &amp; Built by</span>
-  <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNTAiPgogIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiIGZpbGw9IiMwYTE2MjgiIHJ4PSI4Ii8+CiAgPHJlY3QgeD0iOCIgeT0iNyIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM2IiByeD0iNyIgZmlsbD0iIzBhMTYyOCIgc3Ryb2tlPSIjZDRhMDE3IiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDxwYXRoIGQ9Ik0xNCwxNCBMMjAsMzYgTDI2LDIyIEwzMiwzNiBMMzgsMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2Q0YTAxNyIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8dGV4dCB4PSI1NCIgeT0iMjgiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9Ii0wLjUiIGZpbGw9IiNmOGYwZDgiPldlYmxpbmE8L3RleHQ+CiAgPHRleHQgeD0iMTI2IiB5PSIzNCIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjgiIGZvbnQtd2VpZ2h0PSI1MDAiIGxldHRlci1zcGFjaW5nPSIyIiBmaWxsPSIjZDRhMDE3Ij5MTEM8L3RleHQ+Cjwvc3ZnPg==" alt="Weblina LLC" style="height:28px;width:auto;display:inline-block;vertical-align:middle"/>
-</div>
+async function api(action, extra={}) {
+  const res = await fetch(API_URL, {
+    method:"POST",
+    body: JSON.stringify({pin:SESSION_PIN, action, ...extra})
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+const S = {
+  root:     {minHeight:"100%",background:"#0a1628",color:"#e2e8f0",display:"flex",flexDirection:"column"},
+  header:   {background:"#0d1f3c",borderBottom:"1px solid #1e3a5f",padding:"0 20px",display:"flex",alignItems:"center",gap:12,height:56,position:"sticky",top:0,zIndex:20,flexShrink:0},
+  sidebar:  {width:220,background:"#0d1f3c",borderRight:"1px solid #1e3a5f",padding:"16px 0",display:"flex",flexDirection:"column",height:"calc(100vh - 56px)",position:"sticky",top:56,overflowY:"auto",flexShrink:0},
+  sideLabel:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",padding:"0 16px 6px"},
+  sideItem: a=>({padding:"9px 16px",cursor:"pointer",fontSize:13,color:a?"#f8f0d8":"#7a9cc5",background:a?"#1e3a5f":"transparent",borderLeft:a?"2px solid #d4a017":"2px solid transparent",display:"flex",alignItems:"center",gap:8,transition:"all .15s",userSelect:"none"}),
+  content:  {flex:1,padding:24,overflowY:"auto",minHeight:0},
+  card:     {background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:10,padding:"18px 20px"},
+  btn:      (v="primary")=>({padding:"9px 16px",borderRadius:8,fontSize:13,fontWeight:600,border:"none",
+    background:v==="primary"?"#d4a017":v==="danger"?"#ef444422":v==="ghost"?"#1e3a5f":"#1e3a5f",
+    color:v==="danger"?"#ef4444":v==="ghost"?"#7a9cc5":"#0a1628",
+    cursor:"pointer"
+  }),
+  input:    {background:"#071020",border:"1px solid #1e3a5f",borderRadius:7,padding:"10px 12px",color:"#e2e8f0",fontSize:14,width:"100%",outline:"none"},
+  label:    {fontSize:11,color:"#4a6fa5",fontWeight:700,marginBottom:5,display:"block",textTransform:"uppercase",letterSpacing:"0.06em"},
+  th:       {padding:"10px 12px",fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",textAlign:"left",borderBottom:"1px solid #1e3a5f"},
+  td:       {padding:"12px 12px",fontSize:13,color:"#cbd5e1",borderBottom:"1px solid #071020",verticalAlign:"middle"},
+  badge:    cat=>({background:(CATEGORY_COLORS[cat]||"#6b7280")+"22",color:CATEGORY_COLORS[cat]||"#6b7280",padding:"3px 9px",borderRadius:99,fontSize:11,fontWeight:600,whiteSpace:"nowrap"}),
+};
+
+// ── PIN SCREEN ───────────────────────────────────────────────────────────
+function PinScreen({onUnlock}) {
+  const [pin,setPin]=useState("");
+  const [err,setErr]=useState(false);
+  const [checking,setChecking]=useState(false);
+  const check=async()=>{
+    if(!pin)return;
+    setChecking(true);
+    try{
+      const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({pin,action:"getProjects"})});
+      const data=await res.json();
+      if(data.error==="Unauthorized"){setErr(true);setPin("");}
+      else onUnlock(pin);
+    }catch(e){setErr(true);}
+    setChecking(false);
+  };
+  return React.createElement("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    React.createElement("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:16,padding:"40px 36px",textAlign:"center",width:"100%",maxWidth:340}},
+      React.createElement("div",{style:{marginBottom:24,display:"flex",flexDirection:"column",alignItems:"center",gap:8}},
+        React.createElement("div",{style:{fontSize:36,marginBottom:4}},"🏗️"),
+        React.createElement("div",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},"NextPhase Ventures")
+      ),
+      React.createElement("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:28,textAlign:"center"}},"Enter PIN to continue"),
+      React.createElement("input",{type:"password",maxLength:6,placeholder:"••••",value:pin,autoFocus:true,
+        style:{...S.input,fontSize:28,textAlign:"center",letterSpacing:10,padding:14,marginBottom:err?8:16,border:err?"1px solid #ef4444":"1px solid #1e3a5f"},
+        onChange:ev=>{setPin(ev.target.value);setErr(false);},
+        onKeyDown:ev=>ev.key==="Enter"&&check()
+      }),
+      err&&React.createElement("div",{style:{fontSize:12,color:"#ef4444",marginBottom:12}},"Incorrect PIN."),
+      React.createElement("button",{style:{...S.btn(),width:"100%",padding:13,fontSize:15},onClick:check,disabled:checking},checking?"Checking…":"Unlock"),
+      React.createElement("div",{style:{fontSize:10,color:"#2a4a7f",marginTop:20,letterSpacing:"0.04em"}},"Powered by BuildFlow — Weblina LLC")
+    )
+  );
+}
+
+// ── APP ──────────────────────────────────────────────────────────────────
+function App() {
+  const [authed,setAuthed]         = useState(()=>{try{return sessionStorage.getItem("npv-auth")==="ok"}catch{return false}});
+  const [projects,setProjects]     = useState([]);
+  const [activeId,setActiveId]     = useState(null);
+  const [reloadTick,setReloadTick] = useState(0);
+  const [expenses,setExpenses]     = useState([]);
+  const [loading,setLoading]       = useState(true);
+  const [loadingExp,setLoadingExp] = useState(false);
+  const [saving,setSaving]         = useState(false);
+  const [view,setView]             = useState("home");
+  const [form,setForm]             = useState({});
+  const [filter,setFilter]         = useState({category:"",search:""});
+  const [toast,setToast]           = useState(null);
+  const [delConfirm,setDelConfirm] = useState(null);
+  const [error,setError]           = useState(null);
+  const [tasks,setTasks]           = useState([]);
+  const [loadingTasks,setLoadingTasks] = useState(false);
+  const [taskFilter,setTaskFilter] = useState("");
+  const [taskWorkFilter,setTaskWorkFilter] = useState("");
+  const [quotes,setQuotes]         = useState([]);
+  // ── PLANNING STATE — keyed by projectId ──
+  const [allMilestones,setAllMilestones] = useState({
+    "lincoln-2701": [
+      {id:"ms-1",date:"2026-08-14",week:"Demo & Remediation",items:[{type:"Interior",text:"Mold remediation completed"},{type:"Exterior",text:"Landscaping first phase, Driveway"}]},
+      {id:"ms-2",date:"2026-08-21",week:"Rough-In",items:[{type:"Interior",text:"Electric, Plumbing, HVAC completed"}]},
+      {id:"ms-3",date:"2026-08-28",week:"Drywall & Exterior",items:[{type:"Interior",text:"Drywall, Flooring completed"},{type:"Exterior",text:"Carpentry and paint completed"}]},
+      {id:"ms-4",date:"2026-09-04",week:"Finishes",items:[{type:"Interior",text:"Cabinets, tiles, bathtubs etc completed"}]},
+      {id:"ms-5",date:"2026-09-11",week:"Final & Staging",items:[{type:"Interior",text:"Staging completed"},{type:"Exterior",text:"Landscaping second phase"}]}
+    ]
+  }); // Will be overwritten by Sheet data on load
+  // ── MANAGEMENT CARD STATE ──
+  const [mgmtMilestones,setMgmtMilestones] = useState([]);
+  const [mgmtTasks,setMgmtTasks] = useState([]);
+  const [showMgmt,setShowMgmt] = useState(false);
+  const [mgmtSelMs,setMgmtSelMs] = useState(null);
+  const [mgmtMsStatus,setMgmtMsStatus] = useState({});
+  const [mgmtMsComments,setMgmtMsComments] = useState({});
+  const [mgmtCommentInput,setMgmtCommentInput] = useState({});
+  const [showAddMgmtMs,setShowAddMgmtMs] = useState(false);
+  const [mgmtMsForm,setMgmtMsForm] = useState({date:"",week:"",notes:""});
+  const [editMgmtMs,setEditMgmtMs] = useState(null);
+  const [showAddMgmtTask,setShowAddMgmtTask] = useState(false);
+  const [mgmtTaskForm,setMgmtTaskForm] = useState({task:"",status:"To Do",notes:""});
+
+  // ── VENDORS STATE ──
+  const DEFAULT_VENDOR_CATEGORIES = [
+    "Dumpster Companies","Landscapers","Electricians","HVAC","Plumbing",
+    "Carpenters","Interior Paint","Exterior Paint","Loan Providers",
+    "Title Companies","Real Estate Agents","Inspectors","General Contractors","Other"
+  ];
+  const [vendorCategories,setVendorCategories] = useState(DEFAULT_VENDOR_CATEGORIES);
+  const VENDOR_CATEGORIES = vendorCategories;
+  const [vendors,setVendors] = useState({});
+  const [vendorCat,setVendorCat] = useState("All");
+  const [showNewVendorCat,setShowNewVendorCat] = useState(false);
+  const [vendorsLoaded,setVendorsLoaded] = useState(false);
+  const [milestonesLoaded,setMilestonesLoaded] = useState(false);
+  const [mgmtLoaded,setMgmtLoaded] = useState(false);
+  const [showAddVendor,setShowAddVendor] = useState(false);
+  const [editVendorId,setEditVendorId] = useState(null);
+
+  const [planView,setPlanView] = useState("weekly");
+  const [allSelMs,setAllSelMs] = useState({});
+  const [showAddMs,setShowAddMs] = useState(false);
+  const [msForm,setMsForm] = useState({date:"",week:"",interior:"",exterior:""});
+  const [allMsStatus,setAllMsStatus] = useState({});
+  const [allMsComments,setAllMsComments] = useState({});
+  const [editMs,setEditMs] = useState(null);
+  const [editMsForm,setEditMsForm] = useState({date:"",week:"",interior:"",exterior:""});
+  const [allCommentInput,setAllCommentInput] = useState({});
+  const [loadingQuotes,setLoadingQuotes] = useState(false);
+  const [quoteGroupFilter,setQuoteGroupFilter] = useState("");
+  const [leads,setLeads]               = useState([]);
+  const [loadingLeads,setLoadingLeads] = useState(false);
+  const [leadFilter,setLeadFilter]     = useState("All");
+  const [leadStatus,setLeadStatus]     = useState("All");
+  const [expandedLead,setExpandedLead] = useState(null);
+
+  // Derived — per-project planning state
+  const milestones = allMilestones[activeId]||[];
+  const setMilestones = (updater) => setAllMilestones(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||[]):updater}));
+  const selMs = allSelMs[activeId]||null;
+  const setSelMs = (v) => setAllSelMs(prev=>({...prev,[activeId]:typeof v==="function"?v(prev[activeId]):v}));
+  const msStatus = allMsStatus[activeId]||{};
+  const setMsStatus = (updater) => setAllMsStatus(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
+  const msComments = allMsComments[activeId]||{};
+  const setMsComments = (updater) => setAllMsComments(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
+  const commentInput = allCommentInput[activeId]||{};
+  const setCommentInput = (updater) => setAllCommentInput(prev=>({...prev,[activeId]:typeof updater==="function"?updater(prev[activeId]||{}):updater}));
+
+  const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+
+
+  const updateLeadStatus=async(lead,newStatus)=>{
+    const updated={...lead,status:newStatus};
+    setLeads(prev=>prev.map(l=>l.id===lead.id?updated:l));
+    try{await api("updateLead",{lead:updated});showToast("Lead updated.");}
+    catch(err){showToast("Update failed","error");}
+  };
+
+  const updateLeadNotes=async(lead,notes)=>{
+    const updated={...lead,notes};
+    setLeads(prev=>prev.map(l=>l.id===lead.id?updated:l));
+    try{await api("updateLead",{lead:updated});}catch(err){}
+  };
+
+  const deleteLead=async(leadId)=>{
+    setSaving(true);
+    try{
+      await api("deleteLead",{leadId});
+      setLeads(prev=>prev.filter(l=>l.id!==leadId));
+      showToast("Lead deleted.");
+    }catch(err){showToast("Delete failed","error");}
+    setDelConfirm(null);setSaving(false);
+  };
+
+  const refreshLeads=async(silent=false)=>{
+    setLoadingLeads(true);
+    try{
+      const prev=leads.length;
+      const data=await api("getLeads");
+      const fresh=data.leads||[];
+      const newCount=fresh.filter(l=>l.status==="New").length;
+      const prevNew=leads.filter(l=>l.status==="New").length;
+      setLeads(fresh);
+      if(!silent) showToast("Leads refreshed — "+fresh.length+" total.");
+      // Push notification if new leads arrived since last refresh
+      if(fresh.length>prev&&"Notification" in window&&Notification.permission==="granted"){
+        const added=fresh.length-prev;
+        new Notification("📬 NPV Deal Alert",{
+          body:added+" new deal"+(added>1?"s":"")+" arrived — "+newCount+" unreviewed",
+          icon:"./icon-192.png",
+          badge:"./icon-192.png",
+          tag:"npv-lead"
+        });
+      }
+    }
+    catch(err){if(!silent)showToast("Refresh failed","error");}
+    setLoadingLeads(false);
+  };
+
+  const requestNotificationPermission=async()=>{
+    if(!("Notification" in window)){showToast("Notifications not supported","error");return;}
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)){showToast("Push not supported","error");return;}
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){showToast("Permission denied.","error");return;}
+    try{
+      const keyRes=await fetch(PUSH_SERVER_URL+"/vapid-public-key");
+      const {publicKey}=await keyRes.json();
+      const reg=await navigator.serviceWorker.ready;
+      const subscription=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(publicKey)
+      });
+      let deviceId=localStorage.getItem("npv-device-id");
+      if(!deviceId){deviceId="dev-"+Math.random().toString(36).slice(2,10)+"-"+Date.now();localStorage.setItem("npv-device-id",deviceId);}
+      const res=await fetch(PUSH_SERVER_URL+"/subscribe",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({subscription,deviceId})
+      });
+      if(res.ok){showToast("🔔 Push notifications enabled!");localStorage.setItem("npv-push-enabled","true");}
+      else showToast("Failed to register push.","error");
+    }catch(err){showToast("Push error: "+err.message,"error");}
+  };
+
+  function urlBase64ToUint8Array(base64String){
+    const padding="=".repeat((4-(base64String.length%4))%4);
+    const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw=window.atob(base64);
+    const arr=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+    return arr;
+  }
+
+  // Auto-poll leads every 2 minutes when app is open
+  useEffect(()=>{
+    if(!authed) return;
+    const interval = setInterval(()=>{ refreshLeads(true); }, 2 * 60 * 1000);
+    return ()=>clearInterval(interval);
+  },[authed]);
+
+  const unlock=(pin)=>{SESSION_PIN=pin;try{sessionStorage.setItem("npv-auth","ok");sessionStorage.setItem("npv-pin",pin);}catch{}setAuthed(true);};
+
+  useEffect(()=>{
+    if(authed){try{const p=sessionStorage.getItem("npv-pin");if(p)SESSION_PIN=p;}catch{}}
+  },[authed]);
+
+  useEffect(()=>{
+    if(!authed)return;
+    setLoading(true);
+    api("getProjects").then(async data=>{
+      let projs=data.projects||[];
+      if(projs.length===0){await api("seedLincoln");const d2=await api("getProjects");projs=d2.projects||[];}
+      setProjects(projs);
+      if(projs.length>0)setActiveId(projs[0].id);
+      setError(null);
+    }).catch(e=>setError(e.message)).finally(()=>setLoading(false));
+
+    // Load all milestones from Sheet
+    api("getMilestones").then(data=>{
+      if(data.milestones&&Object.keys(data.milestones).length>0){
+        setAllMilestones(prev=>({...prev,...data.milestones}));
+      }
+      setMilestonesLoaded(true);
+    }).catch(()=>setMilestonesLoaded(true));
+
+    // Load vendors from Sheet
+    api("getVendors").then(data=>{
+      if(data.vendors&&Object.keys(data.vendors).length>0) setVendors(data.vendors);
+      if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
+      setVendorsLoaded(true);
+      vendorsLoadedRef.current=true;
+    }).catch(()=>{setVendorsLoaded(true);vendorsLoadedRef.current=true;});
+
+    api("getLeads").then(function(data){
+      setLeads(data.leads||[]);
+    }).catch(function(){});
+
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.addEventListener("message",function(ev){
+        if(ev.data&&ev.data.type==="NPV_PUSH_CLICK") navTo("leads");
+      });
+    }
+
+    api("getLeads").then(function(data){
+      setLeads(data.leads||[]);
+    }).catch(function(){});
+
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+    }
+
+    api("getLeads").then(function(data){
+      setLeads(data.leads||[]);
+    }).catch(function(){});
+
+    // Listen for notification click → navigate to leads
+    if("serviceWorker" in navigator){
+    }
+
+    // Load management data from Sheet
+    api("getMgmtData").then(data=>{
+      const d=data.data||{};
+      if(d.mgmtTasks) setMgmtTasks(d.mgmtTasks);
+      if(d.mgmtMilestones) setMgmtMilestones(d.mgmtMilestones);
+      if(d.mgmtMsStatus) setMgmtMsStatus(d.mgmtMsStatus);
+      setMgmtLoaded(true);
+      mgmtLoadedRef.current=true;
+    }).catch(()=>{setMgmtLoaded(true);mgmtLoadedRef.current=true;});
+  },[authed]);
+
+  // Save milestones to Sheet when they change (debounced, only after initial load)
+  const milestonesLoadedRef = useRef(false);
+  useEffect(()=>{
+    if(!authed)return;
+    if(!milestonesLoadedRef.current){milestonesLoadedRef.current=milestonesLoaded;if(!milestonesLoaded)return;}
+    const timer=setTimeout(()=>{
+      Object.entries(allMilestones).forEach(([pid,ms])=>{
+        if(ms&&ms.length>=0) api("saveMilestones",{projectId:pid,milestones:ms}).catch(()=>{});
+      });
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[allMilestones,milestonesLoaded]);
+
+  // Save vendors to Sheet when they change (only after initial load)
+  const vendorsLoadedRef = useRef(false);
+
+  useEffect(()=>{
+    if(!authed||!vendorsLoadedRef.current)return;
+    const timer=setTimeout(()=>{
+      setSaving(true);
+      api("saveVendors",{vendors,categories:vendorCategories})
+        .then(()=>showToast("Vendors saved ✓","success"))
+        .catch(e=>showToast("Failed: "+e.message,"error"))
+        .finally(()=>setSaving(false));
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[vendors,vendorCategories]);
+
+  // Save management data (only after initial load)
+  const mgmtLoadedRef = useRef(false);
+
+  useEffect(()=>{
+    if(!authed||!mgmtLoadedRef.current)return;
+    const timer=setTimeout(()=>{
+      api("saveMgmtData",{key:"mgmtTasks",value:mgmtTasks}).catch(()=>{});
+      api("saveMgmtData",{key:"mgmtMilestones",value:mgmtMilestones}).catch(()=>{});
+      api("saveMgmtData",{key:"mgmtMsStatus",value:mgmtMsStatus}).catch(()=>{});
+    },1500);
+    return ()=>clearTimeout(timer);
+  },[mgmtTasks,mgmtMilestones,mgmtMsStatus]);
+
+  useEffect(()=>{
+    if(!activeId)return;
+    setLoadingExp(true);
+    api("getExpenses",{projectId:activeId})
+      .then(data=>setExpenses(data.expenses||[]))
+      .catch(e=>showToast("Failed to load expenses","error"))
+      .finally(()=>setLoadingExp(false));
+  },[activeId,reloadTick]);
+
+  useEffect(()=>{
+    if(!activeId)return;
+    setLoadingTasks(true);
+    api("getTasks",{projectId:activeId})
+      .then(data=>setTasks(data.tasks||[]))
+      .catch(e=>{})
+      .finally(()=>setLoadingTasks(false));
+  },[activeId,reloadTick]);
+
+  useEffect(()=>{
+    if(!activeId)return;
+    setLoadingQuotes(true);
+    api("getQuotes",{projectId:activeId})
+      .then(data=>setQuotes(data.quotes||[]))
+      .catch(e=>{})
+      .finally(()=>setLoadingQuotes(false));
+  },[activeId,reloadTick]);
+
+  const activeProject=projects.find(p=>String(p.id)===String(activeId))||null;
+
+  const saveExpense=async()=>{
+    if(!form.description||!form.amount||!form.date){showToast("Fill in all required fields.","error");return;}
+    const amount=parseFloat(form.amount);
+    if(isNaN(amount)||amount<=0){showToast("Enter a valid amount.","error");return;}
+    setSaving(true);
+    try{
+      if(form.id){
+        await api("updateExpense",{projectId:activeId,expense:{...form,amount}});
+        setExpenses(prev=>prev.map(e=>e.id===form.id?{...form,amount}:e));
+        showToast("Expense updated.");
+      } else {
+        const newExp={...form,id:genId(),amount};
+        await api("addExpense",{projectId:activeId,expense:newExp});
+        setExpenses(prev=>[...prev,newExp]);
+        showToast("Expense added.");
+      }
+      setView("expenses");
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteExpense=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteExpense",{projectId:activeId,expenseId:id});
+      setExpenses(prev=>prev.filter(e=>e.id!==id));
+      showToast("Expense deleted.");
+    }catch(e){showToast("Delete failed","error");}
+    setDelConfirm(null);setSaving(false);
+  };
+
+  const saveTask=async()=>{
+    if(!form.task){showToast("Task name is required.","error");return;}
+    setSaving(true);
+    try{
+      if(form.id){
+        await api("updateTask",{projectId:activeId,task:form});
+        setTasks(prev=>prev.map(t=>t.id===form.id?{...form}:t));
+        showToast("Task updated.");
+      } else {
+        const newTask={...form,id:genId(),status:form.status||"To Do"};
+        await api("addTask",{projectId:activeId,task:newTask});
+        setTasks(prev=>[...prev,newTask]);
+        showToast("Task added.");
+      }
+      setView("tasks");
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteTask=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteTask",{projectId:activeId,taskId:id});
+      setTasks(prev=>prev.filter(t=>t.id!==id));
+      showToast("Task deleted.");
+    }catch(e){showToast("Delete failed","error");}
+    setDelConfirm(null);setSaving(false);
+  };
+
+  const cycleStatus=async(task)=>{
+    const idx=TASK_STATUSES.indexOf(task.status||"To Do");
+    const next=TASK_STATUSES[(idx+1)%TASK_STATUSES.length];
+    const updated={...task,status:next};
+    setTasks(prev=>prev.map(t=>t.id===task.id?updated:t));
+    try{ await api("updateTask",{projectId:activeId,task:updated}); }
+    catch(e){ showToast("Failed to update status","error"); }
+  };
+
+  const saveQuote=async()=>{
+    if(!form.item||!form.vendor||!form.amount){showToast("Item, vendor, and amount are required.","error");return;}
+    const amount=parseFloat(form.amount);
+    if(isNaN(amount)||amount<=0){showToast("Enter a valid amount.","error");return;}
+    setSaving(true);
+    try{
+      if(form.id){
+        await api("updateQuote",{projectId:activeId,quote:{...form,amount}});
+        setQuotes(prev=>prev.map(q=>q.id===form.id?{...form,amount}:q));
+        showToast("Quote updated.");
+      } else {
+        const newQuote={...form,id:genId(),amount,status:"Pending"};
+        await api("addQuote",{projectId:activeId,quote:newQuote});
+        setQuotes(prev=>[...prev,newQuote]);
+        showToast("Quote added.");
+      }
+      setView("quotes");
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteQuote=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteQuote",{projectId:activeId,quoteId:id});
+      setQuotes(prev=>prev.filter(q=>q.id!==id));
+      showToast("Quote deleted.");
+    }catch(e){showToast("Delete failed","error");}
+    setDelConfirm(null);setSaving(false);
+  };
+
+  const acceptQuote=async(quote)=>{
+    setSaving(true);
+    try{
+      await api("acceptQuote",{projectId:activeId,quoteId:quote.id});
+      setQuotes(prev=>prev.map(q=>{
+        if(q.id===quote.id) return {...q,status:"Accepted"};
+        if(q.item===quote.item && q.status==="Pending") return {...q,status:"Rejected"};
+        return q;
+      }));
+      const newExp={id:"qte-"+quote.id,description:quote.item,amount:quote.amount,date:new Date().toISOString().slice(0,10),category:quote.category||"Materials",vendor:quote.vendor,notes:"Converted from accepted quote"};
+      setExpenses(prev=>[...prev,newExp]);
+      showToast("Quote accepted and added to expenses.");
+    }catch(e){showToast("Failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const rejectQuote=async(quote)=>{
+    setSaving(true);
+    try{
+      const updated={...quote,status:"Rejected"};
+      await api("updateQuote",{projectId:activeId,quote:updated});
+      setQuotes(prev=>prev.map(q=>q.id===quote.id?updated:q));
+      showToast("Quote rejected.");
+    }catch(e){showToast("Failed","error");}
+    setSaving(false);
+  };
+
+  const saveProject=async()=>{
+    if(!form.name){showToast("Project name is required.","error");return;}
+    setSaving(true);
+    try{
+      const pp=parseFloat(form.purchasePrice)||0;
+      const rb=parseFloat(form.rehabBudget)||0;
+      if(form.id){
+        await api("updateProject",{project:{...form,purchasePrice:pp,rehabBudget:rb}});
+        setProjects(prev=>prev.map(p=>p.id===form.id?{...form,purchasePrice:pp,rehabBudget:rb}:p));
+        showToast("Project updated.");setView("dashboard");
+      } else {
+        const newP={id:genId(),name:form.name,purchasePrice:pp,rehabBudget:rb,description:form.description||""};
+        await api("addProject",{project:newP});
+        setProjects(prev=>[...prev,newP]);
+        setActiveId(newP.id);setExpenses([]);
+        showToast("Project created.");setView("dashboard");
+      }
+    }catch(e){showToast("Save failed: "+e.message,"error");}
+    setSaving(false);
+  };
+
+  const deleteProject=async id=>{
+    setSaving(true);
+    try{
+      await api("deleteProject",{projectId:id});
+      const rem=projects.filter(p=>p.id!==id);
+      setProjects(rem);
+      if(activeId===id){setActiveId(rem[0]?.id||null);setExpenses([]);}
+      showToast("Project deleted.");
+      setDelConfirm(null);
+      setView(rem.length>0?"dashboard":"home");
+    }catch(e){showToast("Delete failed","error");}
+    setSaving(false);
+  };
+
+  const openAddExpense=(expense=null)=>{
+    setForm(expense?{...expense}:{date:new Date().toISOString().slice(0,10),category:CATEGORIES[0]});
+    setView("add-expense");
+  };
+
+  const openAddTask=(task=null)=>{
+    setForm(task?{...task}:{status:"To Do",assignee:ASSIGNEES[0],dueDate:"",notes:"",category:TASK_CATEGORIES[0],priority:"Med"});
+    setView("add-task");
+  };
+
+  const openAddQuote=(quote=null)=>{
+    setForm(quote?{...quote}:{category:REHAB_CATEGORIES[0],status:"Pending",item:quoteGroupFilter||""});
+    setView("add-quote");
+  };
+
+  const navTo=(v)=>{setView(v);window.scrollTo(0,0);};
+
+  if(!authed) return React.createElement(PinScreen,{onUnlock:unlock});
+
+  const e=React.createElement;
+
+  if(loading) return e("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}},
+    e("div",{style:{fontSize:28}},"⏳"),
+    e("div",{style:{color:"#4a6fa5",fontSize:14}},"Connecting…")
+  );
+
+  if(error) return e("div",{style:{minHeight:"100vh",background:"#0a1628",display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    e("div",{style:{...S.card,maxWidth:360,width:"100%",textAlign:"center"}},
+      e("div",{style:{fontSize:28,marginBottom:12}},"⚠️"),
+      e("div",{style:{fontWeight:700,color:"#f8f0d8",marginBottom:8}},"Connection failed"),
+      e("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:16}},error),
+      e("button",{style:{...S.btn(),width:"100%"},onClick:()=>window.location.reload()},"Retry")
+    )
+  );
+
+  // Computed
+  const acqExp    =expenses.filter(ex=>ACQUISITION_CATEGORIES.includes(ex.category));
+  const rehabExp  =expenses.filter(ex=>REHAB_CATEGORIES.includes(ex.category));
+  const acqSpent  =acqExp.reduce((s,ex)=>s+parseFloat(ex.amount||0),0);
+  const rehabSpent=rehabExp.reduce((s,ex)=>s+parseFloat(ex.amount||0),0);
+  const pp        =parseFloat(activeProject?.purchasePrice)||0;
+  const rb        =parseFloat(activeProject?.rehabBudget)||0;
+  const dpAmt     =parseFloat(expenses.find(ex=>ex.category==="Down Payment")?.amount||0);
+  const loanAmt   =Math.max(0,pp-dpAmt);
+  const totalCost =pp+rb;
+  const rehabRem  =rb-rehabSpent;
+  const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
+  const over      =rehabRem<0;
+  const acqByCat  =ACQUISITION_CATEGORIES.map(c=>({name:c,total:acqExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
+  const rehabByCat=REHAB_CATEGORIES.map(c=>({name:c,total:rehabExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
+  const recent    =[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  const filtered  =expenses.filter(ex=>{
+    if(filter.category&&ex.category!==filter.category)return false;
+    if(filter.search&&!ex.description?.toLowerCase().includes(filter.search.toLowerCase())&&!ex.vendor?.toLowerCase().includes(filter.search.toLowerCase()))return false;
+    return true;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // ── FORM VIEWS ──
+  if(view==="add-expense"||view==="add-project"||view==="edit-project"||view==="add-task"||view==="add-quote"){
+    const isExpense=view==="add-expense";
+    const isTask=view==="add-task";
+    const isQuote=view==="add-quote";
+    const isEditProj=view==="edit-project";
+    return e("div",{style:{minHeight:"100vh",background:"#0a1628"}},
+      e("div",{style:S.header},
+        e("button",{style:{background:"none",border:"none",color:"#d4a017",fontSize:22,padding:"0 8px 0 0",lineHeight:1},onClick:()=>setView(isExpense?"expenses":isTask?"tasks":isQuote?"quotes":activeProject?"dashboard":"home")},"←"),
+        e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8"}},isExpense?(form.id?"Edit Expense":"Add Expense"):isTask?(form.id?"Edit Task":"Add Task"):isQuote?(form.id?"Edit Quote":"Add Quote"):isEditProj?"Edit Project":"New Project")
+      ),
+      e("div",{style:{maxWidth:560,margin:"0 auto",padding:"24px 16px"}},
+        e("div",{style:{...S.card,display:"flex",flexDirection:"column",gap:16}},
+          isExpense?[
+            e("div",{key:"desc"},e("label",{style:S.label},"Description *"),e("input",{style:S.input,placeholder:"e.g. Drywall materials",value:form.description||"",onChange:ev=>setForm({...form,description:ev.target.value})})),
+            e("div",{key:"amtdate",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Amount ($) *"),e("input",{style:S.input,type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Date *"),e("input",{style:S.input,type:"date",value:form.date||"",onChange:ev=>setForm({...form,date:ev.target.value})}))
+            ),
+            e("div",{key:"catven",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Category"),
+                e("select",{style:S.input,value:form.category||CATEGORIES[0],onChange:ev=>setForm({...form,category:ev.target.value})},
+                  e("optgroup",{label:"── Acquisition ──"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
+                  e("optgroup",{label:"── Rehab ──"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
+                )
+              ),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Vendor"),e("input",{style:S.input,placeholder:"e.g. Home Depot",value:form.vendor||"",onChange:ev=>setForm({...form,vendor:ev.target.value})}))
+            ),
+            e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
+          ]:isTask?[
+            e("div",{key:"task"},e("label",{style:S.label},"Task *"),e("input",{style:S.input,placeholder:"e.g. Schedule plumbing inspection",value:form.task||"",onChange:ev=>setForm({...form,task:ev.target.value})})),
+            e("div",{key:"catpri",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Category"),
+                e("select",{style:S.input,value:form.category||TASK_CATEGORIES[0],onChange:ev=>setForm({...form,category:ev.target.value})},
+                  TASK_CATEGORIES.map(c=>e("option",{key:c},c))
+                )
+              ),
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Priority"),
+                e("select",{style:S.input,value:form.priority||"Med",onChange:ev=>setForm({...form,priority:ev.target.value})},
+                  PRIORITIES.map(p=>e("option",{key:p},p))
+                )
+              )
+            ),
+            e("div",{key:"statassign",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Status"),
+                e("select",{style:S.input,value:form.status||"To Do",onChange:ev=>setForm({...form,status:ev.target.value})},
+                  TASK_STATUSES.map(s=>e("option",{key:s},s))
+                )
+              ),
+              e("div",{style:{flex:1}},
+                e("label",{style:S.label},"Assignee"),
+                e("select",{style:S.input,value:form.assignee||ASSIGNEES[0],onChange:ev=>setForm({...form,assignee:ev.target.value})},
+                  ASSIGNEES.map(a=>e("option",{key:a},a))
+                )
+              )
+            ),
+            e("div",{key:"due"},e("label",{style:S.label},"Due Date"),e("input",{style:S.input,type:"date",value:form.dueDate||"",onChange:ev=>setForm({...form,dueDate:ev.target.value})})),
+            e("div",{key:"milestone"},
+              e("label",{style:S.label},"Milestone"),
+              e("select",{style:S.input,value:form.milestone||"",onChange:ev=>setForm({...form,milestone:ev.target.value})},
+                e("option",{value:""},"— No milestone —"),
+                milestones.map(ms=>e("option",{key:ms.id,value:ms.id},
+                  new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})+" — "+ms.week
+                ))
+              )
+            ),
+            e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:70,resize:"vertical"},placeholder:"Optional details…",value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
+          ]:isQuote?[
+            e("div",{key:"item"},e("label",{style:S.label},"Item / Project *"),e("input",{style:S.input,placeholder:"e.g. Windows, Roofing, Plumbing fixtures",value:form.item||"",onChange:ev=>setForm({...form,item:ev.target.value})})),
+            e("div",{key:"vendoramt",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Vendor *"),e("input",{style:S.input,placeholder:"e.g. ABC Windows Co.",value:form.vendor||"",onChange:ev=>setForm({...form,vendor:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Quote Amount ($) *"),e("input",{style:S.input,type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})}))
+            ),
+            e("div",{key:"cat"},
+              e("label",{style:S.label},"Category (when converted to expense)"),
+              e("select",{style:S.input,value:form.category||REHAB_CATEGORIES[0],onChange:ev=>setForm({...form,category:ev.target.value})},
+                e("optgroup",{label:"── Acquisition ──"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
+                e("optgroup",{label:"── Rehab ──"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
+              )
+            ),
+            e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"e.g. includes installation, 2-week lead time",value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
+          ]:[
+            e("div",{key:"name"},e("label",{style:S.label},"Project Name *"),e("input",{style:S.input,placeholder:"e.g. 123 Oak Street",value:form.name||"",onChange:ev=>setForm({...form,name:ev.target.value})})),
+            e("div",{key:"desc"},e("label",{style:S.label},"Description"),e("input",{style:S.input,placeholder:"e.g. Richmond, VA — Fix & Flip",value:form.description||"",onChange:ev=>setForm({...form,description:ev.target.value})})),
+            e("div",{key:"budgets",style:{display:"flex",gap:12},className:"form-row"},
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Purchase Price ($)"),e("input",{style:S.input,type:"number",placeholder:"e.g. 320000",value:form.purchasePrice||"",onChange:ev=>setForm({...form,purchasePrice:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},"Rehab Budget ($)"),e("input",{style:S.input,type:"number",placeholder:"e.g. 120000",value:form.rehabBudget||"",onChange:ev=>setForm({...form,rehabBudget:ev.target.value})}))
+            )
+          ],
+          e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
+            e("button",{style:S.btn("ghost"),onClick:()=>setView(isExpense?"expenses":isTask?"tasks":isQuote?"quotes":activeProject?"dashboard":"home"),disabled:saving},"Cancel"),
+            e("button",{style:{...S.btn(),minWidth:120},onClick:isExpense?saveExpense:isTask?saveTask:isQuote?saveQuote:saveProject,disabled:saving},saving?"Saving…":isExpense?(form.id?"Save Changes":"Add Expense"):isTask?(form.id?"Save Changes":"Add Task"):isQuote?(form.id?"Save Changes":"Add Quote"):(form.id?"Save Changes":"Create Project"))
+          )
+        )
+      )
+    );
+  }
+
+  // ── LEADS VIEW ──────────────────────────────────────────────────────────
+  const LeadsView=()=>{
+    const fmt$=n=>n?"$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}):"—";
+    const fmtD=d=>d?new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"—";
+    const filtered=leads.filter(l=>{
+      if(leadFilter!=="All"&&l.recommendation!==leadFilter)return false;
+      if(leadStatus!=="All"&&l.status!==leadStatus)return false;
+      return true;
+    });
+    const counts={
+      Pursue:leads.filter(l=>l.recommendation==="Pursue").length,
+      Negotiate:leads.filter(l=>l.recommendation==="Negotiate").length,
+      Pass:leads.filter(l=>l.recommendation==="Pass").length,
+      New:leads.filter(l=>l.status==="New").length,
+    };
+    return e("div",null,
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
+        e("div",null,
+          e("div",{style:{fontWeight:900,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},"📬 Deal Leads"),
+          e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},leads.length+" total · "+counts.New+" new · "+counts.Pursue+" pursue · "+counts.Negotiate+" negotiate")
+        ),
+        e("div",{style:{display:"flex",gap:8},className:"page-header-actions"},
+          typeof Notification!=="undefined"&&
+            e("button",{
+              style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},
+              onClick:Notification.permission==="granted"&&localStorage.getItem("npv-push-enabled")
+                ?()=>showToast("Push notifications are enabled on this device ✅")
+                :requestNotificationPermission
+            },Notification.permission==="granted"&&localStorage.getItem("npv-push-enabled")?"🔔 Alerts On":"🔔 Enable Alerts"),
+          e("button",{style:{...S.btn("ghost"),fontSize:12,padding:"7px 14px"},onClick:()=>refreshLeads(false),disabled:loadingLeads},loadingLeads?"Refreshing…":"🔄 Refresh")
+        )
+      ),
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}},
+        [{label:"Pursue",count:counts.Pursue,color:"#10b981"},{label:"Negotiate",count:counts.Negotiate,color:"#f59e0b"},{label:"Pass",count:counts.Pass,color:"#10b981"},{label:"New",count:counts.New,color:"#06b6d4"}]
+        .map((s2,i)=>e("div",{key:i,style:{background:"#0d1f3c",border:"1px solid "+(leadFilter===s2.label?s2.color:"#1e3a5f"),borderRadius:10,padding:"12px",textAlign:"center",cursor:"pointer"},onClick:()=>setLeadFilter(leadFilter===s2.label?"All":s2.label)},
+          e("div",{style:{fontSize:22,fontWeight:900,color:s2.color}},s2.count),
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginTop:4}},s2.label)
+        ))
+      ),
+      e("div",{style:{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}},
+        ["All","Pursue","Negotiate","Pass"].map(rec=>{
+          var pillColor=rec==="Pursue"?"#10b981":rec==="Negotiate"?"#f59e0b":rec==="Pass"?"#10b981":"#d4a017";
+          return e("button",{key:rec,
+            style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:600,
+              border:"1px solid "+((leadFilter===rec)?pillColor:"#1e3a5f"),
+              background:(leadFilter===rec)?pillColor+"22":"transparent",
+              color:(leadFilter===rec)?pillColor:"#7a9cc5",cursor:"pointer"},
+            onClick:()=>setLeadFilter(rec)},rec);
+        })
+      ),
+      e("div",{style:{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}},
+        ["All",...LEAD_STATUSES].map(st=>e("button",{key:st,
+          style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+((leadStatus===st)?(LEAD_STATUS_COLORS[st]||"#d4a017"):"#1e3a5f"),background:(leadStatus===st)?(LEAD_STATUS_COLORS[st]||"#d4a017")+"22":"transparent",color:(leadStatus===st)?(LEAD_STATUS_COLORS[st]||"#d4a017"):"#7a9cc5",cursor:"pointer"},
+          onClick:()=>setLeadStatus(st)},st==="All"?"All Statuses":st))
+      ),
+      loadingLeads?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):
+      filtered.length===0
+        ?e("div",{style:{...S.card,textAlign:"center",padding:"48px 16px"}},
+            e("div",{style:{fontSize:36,marginBottom:10}},"📬"),
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",marginBottom:8}},leads.length===0?"No leads yet":"No leads match filters"),
+            e("div",{style:{fontSize:13,color:"#4a6fa5"}},leads.length===0?"Forward deal emails to npvdealchecker@gmail.com and they'll appear here.":"Try clearing the filters above.")
+          )
+        :e("div",null,...filtered.map(lead=>{
+            const recColor=getRecColor(lead);
+            const stColor=LEAD_STATUS_COLORS[lead.status]||"#6b7280";
+            const isOpen=expandedLead===lead.id;
+            return e("div",{key:lead.id,style:{...S.card,marginBottom:12,borderColor:isOpen?recColor:"#1e3a5f",transition:"border-color .15s"}},
+              e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,cursor:"pointer"},onClick:()=>setExpandedLead(isOpen?null:lead.id)},
+                e("div",{style:{flex:1}},
+                  e("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}},
+                    e("span",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8"}},lead.address||"Address not found"),
+                    e("span",{style:{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,background:recColor+"22",color:recColor}},lead.recommendation||"—"),
+                    e("span",{style:{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,background:stColor+"22",color:stColor}},lead.status||"New")
+                  ),
+                  e("div",{style:{display:"flex",gap:16,flexWrap:"wrap",fontSize:12,color:"#7a9cc5"}},
+                    e("span",null,"Ask: ",e("span",{style:{color:"#f8f0d8",fontWeight:700}},lead.askPrice?"$"+Number(lead.askPrice).toLocaleString():"—")),
+                    e("span",null,"Offer: ",e("span",{style:{color:"#10b981",fontWeight:700}},lead.suggestedOffer?"$"+Number(lead.suggestedOffer).toLocaleString():"—")),
+                    e("span",null,"ARV: ",e("span",{style:{color:"#d4a017",fontWeight:700}},lead.arvEstimate?"$"+Number(lead.arvEstimate).toLocaleString():"—")),
+                    e("span",null,"Profit: ",e("span",{style:{color:lead.projectedProfit!=null&&lead.projectedProfit<0?"#ef4444":"#10b981",fontWeight:700}},
+                      lead.projectedProfit!=null?(lead.projectedProfit<0?"-$":"+$")+Math.abs(Number(lead.projectedProfit)).toLocaleString():"—"))
+                  ),
+                  lead.summary&&e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:6,lineHeight:1.5}},lead.summary)
+                ),
+                e("div",{style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}},
+                  e("span",{style:{fontSize:11,color:"#2a4a7f"}},fmtD(lead.receivedAt)),
+                  e("span",{style:{fontSize:14,color:"#4a6fa5"}},isOpen?"▲":"▼")
+                )
+              ),
+              isOpen&&e("div",{style:{marginTop:16,paddingTop:16,borderTop:"1px solid #1e3a5f"}},
+
+                // ── Key numbers grid (matches email) ──
+                e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}},
+                  [
+                    ["Ask Price",      lead.askPrice       ? "$"+Number(lead.askPrice).toLocaleString()       : "—", "#f8f0d8"],
+                    ["Suggested Offer",lead.suggestedOffer ? "$"+Number(lead.suggestedOffer).toLocaleString() : "—", "#10b981"],
+                    ["ARV Estimate",   lead.arvEstimate    ? "$"+Number(lead.arvEstimate).toLocaleString()    : "—", "#d4a017"],
+                    ["Rehab Estimate", lead.rehabEstimate  ? "$"+Number(lead.rehabEstimate).toLocaleString()  : "—", "#a78bfa"],
+                    ["Projected Profit",lead.projectedProfit!=null ? (lead.projectedProfit<0?"-$":"+$")+Math.abs(Number(lead.projectedProfit)).toLocaleString() : "—", lead.projectedProfit!=null&&lead.projectedProfit<0?"#ef4444":"#10b981"],
+                    ["Profit Margin",  lead.profitMarginPct!=null  ? (lead.profitMarginPct*100).toFixed(1)+"%" : "—", lead.profitMarginPct!=null&&lead.profitMarginPct<0?"#ef4444":lead.profitMarginPct>=0.12?"#10b981":lead.profitMarginPct>=0.08?"#f59e0b":"#6b7280"],
+                    ["Beds / Baths",   (lead.beds||"?")+" bd / "+(lead.baths||"?")+" ba", "#f8f0d8"],
+                    ["Sqft / Year",    (lead.sqft?Number(lead.sqft).toLocaleString()+" SF":"—")+" · "+(lead.yearBuilt||"—"), "#f8f0d8"],
+                    ["ARV $/SF",       lead.arvPPSF ? "$"+Number(lead.arvPPSF).toFixed(0)+"/SF" : "—", "#f8f0d8"],
+                    ["Hold Period",    (lead.holdingPeriodMonths||"?")+" months", "#f8f0d8"],
+                    ["Condition",      lead.condition||"Unknown", "#f8f0d8"],
+                    ["Neighborhood",   lead.neighborhood||"—", "#f8f0d8"],
+                  ].map(([label,val,color],i)=>e("div",{key:i,style:{background:"#071020",borderRadius:8,padding:"10px 12px"}},
+                    e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
+                    e("div",{style:{fontSize:13,fontWeight:800,color}},val)
+                  ))
+                ),
+
+                // ── Summary ──
+                lead.summary&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"📋 Analysis Summary"),
+                  e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},lead.summary)
+                ),
+
+                // ── ARV Reasoning ──
+                lead.arvReasoning&&e("div",{style:{background:"#071020",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"🏡 ARV Reasoning"),
+                  e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},lead.arvReasoning),
+                  lead.conditionNotes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Condition: "+lead.conditionNotes)
+                ),
+
+                // ── Red Flags ──
+                lead.redFlags&&String(lead.redFlags).length>0&&!String(lead.redFlags).includes("Not a deal")&&
+                  e("div",{style:{background:"#ef444411",border:"1px solid #ef444433",borderRadius:8,padding:"10px 14px",marginBottom:12}},
+                    e("div",{style:{fontSize:11,fontWeight:700,color:"#ef4444",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"⚠️ Red Flags"),
+                    e("div",{style:{fontSize:12,color:"#ef4444",lineHeight:1.8}},String(lead.redFlags))
+                  ),
+
+                // ── Data Gaps ──
+                lead.dataGaps&&String(lead.dataGaps).length>0&&
+                  e("div",{style:{background:"#f59e0b11",border:"1px solid #f59e0b33",borderRadius:8,padding:"10px 14px",marginBottom:12}},
+                    e("div",{style:{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}},"📋 Data Gaps & Assumptions"),
+                    e("div",{style:{fontSize:12,color:"#f59e0b",lineHeight:1.8}},String(lead.dataGaps))
+                  ),
+                e("div",{style:{marginBottom:12}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"Update Status"),
+                  e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+                    LEAD_STATUSES.map(st=>e("button",{key:st,
+                      style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:700,border:"1px solid "+(lead.status===st?LEAD_STATUS_COLORS[st]:"#1e3a5f"),background:lead.status===st?LEAD_STATUS_COLORS[st]+"33":"transparent",color:lead.status===st?LEAD_STATUS_COLORS[st]:"#7a9cc5",cursor:"pointer"},
+                      onClick:()=>updateLeadStatus(lead,st)},st))
+                  )
+                ),
+                e("div",{style:{marginBottom:12}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"Notes"),
+                  e("textarea",{style:{...S.input,minHeight:70,resize:"vertical",fontSize:12},placeholder:"Add notes, counter offer, next steps…",defaultValue:lead.notes||"",onBlur:ev=>updateLeadNotes(lead,ev.target.value)})
+                ),
+                e("div",{style:{fontSize:11,color:"#2a4a7f",marginBottom:12}},"From: "+(lead.fromEmail||"—")+" · "+(lead.subject||"")),
+                e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",flexWrap:"wrap"}},
+                  e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"7px 14px",borderRadius:6,fontSize:12,fontWeight:600},onClick:()=>setDelConfirm({type:"lead",id:lead.id,name:lead.address||"this lead"})},"Delete"),
+                  e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>{
+                    setMgmtMilestones(prev=>[...prev,{id:"mgmt-"+Date.now(),date:"",week:lead.address||"New Deal",notes:"Ask: "+(lead.askPrice?"$"+Number(lead.askPrice).toLocaleString():"—")+" · ARV: "+(lead.arvEstimate?"$"+Number(lead.arvEstimate).toLocaleString():"—")+" · MAO: "+(lead.mao?"$"+Number(lead.mao).toLocaleString():"—")+" · "+(lead.recommendation||"")}]);
+                    updateLeadStatus(lead,"Pursuing");
+                    navTo("management");
+                    showToast("Added to pipeline!");
+                  }},"➕ Add to Pipeline")
+                )
+              )
+            );
+          }))
+    );
+  };
+
+  // ── SIDEBAR ──
+  const Sidebar=()=>{
+    const isMgmt = view==="management";
+    const isProject = (p) => p.id===activeId&&!["home","management"].includes(view);
+    const children = [
+      e("div",{key:"nav-label",style:S.sideLabel},"Navigation"),
+      e("div",{key:"home",style:S.sideItem(view==="home"),onClick:()=>navTo("home")},"🏠 All Projects"),
+      e("div",{key:"mgmt",style:S.sideItem(isMgmt),onClick:()=>{setActiveId(null);navTo("management");}},"📋 Management"),
+      isMgmt&&e("div",{key:"mgmt-ms",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtMs(true)},"🏁 + Milestone"),
+      isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
+      e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
+      e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
+        e("span",null,"📬 Leads"),
+        leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
+      ),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"dashboard",style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"expenses",style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"tasks",style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"quotes",style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"planning",style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
+      e("div",{key:"projects-section",style:{marginTop:16}},
+        e("div",{style:S.sideLabel},"Projects"),
+        ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>{
+          const active = isProject(p);
+          return e("div",{key:p.id},
+            e("div",{style:{...S.sideItem(active),paddingLeft:20,fontSize:12},
+              onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
+              e("span",{style:{width:7,height:7,borderRadius:"50%",background:active?"#d4a017":"#1e3a5f",flexShrink:0}}),
+              e("span",{style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},p.name)
+            ),
+            active&&e("div",{key:"proj-tasks",style:{...S.sideItem(view==="tasks"),paddingLeft:36,fontSize:11},onClick:()=>navTo("tasks")},"✅ Tasks"),
+            active&&e("div",{key:"proj-plan",style:{...S.sideItem(view==="planning"),paddingLeft:36,fontSize:11},onClick:()=>navTo("planning")},"📅 Planning")
+          );
+        }),
+        e("div",{style:{padding:"10px 16px"}},
+          e("button",{style:{...S.btn("ghost"),width:"100%",fontSize:12,padding:"7px 10px"},onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
+        )
+      )
+    ].filter(Boolean);
+    return e("div",{style:S.sidebar,className:"desktop-sidebar"},...children);
+  };
+
+  // ── BOTTOM NAV (mobile) ──
+  const BottomNav=()=>{
+    const isProject = activeProject&&!activeProject.description?.includes("No budget");
+    const isMgmt = view==="management";
+    const isVendors = view==="vendors";
+    const items = (isProject&&!isVendors) ? [
+      {icon:"🏠",label:"Projects",v:"home"},
+      {icon:"📊",label:"Dashboard",v:"dashboard"},
+      {icon:"✅",label:"Tasks",v:"tasks"},
+      {icon:"💬",label:"Quotes",v:"quotes"},
+      {icon:"📅",label:"Planning",v:"planning"},
+    ] : [
+      {icon:"🏠",label:"Projects",v:"home"},
+      {icon:"📋",label:"Management",v:"management"},
+      {icon:"📇",label:"Vendors",v:"vendors"},
+      {icon:"📬",label:"Leads",v:"leads"},
+    ];
+    return e("div",{style:{display:"flex"},className:"bottom-nav"},
+      ...items.map(item=>e("div",{key:item.v,
+        style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px",cursor:"pointer",
+          color:view===item.v?"#d4a017":"#4a6fa5",fontSize:9,fontWeight:view===item.v?700:400,gap:2},
+        onClick:()=>{
+          if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
+          if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
+          navTo(item.v);
+        }},
+        e("span",{style:{fontSize:18}},item.icon),
+        item.label
+      ))
+    );
+  };
+
+  const HomeView=()=>e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
+      e("div",null,
+        e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Projects"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},projects.filter(p=>!p.description?.includes("No budget")).length+" project"+(projects.filter(p=>!p.description?.includes("No budget")).length!==1?"s":""))
+      ),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>{setForm({});navTo("add-project");}},"+ New Project")
+      )
+    ),
+
+    // ── MANAGEMENT CARD ──
+    e("div",{style:{...S.card,marginBottom:20,borderColor:"#2a3a5a",background:"linear-gradient(135deg,#0d1e35,#091526)",cursor:"pointer",transition:"border-color .2s"},
+      onClick:()=>{setActiveId(null);navTo("management");}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("div",{style:{width:36,height:36,borderRadius:8,background:"#d4a01722",border:"1px solid #d4a017",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}},"📋"),
+          e("div",null,
+            e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8"}},"Management"),
+            e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"Pipeline · Expenses · Tasks · Plans")
+          )
+        ),
+        e("div",{style:{display:"flex",alignItems:"center",gap:8}},
+          e("div",{style:{display:"flex",gap:6}},
+            e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#8b5cf622",color:"#a78bfa"}},mgmtMilestones.filter(m=>(mgmtMsStatus[m.id]||"upcoming")!=="done").length+" active"),
+            e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#06b6d422",color:"#06b6d4"}},mgmtTasks.filter(t=>t.status!=="Done").length+" tasks")
+          ),
+          e("span",{style:{color:"#d4a017",fontSize:16,fontWeight:700}},"→")
+        )
+      )
+    ),
+    projects.filter(p=>!p.description?.includes("No budget")).length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"48px 16px"}},
+          e("div",{style:{fontSize:36,marginBottom:10}},"🏗️"),
+          e("div",{style:{fontWeight:700,color:"#f8f0d8",marginBottom:8}},"No projects yet"),
+          e("button",{style:{...S.btn(),marginTop:8},onClick:()=>{setForm({});navTo("add-project");}},"Create Project")
+        )
+      :e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14},className:"project-grid"},
+          ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>e("div",{key:p.id,
+            style:{...S.card,cursor:"pointer",borderColor:p.id===activeId?"#d4a017":"#1e3a5f",transition:"border-color .15s"},
+            onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
+            e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}},
+              e("div",null,
+                e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8",marginBottom:2}},p.name),
+                e("div",{style:{fontSize:12,color:"#4a6fa5"}},( p.description?.split("|")[0]?.trim() )||"Fix & Flip")
+              ),
+              e("div",{style:{
+                width:"auto",padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,marginTop:2,
+                background:p.description?.includes("Sold")?"#ef444422":p.description?.includes("No budget")?"#1e3a5f":"#10b98122",
+                color:p.description?.includes("Sold")?"#ef4444":p.description?.includes("No budget")?"#4a6fa5":"#10b981"
+              }},p.description?.includes("Sold")?"Sold":p.description?.includes("No budget")?"General":"Active")
+            ),
+            p.description?.includes("No budget")
+              ? e("div",{style:{background:"#071020",borderRadius:7,padding:"12px 14px"}},
+                  e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Type"),
+                  e("div",{style:{fontSize:15,fontWeight:800,color:"#7a9cc5"}},"General Expenses")
+                )
+              : e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
+                  e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                    e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Purchase"),
+                    e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(p.purchasePrice))
+                  ),
+                  e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+                    e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Rehab Budget"),
+                    e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
+                  )
+                ),
+            e("div",{style:{marginTop:12,display:"flex",alignItems:"center",justifyContent:"space-between"}},
+              e("div",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →"),
+              e("div",{style:{display:"flex",gap:6}},
+                e("button",{style:{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer"},
+                  onClick:ev=>{ev.stopPropagation();setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("tasks");}
+                },"✅ Tasks"),
+                e("button",{style:{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer"},
+                  onClick:ev=>{ev.stopPropagation();setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("planning");}
+                },"📅 Plan")
+              )
+            )
+          ))
+        )
+  );
+
+  // ── DASHBOARD VIEW ──
+  const isGeneral = activeProject?.description?.includes("No budget");
+  const isSold    = activeProject?.description?.includes("Sold");
+  const DashboardView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:12,flexWrap:"wrap"}},
+      e("div",null,
+        e("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:4}},
+          e("h1",{style:{fontWeight:800,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},activeProject?.name),
+          isSold&&e("span",{style:{background:"#ef444422",color:"#ef4444",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"Sold"),
+          isGeneral&&e("span",{style:{background:"#1e3a5f",color:"#4a6fa5",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"General")
+        ),
+        e("p",{style:{color:"#4a6fa5",fontSize:13}},activeProject?.description?.split("|")[0]?.trim()||"Fix & Flip")
+      ),
+      e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+        e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
+        e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("expenses")},"Expenses"),
+        e("button",{style:{...S.btn("danger"),fontSize:12},onClick:()=>setDelConfirm({type:"project",id:activeId,name:activeProject?.name})},"Delete")
+      )
+    ),
+
+    // Cost Summary — hidden for General Expenses
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16,background:"linear-gradient(135deg,#0d1f3c,#0f2548)",border:"1px solid #2a4a7f"}},
+      e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:14}},"Project Cost Summary"),
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12},className:"summary-grid"},
+        ...[
+          {label:"Purchase Price",value:fmt(pp),color:"#f8f0d8"},
+          {label:"Loan Amount",value:fmt(loanAmt),color:"#a78bfa"},
+          {label:"Rehab Budget",value:fmt(rb),color:"#d4a017"},
+          {label:"Total Project",value:fmt(totalCost),color:"#10b981"},
+        ].map((item,i)=>e("div",{key:i,style:{background:"#071020",borderRadius:8,padding:"12px 14px"}},
+          e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}},item.label),
+          e("div",{style:{fontSize:18,fontWeight:800,color:item.color,lineHeight:1}},item.value)
+        ))
+      )
+    ),
+
+    // Rehab Budget — hidden for General Expenses
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16,padding:"20px"}},
+      e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}},
+        e("div",null,
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"🔨 Rehab Budget"),
+          e("div",{style:{display:"flex",alignItems:"baseline",gap:8}},
+            e("span",{style:{fontSize:32,fontWeight:900,color:over?"#ef4444":rehabPct>80?"#f59e0b":"#d4a017",lineHeight:1},className:"rehab-amount"},fmt(rehabSpent)),
+            e("span",{style:{fontSize:13,color:"#4a6fa5"}},"of "+fmt(rb))
+          )
+        ),
+        e("div",{style:{textAlign:"right"}},
+          e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},over?"Over Budget":"Remaining"),
+          e("div",{style:{fontSize:24,fontWeight:800,color:over?"#ef4444":"#10b981"},className:"rehab-remaining"},fmt(Math.abs(rehabRem))),
+          e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},rehabPct.toFixed(1)+"% used")
+        )
+      ),
+      e("div",{style:{background:"#071020",borderRadius:99,height:16,overflow:"hidden",marginBottom:14}},
+        e("div",{style:{width:rehabPct+"%",height:"100%",background:over?"#ef4444":rehabPct>80?"#f59e0b":"#d4a017",borderRadius:99,transition:"width .6s",position:"relative"}},
+          rehabPct>12&&e("span",{style:{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:10,fontWeight:700,color:"rgba(0,0,0,0.7)"}},rehabPct.toFixed(0)+"%")
+        )
+      ),
+      rehabByCat.length>0
+        ?e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 20px"},className:"rehab-grid"},
+            ...rehabByCat.sort((a,b)=>b.total-a.total).map(c=>{
+              const pct=rb>0?(c.total/rb)*100:0;
+              return e("div",{key:c.name},
+                e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}},
+                  e("span",{style:{color:"#7a9cc5",display:"flex",alignItems:"center",gap:5}},
+                    e("span",{style:{width:6,height:6,borderRadius:"50%",background:CATEGORY_COLORS[c.name]||"#d4a017",display:"inline-block"}}),
+                    c.name
+                  ),
+                  e("span",{style:{color:"#f8f0d8",fontWeight:700}},fmt(c.total))
+                ),
+                e("div",{style:{background:"#071020",borderRadius:99,height:5}},
+                  e("div",{style:{width:Math.min(100,pct)+"%",height:"100%",background:CATEGORY_COLORS[c.name]||"#d4a017",borderRadius:99}})
+                )
+              );
+            })
+          )
+        :e("div",{style:{fontSize:13,color:"#4a6fa5",textAlign:"center",padding:"8px 0"}},"No rehab expenses yet.")
+    ),
+
+    // For General Expenses show simple total; for projects show acquisition
+    isGeneral&&e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+        e("div",{style:{fontSize:13,fontWeight:700,color:"#7a9cc5"}},"💼 Total Expenses"),
+        e("div",{style:{fontSize:22,fontWeight:800,color:"#f8f0d8"}},fmt(expenses.reduce((s,ex)=>s+parseFloat(ex.amount||0),0)))
+      )
+    ),
+    !isGeneral&&e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
+        e("div",{style:{fontSize:13,fontWeight:700,color:"#06b6d4"}},"🏦 Acquisition Costs"),
+        e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(acqSpent))
+      ),
+      acqByCat.length===0
+        ?e("div",{style:{fontSize:13,color:"#4a6fa5"}},"No acquisition expenses yet.")
+        :acqByCat.map(c=>e("div",{key:c.name,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1e3a5f"}},
+            e("span",{style:{display:"flex",alignItems:"center",gap:7,fontSize:13,color:"#cbd5e1"}},
+              e("span",{style:{width:8,height:8,borderRadius:"50%",background:CATEGORY_COLORS[c.name]||"#6b7280",flexShrink:0}}),
+              c.name
+            ),
+            e("span",{style:{fontWeight:700,color:"#f8f0d8"}},fmt(c.total))
+          )),
+      e("div",{style:{fontSize:11,color:"#2a4a7f",marginTop:8,fontStyle:"italic"}},"Excluded from rehab budget.")
+    ),
+
+    // Recent
+    recent.length>0&&e("div",{style:S.card},
+      e("div",{style:{fontSize:13,fontWeight:700,color:"#7a9cc5",marginBottom:12}},"Recent Expenses"),
+      ...recent.map(ex=>e("div",{key:ex.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:"1px solid #1e3a5f"}},
+        e("div",null,
+          e("div",{style:{fontSize:13,color:"#e2e8f0"}},ex.description),
+          e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.category+" · "+fmtDateShort(ex.date))
+        ),
+        e("span",{style:{fontWeight:700,fontSize:14,color:"#f8f0d8",whiteSpace:"nowrap",marginLeft:8}},fmt(ex.amount))
+      ))
+    )
+  );
+
+  // ── EXPENSES VIEW ──
+  const ExpensesView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
+      e("h2",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},"All Expenses"),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>openAddExpense()},"+ Add Expense")
+      )
+    ),
+    e("div",{style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
+      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,onChange:ev=>setFilter({...filter,search:ev.target.value})}),
+      e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>setFilter({...filter,category:ev.target.value})},
+        e("option",{value:""},"All Categories"),
+        e("optgroup",{label:"Acquisition"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
+        e("optgroup",{label:"Rehab"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
+      )
+    ),
+    filtered.length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"36px 16px",color:"#4a6fa5"}},
+          e("div",{style:{fontSize:28,marginBottom:8}},"🔍"),
+          e("div",{style:{fontWeight:600}},"No expenses found")
+        )
+      :e("div",null,
+          // Desktop table
+          e("div",{style:{...S.card,padding:0,overflow:"hidden"},className:"desktop-table"},
+            e("table",null,
+              e("thead",null,e("tr",null,
+                ...["Date","Description","Category","Vendor","Amount",""].map((h,i)=>e("th",{key:i,style:{...S.th,textAlign:h==="Amount"?"right":"left"}},h))
+              )),
+              e("tbody",null,...filtered.map(ex=>
+                e("tr",{key:ex.id,
+                  onMouseEnter:ev=>ev.currentTarget.style.background="#0f2548",
+                  onMouseLeave:ev=>ev.currentTarget.style.background=""},
+                  e("td",{style:S.td},e("span",{style:{fontSize:12,color:"#4a6fa5",whiteSpace:"nowrap"}},fmtDate(ex.date))),
+                  e("td",{style:S.td},
+                    e("div",null,ex.description),
+                    ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                  ),
+                  e("td",{style:S.td},e("span",{style:S.badge(ex.category)},ex.category)),
+                  e("td",{style:{...S.td,color:"#4a6fa5"}},ex.vendor||"—"),
+                  e("td",{style:{...S.td,textAlign:"right",fontWeight:700,color:"#f8f0d8",whiteSpace:"nowrap"}},fmt(ex.amount)),
+                  e("td",{style:{...S.td,whiteSpace:"nowrap"}},
+                    e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>openAddExpense(ex)},"✏️"),
+                    e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"🗑️")
+                  )
+                )
+              ))
+            )
+          ),
+          // Mobile cards
+          e("div",{className:"mobile-cards"},
+            ...filtered.map(ex=>e("div",{key:ex.id,style:{...S.card,marginBottom:10}},
+              e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}},
+                e("div",{style:{flex:1}},
+                  e("div",{style:{fontWeight:600,color:"#f8f0d8",fontSize:14}},ex.description),
+                  ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                ),
+                e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginLeft:8,whiteSpace:"nowrap"}},fmt(ex.amount))
+              ),
+              e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}},
+                e("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
+                  e("span",{style:S.badge(ex.category)},ex.category),
+                  e("span",{style:{fontSize:12,color:"#4a6fa5"}},fmtDateShort(ex.date)),
+                  ex.vendor&&e("span",{style:{fontSize:12,color:"#4a6fa5"}},ex.vendor)
+                ),
+                e("div",{style:{display:"flex",gap:4}},
+                  e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openAddExpense(ex)},"Edit"),
+                  e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"Delete")
+                )
+              )
+            ))
+          )
+        )
+  );
+
+  // ── TASKS VIEW ──
+  const taskStatusOrder={"To Do":0,"In Progress":1,"Blocked":2,"Done":3};
+  const filteredTasks=tasks.filter(t=>
+    (!taskFilter||t.status===taskFilter) &&
+    (!taskWorkFilter||t.category===taskWorkFilter)
+  ).sort((a,b)=>(taskStatusOrder[a.status]||0)-(taskStatusOrder[b.status]||0));
+
+  const TasksView=()=>loadingTasks?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
+      e("div",null,
+        e("h2",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},"Tasks"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},tasks.length+" task"+(tasks.length!==1?"s":"")+" · "+tasks.filter(t=>t.status==="Done").length+" done")
+      ),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>openAddTask()},"+ Add Task")
+      )
+    ),
+    e("div",{style:{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}},
+      e("button",{style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:600,border:"1px solid "+(taskFilter===""?"#d4a017":"#1e3a5f"),background:taskFilter===""?"#d4a01722":"transparent",color:taskFilter===""?"#d4a017":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskFilter("")},"All"),
+      ...TASK_STATUSES.map(s=>e("button",{key:s,style:{padding:"6px 14px",borderRadius:99,fontSize:12,fontWeight:600,border:"1px solid "+(taskFilter===s?TASK_STATUS_COLORS[s]:"#1e3a5f"),background:taskFilter===s?TASK_STATUS_COLORS[s]+"22":"transparent",color:taskFilter===s?TASK_STATUS_COLORS[s]:"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskFilter(s)},s))
+    ),
+    e("div",{style:{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}},
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter===""?"#10b981":"#1e3a5f"),background:taskWorkFilter===""?"#10b98122":"transparent",color:taskWorkFilter===""?"#10b981":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter("")},"All Work"),
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter==="Interior"?"#06b6d4":"#1e3a5f"),background:taskWorkFilter==="Interior"?"#06b6d422":"transparent",color:taskWorkFilter==="Interior"?"#06b6d4":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter(taskWorkFilter==="Interior"?"":"Interior")},"🏠 Interior"),
+      e("button",{style:{padding:"5px 12px",borderRadius:99,fontSize:11,fontWeight:600,border:"1px solid "+(taskWorkFilter==="Exterior"?"#f59e0b":"#1e3a5f"),background:taskWorkFilter==="Exterior"?"#f59e0b22":"transparent",color:taskWorkFilter==="Exterior"?"#f59e0b":"#7a9cc5",cursor:"pointer"},onClick:()=>setTaskWorkFilter(taskWorkFilter==="Exterior"?"":"Exterior")},"🏗️ Exterior")
+    ),
+    filteredTasks.length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"40px 16px",color:"#4a6fa5"}},
+          e("div",{style:{fontSize:28,marginBottom:8}},"✅"),
+          e("div",{style:{fontWeight:600}},"No tasks yet"),
+          e("button",{style:{...S.btn(),marginTop:14},onClick:()=>openAddTask()},"+ Add First Task")
+        )
+      :e("div",null,...filteredTasks.map(t=>{
+          const isDone=t.status==="Done";
+          const isOverdue=t.dueDate&&!isDone&&!(new Date(t.dueDate).getTime()>=new Date(new Date().toDateString()).getTime());
+          return e("div",{key:t.id,style:{...S.card,marginBottom:10,opacity:isDone?0.65:1,borderColor:isOverdue?"#ef444455":"#1e3a5f"}},
+            e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}},
+              e("div",{style:{flex:1}},
+                e("div",{style:{display:"flex",alignItems:"center",gap:7,marginBottom:3,flexWrap:"wrap"}},
+                  t.priority&&e("span",{style:{width:6,height:6,borderRadius:"50%",background:PRIORITY_COLORS[t.priority]||"#6b7280",flexShrink:0}}),
+                  e("span",{style:{fontWeight:700,fontSize:14,color:"#f8f0d8",textDecoration:isDone?"line-through":"none"}},t.task)
+                ),
+                t.notes&&e("div",{style:{fontSize:12,color:"#4a6fa5"}},t.notes)
+              ),
+              e("button",{
+                style:{background:TASK_STATUS_COLORS[t.status||"To Do"]+"22",color:TASK_STATUS_COLORS[t.status||"To Do"],border:"none",borderRadius:99,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"},
+                onClick:()=>cycleStatus(t)
+              },t.status||"To Do")
+            ),
+            e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginTop:6}},
+              e("div",{style:{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",fontSize:12,color:"#4a6fa5"}},
+                t.category&&e("span",{style:{background:"#1e3a5f",padding:"2px 8px",borderRadius:99,fontSize:11,color:"#7a9cc5"}},t.category),
+                t.assignee&&e("span",null,"👤 "+t.assignee),
+                t.dueDate&&e("span",{style:{color:isOverdue?"#ef4444":"#4a6fa5",fontWeight:isOverdue?700:400}},(isOverdue?"⚠️ ":"📅 ")+fmtDateShort(t.dueDate)),
+                t.milestone&&milestones.find(m=>m.id===t.milestone)&&e("span",{style:{background:"#8b5cf622",color:"#a78bfa",padding:"2px 8px",borderRadius:99,fontSize:11,fontWeight:600}},
+                  "🏁 "+new Date(milestones.find(m=>m.id===t.milestone)?.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
+                )
+              ),
+              e("div",{style:{display:"flex",gap:4}},
+                e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openAddTask(t)},"Edit"),
+                e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"task",id:t.id,name:t.task})},"Delete")
+              )
+            )
+          );
+        }))
+  );
+
+  // ── QUOTES VIEW ──
+  const quoteGroups = {};
+  quotes.forEach(q=>{
+    const key=q.item||"Other";
+    if(!quoteGroups[key]) quoteGroups[key]=[];
+    quoteGroups[key].push(q);
+  });
+  const groupNames = Object.keys(quoteGroups).sort();
+
+  const QuotesView=()=>loadingQuotes?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
+    e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
+      e("div",null,
+        e("h2",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},"Quotes"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},quotes.length+" quote"+(quotes.length!==1?"s":"")+" across "+groupNames.length+" item"+(groupNames.length!==1?"s":""))
+      ),
+      e("div",{className:"page-header-actions"},
+        e("button",{style:S.btn(),onClick:()=>openAddQuote()},"+ Add Quote")
+      )
+    ),
+    groupNames.length===0
+      ?e("div",{style:{...S.card,textAlign:"center",padding:"40px 16px",color:"#4a6fa5"}},
+          e("div",{style:{fontSize:28,marginBottom:8}},"💬"),
+          e("div",{style:{fontWeight:600}},"No quotes yet"),
+          e("p",{style:{fontSize:12,marginTop:6,marginBottom:14}},"Add quotes from different vendors to compare before deciding."),
+          e("button",{style:S.btn(),onClick:()=>openAddQuote()},"+ Add First Quote")
+        )
+      :e("div",null,...groupNames.map(groupName=>{
+          const groupQuotes=quoteGroups[groupName].sort((a,b)=>a.amount-b.amount);
+          const accepted=groupQuotes.find(q=>q.status==="Accepted");
+          const lowestAmt=Math.min(...groupQuotes.map(q=>q.amount));
+          return e("div",{key:groupName,style:{marginBottom:22}},
+            e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+              e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8"}},groupName),
+              accepted&&e("span",{style:{fontSize:11,color:"#10b981",fontWeight:600}},"✓ "+accepted.vendor+" accepted")
+            ),
+            e("div",{style:{display:"flex",flexDirection:"column",gap:8}},
+              ...groupQuotes.map(q=>{
+                const isLowest=q.amount===lowestAmt && q.status==="Pending";
+                return e("div",{key:q.id,style:{...S.card,padding:"14px 16px",borderColor:q.status==="Accepted"?"#10b981":q.status==="Rejected"?"#1e3a5f":isLowest?"#d4a01755":"#1e3a5f",opacity:q.status==="Rejected"?0.5:1}},
+                  e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}},
+                    e("div",{style:{flex:1}},
+                      e("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:2}},
+                        e("span",{style:{fontWeight:700,fontSize:14,color:"#f8f0d8"}},q.vendor),
+                        isLowest&&e("span",{style:{fontSize:10,color:"#d4a017",fontWeight:700,background:"#d4a01722",padding:"1px 7px",borderRadius:99}},"LOWEST")
+                      ),
+                      q.notes&&e("div",{style:{fontSize:12,color:"#4a6fa5"}},q.notes),
+                      e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:3}},q.category)
+                    ),
+                    e("div",{style:{textAlign:"right"}},
+                      e("div",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},fmt(q.amount)),
+                      e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:99,background:QUOTE_STATUS_COLORS[q.status||"Pending"]+"22",color:QUOTE_STATUS_COLORS[q.status||"Pending"]}},q.status||"Pending")
+                    )
+                  ),
+                  e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+                    q.status==="Pending"&&e("button",{style:{background:"#10b98122",border:"none",color:"#10b981",cursor:"pointer",padding:"6px 12px",borderRadius:6,fontSize:12,fontWeight:600},onClick:()=>acceptQuote(q),disabled:saving},"✓ Accept"),
+                    q.status==="Pending"&&e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"6px 12px",borderRadius:6,fontSize:12},onClick:()=>rejectQuote(q),disabled:saving},"Reject"),
+                    e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"6px 12px",borderRadius:6,fontSize:12},onClick:()=>openAddQuote(q)},"Edit"),
+                    e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"6px 12px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"quote",id:q.id,name:q.vendor+" — "+q.item})},"Delete")
+                  )
+                );
+              })
+            )
+          );
+        }))
+  );
+
+  // ── PLANNING VIEW ──
+  const PlanningView=()=>{
+    const today=new Date();
+    const getStatus=ms=>{
+      if(msStatus[ms.id]==="done") return "done";
+      if(msStatus[ms.id]==="in-progress") return "in-progress";
+      return !(new Date(ms.date).getTime()>=today.getTime())?"overdue":"upcoming";
+    };
+    const sCol={done:"#10b981","in-progress":"#f59e0b",overdue:"#ef4444",upcoming:"#4a6fa5"};
+    const sIcon={done:"✅","in-progress":"🔄",overdue:"⚠️",upcoming:"📅"};
+    return e("div",null,
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}},
+        e("div",null,
+          e("div",{style:{fontSize:20,fontWeight:900,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Project Planning"),
+          e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},activeProject?.name||"")
+        ),
+        e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>setShowAddMs(true)},"+ Milestone")
+      ),
+      e("div",{style:{display:"flex",gap:8,marginBottom:24}},
+        ["weekly","daily"].map(v=>e("button",{key:v,style:{padding:"7px 18px",borderRadius:99,fontSize:12,fontWeight:700,border:"1px solid "+(planView===v?"#d4a017":"#1e3a5f"),background:planView===v?"#d4a01722":"transparent",color:planView===v?"#d4a017":"#7a9cc5",cursor:"pointer"},onClick:()=>setPlanView(v)},v.charAt(0).toUpperCase()+v.slice(1)))
+      ),
+      e("div",{style:{position:"relative"}},
+        e("div",{style:{position:"absolute",left:18,top:0,bottom:0,width:2,background:"#1e3a5f"}}),
+        milestones.map(ms=>{
+          const st=getStatus(ms);
+          const col=sCol[st];
+          const isSel=selMs===ms.id;
+          const dateStr=new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+          const comments=msComments[ms.id]||[];
+          const cInput=commentInput[ms.id]||"";
+          // Task progress for this milestone
+          const msTasks=tasks.filter(t=>t.milestone===ms.id);
+          const msDone=msTasks.filter(t=>t.status==="Done").length;
+          const msTotal=msTasks.length;
+          const msPct=msTotal>0?Math.round((msDone/msTotal)*100):0;
+          return e("div",{key:ms.id,style:{display:"flex",gap:16,marginBottom:20,position:"relative"}},
+            e("div",{style:{flexShrink:0,width:38,height:38,borderRadius:"50%",background:col+"22",border:`2px solid ${col}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,zIndex:2,cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},sIcon[st]),
+            e("div",{style:{flex:1,background:"#0d1f3c",border:`1px solid ${isSel?col:"#1e3a5f"}`,borderRadius:12,padding:"14px 16px"}},
+              // Header row
+              e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}},
+                e("div",{style:{cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
+                  e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8",letterSpacing:"-0.3px"}},dateStr),
+                  e("div",{style:{fontSize:11,fontWeight:700,color:col,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2}},ms.week)
+                ),
+                e("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                  e("span",{style:{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:99,background:col+"22",color:col}},sIcon[st]+" "+(st==="in-progress"?"In Progress":st.charAt(0).toUpperCase()+st.slice(1))),
+                  e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:600},
+                    onClick:ev=>{ev.stopPropagation();
+                      const interior=ms.items.find(i=>i.type==="Interior")?.text||"";
+                      const exterior=ms.items.find(i=>i.type==="Exterior")?.text||"";
+                      setEditMsForm({date:ms.date,week:ms.week,interior,exterior});
+                      setEditMs(ms.id);
+                    }},"Edit")
+                )
+              ),
+              // Work items
+              e("div",{style:{cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
+                ms.items.map((item,j)=>e("div",{key:j,style:{display:"flex",gap:8,alignItems:"flex-start",marginTop:6}},
+                  e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99,background:item.type==="Interior"?"#06b6d422":"#f59e0b22",color:item.type==="Interior"?"#06b6d4":"#f59e0b",flexShrink:0}},item.type),
+                  e("span",{style:{fontSize:13,color:"#cbd5e1",lineHeight:1.4}},item.text)
+                ))
+              ),
+              // Task progress bar
+              msTotal>0&&e("div",{style:{marginTop:12,cursor:"pointer"},onClick:()=>setSelMs(isSel?null:ms.id)},
+                e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:11,color:"#4a6fa5",marginBottom:4}},
+                  e("span",null,"🏁 Tasks"),
+                  e("span",{style:{fontWeight:700,color:msPct===100?"#10b981":"#f8f0d8"}},msDone+"/"+msTotal+" done ("+msPct+"%)")
+                ),
+                e("div",{style:{background:"#071020",borderRadius:99,height:6}},
+                  e("div",{style:{width:msPct+"%",height:"100%",background:msPct===100?"#10b981":msPct>50?"#f59e0b":"#4a6fa5",borderRadius:99,transition:"width .4s"}})
+                )
+              ),
+              // Expanded section
+              isSel&&e("div",null,
+                // Linked tasks list
+                msTotal>0&&e("div",{style:{marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"🏁 Linked Tasks"),
+                  msTasks.map(t=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid #071020"}},
+                    e("span",{style:{width:8,height:8,borderRadius:"50%",background:TASK_STATUS_COLORS[t.status||"To Do"],flexShrink:0}}),
+                    e("span",{style:{fontSize:12,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",flex:1,textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+                    e("span",{style:{fontSize:10,fontWeight:700,color:TASK_STATUS_COLORS[t.status||"To Do"]}},t.status||"To Do")
+                  ))
+                ),
+                // Status buttons
+                e("div",{style:{display:"flex",gap:8,marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+                  e("span",{style:{fontSize:11,color:"#4a6fa5",alignSelf:"center"}},"Mark as:"),
+                  ["in-progress","done"].map(s=>e("button",{key:s,style:{padding:"4px 12px",borderRadius:99,fontSize:11,fontWeight:700,border:`1px solid ${sCol[s]}`,background:msStatus[ms.id]===s?sCol[s]+"33":"transparent",color:sCol[s],cursor:"pointer"},
+                    onClick:ev=>{ev.stopPropagation();setMsStatus(p=>({...p,[ms.id]:p[ms.id]===s?"":s}));}},
+                    s==="in-progress"?"🔄 In Progress":"✅ Done"
+                  ))
+                ),
+                // Comments section
+                e("div",{style:{marginTop:14,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}},"💬 Comments"),
+                  comments.length===0&&e("div",{style:{fontSize:12,color:"#2a4a7f",marginBottom:8}},"No comments yet"),
+                  comments.map((c,ci)=>e("div",{key:ci,style:{background:"#071020",borderRadius:8,padding:"8px 10px",marginBottom:6}},
+                    e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.5}},c.text),
+                    e("div",{style:{fontSize:10,color:"#2a4a7f",marginTop:3}},c.ts)
+                  )),
+                  e("div",{style:{display:"flex",gap:8,marginTop:6}},
+                    e("input",{style:{...S.input,flex:1,padding:"8px 12px",fontSize:12},placeholder:"Add a comment…",value:cInput,
+                      onChange:ev=>setCommentInput(p=>({...p,[ms.id]:ev.target.value})),
+                      onKeyDown:ev=>{if(ev.key==="Enter"&&cInput.trim()){
+                        const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+                        setMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cInput.trim(),ts}]}));
+                        setCommentInput(p=>({...p,[ms.id]:""}));
+                      }}
+                    }),
+                    e("button",{style:{...S.btn(),padding:"8px 14px",fontSize:12},onClick:()=>{
+                      if(!cInput.trim())return;
+                      const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+                      setMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cInput.trim(),ts}]}));
+                      setCommentInput(p=>({...p,[ms.id]:""}));
+                    }},"Add")
+                  )
+                )
+              )
+            )
+          );
+        }),
+        showAddMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+          e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+            e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Milestone"),
+            [["week","Phase Name","e.g. Rough-In, Finishes","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","e.g. Paint touchups completed","text"],["exterior","🏗️ Exterior Work","e.g. Final walkthrough","text"]].map(([k,label,ph,t])=>
+              e("div",{key:k,style:{marginBottom:12}},
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}},label),
+                e("input",{type:t,style:S.input,placeholder:ph,value:msForm[k],onChange:ev=>setMsForm(f=>({...f,[k]:ev.target.value}))})
+              )
+            ),
+            e("div",{style:{display:"flex",gap:10,marginTop:8}},
+              e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>{setShowAddMs(false);setMsForm({date:"",week:"",interior:"",exterior:""});}},"Cancel"),
+              e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+                if(!msForm.date||!msForm.week)return;
+                const items=[];
+                if(msForm.interior)items.push({type:"Interior",text:msForm.interior});
+                if(msForm.exterior)items.push({type:"Exterior",text:msForm.exterior});
+                setMilestones(p=>[...p,{id:"ms-"+Date.now(),date:msForm.date,week:msForm.week,items}].sort((a,b)=>new Date(a.date)-new Date(b.date)));
+                setShowAddMs(false);setMsForm({date:"",week:"",interior:"",exterior:""});
+              }},"Add")
+            )
+          )
+        ),
+        editMs&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+          e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+            e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Milestone"),
+            [["week","Phase Name","e.g. Rough-In, Finishes","text"],["date","Target Date","","date"],["interior","🏠 Interior Work","","text"],["exterior","🏗️ Exterior Work","","text"]].map(([k,label,ph,t])=>
+              e("div",{key:k,style:{marginBottom:12}},
+                e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}},label),
+                e("input",{type:t,style:S.input,placeholder:ph,value:editMsForm[k],onChange:ev=>setEditMsForm(f=>({...f,[k]:ev.target.value}))})
+              )
+            ),
+            e("div",{style:{display:"flex",gap:10,marginTop:8}},
+              e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditMs(null)},"Cancel"),
+              e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},
+                onClick:()=>{setMilestones(p=>p.filter(m=>m.id!==editMs));setEditMs(null);setSelMs(null);}
+              },"Delete"),
+              e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+                if(!editMsForm.date||!editMsForm.week)return;
+                const items=[];
+                if(editMsForm.interior)items.push({type:"Interior",text:editMsForm.interior});
+                if(editMsForm.exterior)items.push({type:"Exterior",text:editMsForm.exterior});
+                setMilestones(p=>p.map(m=>m.id===editMs?{...m,date:editMsForm.date,week:editMsForm.week,items}:m).sort((a,b)=>new Date(a.date)-new Date(b.date)));
+                setEditMs(null);
+              }},"Save")
+            )
+          )
+        )
+      )
+    );
+  };
+
+  // ── ADD GENERAL TASK MODAL — own component so typing doesn't re-render parent ──
+  const AddMgmtTaskModal=()=>{
+    const [localForm,setLocalForm] = useState({task:"",assignee:"",notes:""});
+    const submit=()=>{
+      if(!localForm.task)return;
+      setMgmtTasks(p=>[...p,{id:"mt-"+Date.now(),task:localForm.task,status:"To Do",assignee:localForm.assignee,notes:localForm.notes}]);
+      setShowAddMgmtTask(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add General Task"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Task *"),
+          e("input",{style:S.input,placeholder:"e.g. Call lender about next deal",autoFocus:true,
+            value:localForm.task,
+            onChange:ev=>setLocalForm(f=>({...f,task:ev.target.value})),
+            onKeyDown:ev=>{if(ev.key==="Enter")submit();}
+          })
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Assign To"),
+          e("input",{style:S.input,placeholder:"e.g. Me, Malik, Partner",
+            value:localForm.assignee,
+            onChange:ev=>setLocalForm(f=>({...f,assignee:ev.target.value}))
+          })
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("input",{style:S.input,placeholder:"Optional",
+            value:localForm.notes,
+            onChange:ev=>setLocalForm(f=>({...f,notes:ev.target.value}))
+          })
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddMgmtTask(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── NEW CATEGORY INLINE INPUT ──
+  const NewCategoryInput=({onSave,onCancel})=>{
+    const [val,setVal]=useState("");
+    return e("div",{style:{display:"flex",gap:8,marginTop:8}},
+      e("input",{style:{...S.input,flex:1,fontSize:12,padding:"7px 10px"},
+        placeholder:"Category name…",autoFocus:true,value:val,
+        onChange:ev=>setVal(ev.target.value),
+        onKeyDown:ev=>{if(ev.key==="Enter"&&val.trim())onSave(val.trim());if(ev.key==="Escape")onCancel();}
+      }),
+      e("button",{style:{...S.btn(),padding:"7px 12px",fontSize:12},onClick:()=>{if(val.trim())onSave(val.trim());}},"Add"),
+      e("button",{style:{...S.btn("ghost"),padding:"7px 10px",fontSize:12},onClick:onCancel},"✕")
+    );
+  };
+
+  // ── ADD VENDOR MODAL ──
+  const AddVendorModal=()=>{
+    const defaultCat = vendorCat==="All" ? VENDOR_CATEGORIES[0] : vendorCat;
+    const [lf,setLf]=useState({name:"",phone:"",email:"",notes:"",category:defaultCat});
+    const [showNewCat,setShowNewCat]=useState(false);
+    const submit=()=>{
+      if(!lf.name)return;
+      setVendors(prev=>({...prev,[lf.category]:[...(prev[lf.category]||[]),{id:"v-"+Date.now(),name:lf.name,phone:lf.phone,email:lf.email,notes:lf.notes}]}));
+      setShowAddVendor(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Vendor"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Category"),
+          e("select",{style:S.input,value:lf.category,onChange:ev=>{
+            if(ev.target.value==="__new__") setShowNewCat(true);
+            else{setLf(f=>({...f,category:ev.target.value}));setShowNewCat(false);}
+          }},
+            VENDOR_CATEGORIES.map(cat=>e("option",{key:cat,value:cat},cat)),
+            e("option",{value:"__new__"},"+ Add New Category…")
+          ),
+          showNewCat&&e(NewCategoryInput,{key:"new-cat-modal",
+            onSave:(name)=>{setVendorCategories(prev=>[...prev,name]);setLf(f=>({...f,category:name}));setShowNewCat(false);},
+            onCancel:()=>setShowNewCat(false)
+          })
+        ),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Name *"),e("input",{style:S.input,placeholder:"Company or person name",autoFocus:true,value:lf.name,onChange:ev=>setLf(f=>({...f,name:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter")submit();}})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Phone"),e("input",{style:S.input,placeholder:"(804) 555-0000",type:"tel",value:lf.phone,onChange:ev=>setLf(f=>({...f,phone:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Email"),e("input",{style:S.input,placeholder:"contact@example.com",type:"email",value:lf.email,onChange:ev=>setLf(f=>({...f,email:ev.target.value}))})),
+        e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"Pricing, ratings, notes…",value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddVendor(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── EDIT VENDOR MODAL ──
+  const EditVendorModal=({vendorId,category})=>{
+    const existing=(vendors[category]||[]).find(v=>v.id===vendorId)||{};
+    const [lf,setLf]=useState({name:existing.name||"",phone:existing.phone||"",email:existing.email||"",notes:existing.notes||""});
+    const save=()=>{
+      setVendors(prev=>({...prev,[category]:(prev[category]||[]).map(v=>v.id===vendorId?{...v,...lf}:v)}));
+      setEditVendorId(null);
+    };
+    const del=()=>{
+      setVendors(prev=>({...prev,[category]:(prev[category]||[]).filter(v=>v.id!==vendorId)}));
+      setEditVendorId(null);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:4}},"Edit Vendor"),
+        e("div",{style:{fontSize:12,color:"#4a6fa5",marginBottom:16}},category),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Name *"),e("input",{style:S.input,autoFocus:true,value:lf.name,onChange:ev=>setLf(f=>({...f,name:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Phone"),e("input",{style:S.input,type:"tel",value:lf.phone,onChange:ev=>setLf(f=>({...f,phone:ev.target.value}))})),
+        e("div",{style:{marginBottom:12}},e("label",{style:S.label},"Email"),e("input",{style:S.input,type:"email",value:lf.email,onChange:ev=>setLf(f=>({...f,email:ev.target.value}))})),
+        e("div",{style:{marginBottom:20}},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})),
+        e("div",{style:{display:"flex",gap:8}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditVendorId(null)},"Cancel"),
+          e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},onClick:del},"Delete"),
+          e("button",{style:{...S.btn(),flex:1},onClick:save},"Save")
+        )
+      )
+    );
+  };
+
+  // ── VENDORS VIEW ──
+  const VendorsView=()=>{
+    const allVendors = VENDOR_CATEGORIES.flatMap(cat=>(vendors[cat]||[]).map(v=>({...v,category:cat})));
+    const isAll = vendorCat==="All";
+    const displayVendors = isAll ? allVendors : (vendors[vendorCat]||[]).map(v=>({...v,category:vendorCat}));
+
+    return e("div",null,
+      // Header
+      e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          e("div",{style:{width:36,height:36,borderRadius:8,background:"#06b6d422",border:"1px solid #06b6d4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}},"📇"),
+          e("div",null,
+            e("div",{style:{fontWeight:900,fontSize:20,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Vendors & Contacts"),
+            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},allVendors.length+" vendors across "+VENDOR_CATEGORIES.filter(c=>(vendors[c]||[]).length>0).length+" categories")
+          )
+        ),
+        e("button",{style:{...S.btn(),fontSize:12,padding:"7px 14px"},onClick:()=>setShowAddVendor(true)},"+ Add Vendor")
+      ),
+
+      // Dropdown + new category
+      e("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:20}},
+        e("div",{style:{display:"flex",gap:8}},
+          e("select",{style:{...S.input,flex:1,fontSize:13},value:vendorCat,onChange:ev=>{
+            if(ev.target.value==="__new__"){setShowNewVendorCat(true);}
+            else{setVendorCat(ev.target.value);setShowNewVendorCat(false);}
+          }},
+            e("option",{value:"All"},"All Vendors ("+allVendors.length+")"),
+            VENDOR_CATEGORIES.map(cat=>e("option",{key:cat,value:cat},
+              cat+(vendors[cat]?.length?" ("+vendors[cat].length+")":"")
+            )),
+            e("option",{value:"__new__"},"+ Add New Category…")
+          ),
+          vendorCat!=="All"&&e("button",{
+            style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"0 12px",cursor:"pointer",fontSize:12,fontWeight:700,flexShrink:0,whiteSpace:"nowrap"},
+            onClick:()=>{
+              if((vendors[vendorCat]||[]).length>0){
+                if(!window.confirm("This will also delete all "+vendors[vendorCat].length+" vendor(s) in \""+vendorCat+"\". Continue?"))return;
+              }
+              setVendorCategories(prev=>prev.filter(c=>c!==vendorCat));
+              setVendors(prev=>{const n={...prev};delete n[vendorCat];return n;});
+              setVendorCat("All");
+            }},"🗑 Remove")
+        ),
+        showNewVendorCat&&e(NewCategoryInput,{key:"new-cat-vendor",
+          onSave:(name)=>{setVendorCategories(prev=>[...prev,name]);setVendorCat(name);setShowNewVendorCat(false);},
+          onCancel:()=>setShowNewVendorCat(false)
+        })
+      ),
+
+      // Vendor cards
+      displayVendors.length===0
+        ?e("div",{style:{...S.card,textAlign:"center",padding:"40px 16px"}},
+            e("div",{style:{fontSize:32,marginBottom:10}},"📇"),
+            e("div",{style:{color:"#4a6fa5",fontSize:13,marginBottom:12}},
+              isAll?"No vendors added yet":"No "+vendorCat.toLowerCase()+" added yet"
+            ),
+            e("button",{style:{...S.btn(),fontSize:12},onClick:()=>setShowAddVendor(true)},"Add First Vendor")
+          )
+        :e("div",{style:{display:"flex",flexDirection:"column",gap:10}},
+            displayVendors.map(v=>e("div",{key:v.id,style:{...S.card,padding:"14px 16px"}},
+              e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}},
+                e("div",{style:{flex:1}},
+                  e("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:6}},
+                    e("div",{style:{fontWeight:700,fontSize:15,color:"#f8f0d8"}},v.name),
+                    isAll&&e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#06b6d422",color:"#06b6d4"}},v.category)
+                  ),
+                  e("div",{style:{display:"flex",flexWrap:"wrap",gap:10}},
+                    v.phone&&e("a",{href:"tel:"+v.phone,style:{display:"flex",alignItems:"center",gap:5,fontSize:13,color:"#10b981",textDecoration:"none",fontWeight:600}},
+                      "📞 ",v.phone
+                    ),
+                    v.email&&e("a",{href:"mailto:"+v.email,style:{display:"flex",alignItems:"center",gap:5,fontSize:13,color:"#06b6d4",textDecoration:"none",fontWeight:600}},
+                      "✉️ ",v.email
+                    )
+                  ),
+                  v.notes&&e("div",{style:{fontSize:12,color:"#7a9cc5",marginTop:8,lineHeight:1.5}},v.notes)
+                ),
+                e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:11,fontWeight:600,flexShrink:0,marginLeft:10},
+                  onClick:()=>{setVendorCat(v.category);setEditVendorId(v.id);}},"Edit")
+              )
+            ))
+          ),
+
+      showAddVendor&&e(AddVendorModal,{key:"add-vendor-modal"}),
+      editVendorId&&e(EditVendorModal,{key:"edit-vendor-modal",vendorId:editVendorId,category:vendorCat})
+    );
+  };
+
+  // ── ADD PIPELINE MODAL ──
+  const AddMgmtMsModal=()=>{
+    const [lf,setLf]=useState({week:"",date:"",notes:""});
+    const submit=()=>{
+      if(!lf.week)return;
+      setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:lf.date,week:lf.week,notes:lf.notes}].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)));
+      setShowAddMgmtMs(false);
+    };
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Add Pipeline Item"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Project / Goal Name *"),
+          e("input",{style:S.input,placeholder:"e.g. 4503 Monument Ave",autoFocus:true,value:lf.week,onChange:ev=>setLf(f=>({...f,week:ev.target.value})),onKeyDown:ev=>{if(ev.key==="Enter")submit();}})
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Target Date"),
+          e("input",{type:"date",style:S.input,value:lf.date,onChange:ev=>setLf(f=>({...f,date:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},placeholder:"e.g. ARV ~$450K, targeting Q4",value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setShowAddMgmtMs(false)},"Cancel"),
+          e("button",{style:{...S.btn(),flex:1},onClick:submit},"Add")
+        )
+      )
+    );
+  };
+
+  // ── EDIT PIPELINE MODAL ──
+  const EditMgmtMsModal=({msId})=>{
+    const ms=mgmtMilestones.find(m=>m.id===msId)||{};
+    const [lf,setLf]=useState({week:ms.week||"",date:ms.date||"",notes:ms.notes||""});
+    return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:400,width:"100%"}},
+        e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:16}},"Edit Pipeline Item"),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Name"),
+          e("input",{style:S.input,autoFocus:true,value:lf.week,onChange:ev=>setLf(f=>({...f,week:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:12}},
+          e("label",{style:S.label},"Target Date"),
+          e("input",{type:"date",style:S.input,value:lf.date,onChange:ev=>setLf(f=>({...f,date:ev.target.value}))})
+        ),
+        e("div",{style:{marginBottom:20}},
+          e("label",{style:S.label},"Notes"),
+          e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:lf.notes,onChange:ev=>setLf(f=>({...f,notes:ev.target.value}))})
+        ),
+        e("div",{style:{display:"flex",gap:10}},
+          e("button",{style:{...S.btn("ghost"),flex:1},onClick:()=>setEditMgmtMs(null)},"Cancel"),
+          e("button",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#ef4444",borderRadius:8,padding:"10px",flex:1,cursor:"pointer",fontWeight:700,fontSize:13},
+            onClick:()=>{setMgmtMilestones(p=>p.filter(m=>m.id!==msId));setEditMgmtMs(null);}},"Delete"),
+          e("button",{style:{...S.btn(),flex:1},onClick:()=>{
+            setMgmtMilestones(p=>p.map(m=>m.id===msId?{...m,week:lf.week,date:lf.date,notes:lf.notes}:m));
+            setEditMgmtMs(null);
+          }},"Save")
+        )
+      )
+    );
+  };
+
+  const ManagementView=()=>{
+    const completed=projects.filter(p=>p.description?.includes("Sold"));
+    const inProgress=projects.filter(p=>!p.description?.includes("Sold")&&!p.description?.includes("No budget"));
+    const genProj=projects.find(p=>p.description?.includes("No budget"));
+    const today=new Date();
+    const sCol2={done:"#10b981","in-progress":"#f59e0b",upcoming:"#4a6fa5"};
+
+    return e("div",null,
+      // Header
+      e("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:24}},
+        e("div",{style:{width:40,height:40,borderRadius:10,background:"#d4a01722",border:"1px solid #d4a017",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}},"📋"),
+        e("div",null,
+          e("div",{style:{fontWeight:900,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Management"),
+          e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},"Pipeline · Expenses · Tasks · Planning")
+        )
+      ),
+
+      // Stats row
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}},
+        e("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:10,padding:"14px 12px",textAlign:"center"}},
+          e("div",{style:{fontSize:22,fontWeight:900,color:"#10b981"}},completed.length),
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginTop:4}},"Completed")
+        ),
+        e("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:10,padding:"14px 12px",textAlign:"center"}},
+          e("div",{style:{fontSize:22,fontWeight:900,color:"#f59e0b"}},inProgress.length),
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginTop:4}},"In Progress")
+        ),
+        e("div",{style:{background:"#0d1f3c",border:"1px solid #1e3a5f",borderRadius:10,padding:"14px 12px",textAlign:"center"}},
+          e("div",{style:{fontSize:22,fontWeight:900,color:"#a78bfa"}},mgmtMilestones.length),
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",marginTop:4}},"Pipeline")
+        )
+      ),
+
+      // In Progress Projects
+      inProgress.length>0&&e("div",{style:{...S.card,marginBottom:16}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"#f59e0b",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"🔨 In Progress"),
+        inProgress.map(p=>e("div",{key:p.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #1e3a5f",cursor:"pointer"},
+          onClick:()=>{setActiveId(p.id);setExpenses([]);setTasks([]);setQuotes([]);setReloadTick(t=>t+1);navTo("dashboard");}},
+          e("div",null,
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},p.name),
+            e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},p.description?.split("|")[0]?.trim()||"Fix & Flip")
+          ),
+          e("span",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open →")
+        ))
+      ),
+
+      // Pipeline / Upcoming
+      e("div",{style:{...S.card,marginBottom:16}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
+          e("div",{style:{fontSize:12,fontWeight:700,color:"#a78bfa",textTransform:"uppercase",letterSpacing:"0.06em"}},"🏁 Pipeline & Upcoming"),
+          e("button",{style:{...S.btn(),fontSize:11,padding:"5px 12px"},onClick:()=>setShowAddMgmtMs(true)},"+ Add")
+        ),
+        mgmtMilestones.length===0
+          ?e("div",{style:{fontSize:12,color:"#2a4a7f",padding:"8px 0"}},"No pipeline items yet — add upcoming deals or goals")
+          :mgmtMilestones.map(ms=>{
+            const isSel=mgmtSelMs===ms.id;
+            const st=mgmtMsStatus[ms.id]||"upcoming";
+            const col=sCol2[st];
+            const comments=mgmtMsComments[ms.id]||[];
+            const cIn=mgmtCommentInput[ms.id]||"";
+            return e("div",{key:ms.id,style:{background:"#071020",borderRadius:10,padding:"12px 14px",marginBottom:8,border:`1px solid ${isSel?col:"#1e3a5f"}`}},
+              e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"},onClick:()=>setMgmtSelMs(isSel?null:ms.id)},
+                e("div",null,
+                  e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8"}},ms.week),
+                  ms.date&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}))
+                ),
+                e("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                  e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:col+"22",color:col}},st==="in-progress"?"🔄 Active":st==="done"?"✅ Done":"📅 Planned"),
+                  e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11},
+                    onClick:ev=>{ev.stopPropagation();setEditMgmtMs(ms.id);}
+                  },"Edit")
+                )
+              ),
+              ms.notes&&e("div",{style:{fontSize:12,color:"#7a9cc5",marginTop:6}},ms.notes),
+              isSel&&e("div",null,
+                e("div",{style:{display:"flex",gap:8,marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
+                  e("span",{style:{fontSize:11,color:"#4a6fa5",alignSelf:"center"}},"Status:"),
+                  ["in-progress","done"].map(s=>e("button",{key:s,style:{padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700,border:`1px solid ${sCol2[s]}`,background:mgmtMsStatus[ms.id]===s?sCol2[s]+"33":"transparent",color:sCol2[s],cursor:"pointer"},
+                    onClick:ev=>{ev.stopPropagation();setMgmtMsStatus(p=>({...p,[ms.id]:p[ms.id]===s?"upcoming":s}));}},
+                    s==="in-progress"?"🔄 Active":"✅ Done"
+                  ))
+                ),
+                e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
+                  e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",marginBottom:6}},"💬 Notes & Comments"),
+                  comments.map((c,ci)=>e("div",{key:ci,style:{fontSize:12,color:"#7a9cc5",padding:"4px 0",borderBottom:"1px solid #071020"}},c.text+" · "+c.ts)),
+                  e("div",{style:{display:"flex",gap:6,marginTop:6}},
+                    e("input",{style:{...S.input,flex:1,padding:"6px 10px",fontSize:12},placeholder:"Add note…",value:cIn,
+                      onChange:ev=>setMgmtCommentInput(p=>({...p,[ms.id]:ev.target.value})),
+                      onKeyDown:ev=>{if(ev.key==="Enter"&&cIn.trim()){
+                        const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+                        setMgmtMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cIn.trim(),ts}]}));
+                        setMgmtCommentInput(p=>({...p,[ms.id]:""}));
+                      }}
+                    }),
+                    e("button",{style:{...S.btn(),padding:"6px 12px",fontSize:12},onClick:()=>{
+                      const cIn2=mgmtCommentInput[ms.id]||"";
+                      if(!cIn2.trim())return;
+                      const ts=new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
+                      setMgmtMsComments(p=>({...p,[ms.id]:[...(p[ms.id]||[]),{text:cIn2.trim(),ts}]}));
+                      setMgmtCommentInput(p=>({...p,[ms.id]:""}));
+                    }},"Add")
+                  )
+                )
+              )
+            );
+          })
+      ),
+
+      // General Tasks
+      e("div",{style:{...S.card,marginBottom:16}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
+          e("div",{style:{fontSize:12,fontWeight:700,color:"#06b6d4",textTransform:"uppercase",letterSpacing:"0.06em"}},"✅ General Tasks"),
+          e("button",{style:{...S.btn(),fontSize:11,padding:"5px 12px"},onClick:()=>setShowAddMgmtTask(true)},"+ Task")
+        ),
+        mgmtTasks.length===0
+          ?e("div",{style:{fontSize:12,color:"#2a4a7f",padding:"8px 0"}},"No tasks yet")
+          :mgmtTasks.map(t=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #071020"}},
+            e("button",{style:{width:20,height:20,borderRadius:4,border:`2px solid ${t.status==="Done"?"#10b981":"#1e3a5f"}`,background:t.status==="Done"?"#10b98133":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12},
+              onClick:()=>setMgmtTasks(p=>p.map(mt=>mt.id===t.id?{...mt,status:mt.status==="Done"?"To Do":"Done"}:mt))
+            },t.status==="Done"?"✓":""),
+            e("div",{style:{flex:1}},
+              e("div",{style:{fontSize:13,color:t.status==="Done"?"#4a6fa5":"#cbd5e1",textDecoration:t.status==="Done"?"line-through":"none"}},t.task),
+              t.assignee&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"👤 "+t.assignee)
+            ),
+            e("button",{style:{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:12,padding:"2px 6px"},
+              onClick:()=>setMgmtTasks(p=>p.filter(mt=>mt.id!==t.id))},"×")
+          ))
+      ),
+
+      // General Expenses link
+      genProj&&e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(genProj.id);setExpenses([]);setReloadTick(t=>t+1);navTo("expenses");}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+          e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+            e("div",{style:{fontSize:20}},"💼"),
+            e("div",null,
+              e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},"General Expenses"),
+              e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"Company-wide expenses")
+            )
+          ),
+          e("span",{style:{color:"#d4a017",fontSize:13,fontWeight:600}},"View →")
+        )
+      ),
+
+      // Completed Projects
+      completed.length>0&&e("div",{style:{...S.card,marginBottom:16}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"#10b981",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"✅ Completed Projects"),
+        completed.map(p=>e("div",{key:p.id,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #1e3a5f",cursor:"pointer"},
+          onClick:()=>{setActiveId(p.id);setExpenses([]);setTasks([]);setQuotes([]);setReloadTick(t=>t+1);navTo("dashboard");}},
+          e("div",null,
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},p.name),
+            e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},p.description?.split("|")[0]?.trim()||"Fix & Flip")
+          ),
+          e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"#ef444422",color:"#ef4444"}},"Sold")
+        ))
+      ),
+
+      // Modals
+      showAddMgmtMs&&e(AddMgmtMsModal,{key:"add-mgmt-ms-modal"}),
+      editMgmtMs&&e(EditMgmtMsModal,{key:"edit-mgmt-ms-modal",msId:editMgmtMs}),
+      showAddMgmtTask&&e(AddMgmtTaskModal,{key:"add-mgmt-task-modal"})
+    );
+  };
+
+  return e("div",{style:S.root},
+    e("div",{style:S.header},
+      e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8",display:"flex",alignItems:"center",gap:8,cursor:"pointer"},onClick:()=>navTo("home"),className:"header-title"},
+        e("div",{style:{width:28,height:28,background:"#1e3a5f",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#d4a017",flexShrink:0}},"N"),
+        "NextPhase Ventures"
+      ),
+      saving&&e("span",{style:{fontSize:12,color:"#d4a017",marginLeft:4}},"Saving…"),
+      activeProject&&view!=="home"&&e("div",{style:{marginLeft:"auto"}},
+        e("button",{style:{...S.btn(),fontSize:13},onClick:()=>view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense()},view==="tasks"?"+ Task":view==="quotes"?"+ Quote":"+ Add")
+      )
+    ),
+
+    e("div",{style:{display:"flex",flex:1,minHeight:0}},
+      e(Sidebar),
+      e("div",{style:{...S.content},className:"main-content"},
+        view==="home"      ?e(HomeView):
+        view==="management"?e(ManagementView):
+        view==="vendors"   ?e(VendorsView):
+        view==="dashboard" ?e(DashboardView):
+        view==="expenses"  ?e(ExpensesView):
+        view==="tasks"     ?e(TasksView):
+        view==="quotes"    ?e(QuotesView):
+        view==="planning"  ?e(PlanningView):
+        view==="leads"     ?e(LeadsView):null
+      )
+    ),
+
+    e(BottomNav),
+    e("div",{style:{background:"#071020",borderTop:"1px solid #1e3a5f",padding:"7px 16px",textAlign:"center",flexShrink:0}},e("span",{style:{fontSize:10,color:"#2a4a7f",fontFamily:"system-ui,sans-serif",letterSpacing:"0.04em"}},"Powered by BuildFlow — Weblina LLC")),
+
+    delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
+      e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
+        e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
+        e("p",{style:{fontSize:13,color:"#4a6fa5",marginBottom:20}},'"'+delConfirm.name+'" will be permanently removed'+(delConfirm.type==="project"?" and all its expenses":"")+"."),
+        e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
+          e("button",{style:S.btn("ghost"),onClick:()=>setDelConfirm(null),disabled:saving},"Cancel"),
+          e("button",{style:S.btn("danger"),disabled:saving,onClick:()=>delConfirm.type==="project"?deleteProject(delConfirm.id):delConfirm.type==="task"?deleteTask(delConfirm.id):delConfirm.type==="quote"?deleteQuote(delConfirm.id):
+                delConfirm.type==="lead"?deleteLead(delConfirm.id):deleteExpense(delConfirm.id)},saving?"Deleting…":"Delete")
+        )
+      )
+    ),
+
+    toast&&e("div",{style:{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?"#ef4444":"#10b981",color:"#fff",padding:"10px 20px",borderRadius:8,fontSize:13,fontWeight:600,zIndex:100,boxShadow:"0 4px 20px #0006",whiteSpace:"nowrap"}},toast.msg)
+  );
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(e){return {error:e.message};}
+  render(){
+    if(this.state.error) return React.createElement("div",{style:{padding:32,color:"#ef4444",fontFamily:"monospace",fontSize:13,background:"#0a1628",minHeight:"100vh"}},
+      React.createElement("div",{style:{fontWeight:700,fontSize:18,marginBottom:12}},"⚠️ App Error"),
+      React.createElement("pre",{style:{whiteSpace:"pre-wrap",wordBreak:"break-all"}},this.state.error)
+    );
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(ErrorBoundary,null,React.createElement(App)));
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+//]]>
+</script>
 </body>
 </html>
