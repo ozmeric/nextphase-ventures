@@ -1482,8 +1482,8 @@ function App() {
       )
     ),
     e("div",{style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
-      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,onChange:ev=>setFilter({...filter,search:ev.target.value})}),
-      e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>setFilter({...filter,category:ev.target.value})},
+      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,search:v}));}}),
+      e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,category:v}));},},
         e("option",{value:""},"All Categories"),
         e("optgroup",{label:"Acquisition"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
         e("optgroup",{label:"Rehab"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
