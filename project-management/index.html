@@ -1482,7 +1482,7 @@ function App() {
       )
     ),
     e("div",{style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
-      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,search:v}));}}),
+      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",defaultValue:filter.search,autoComplete:"off",onInput:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,search:v}));}}),
       e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,category:v}));},},
         e("option",{value:""},"All Categories"),
         e("optgroup",{label:"Acquisition"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
@@ -2306,10 +2306,10 @@ function App() {
         view==="management"?e(ManagementView):
         view==="vendors"   ?e(VendorsView):
         view==="dashboard" ?e(DashboardView):
-        view==="expenses"  ?e(ExpensesView):
-        view==="tasks"     ?e(TasksView):
-        view==="quotes"    ?e(QuotesView):
-        view==="planning"  ?e(PlanningView):
+        view==="expenses"  ?e(ExpensesView,{key:"expenses"}):
+        view==="tasks"     ?e(TasksView,{key:"tasks"}):
+        view==="quotes"    ?e(QuotesView,{key:"quotes"}):
+        view==="planning"  ?e(PlanningView,{key:"planning"}):
         view==="leads"     ?e(LeadsView):null
       )
     ),
