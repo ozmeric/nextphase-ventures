@@ -197,33 +197,33 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
   const rb   = full.rehabBreakdown || {};
   const pf   = full.proForma || {};
 
-  // Editable state — pre-fill from full analysis or lead columns
-  // Use refs to hold edited values so they survive re-renders without resetting
-  const initRef = useRef(false);
-  const [askPrice,    setAskPrice]    = useState(()=>String(lead.askPrice    || ""));
-  const [arv,         setArv]         = useState(()=>String(lead.arvEstimate || ""));
-  const [beds,        setBeds]        = useState(()=>String(lead.beds        || ""));
-  const [baths,       setBaths]       = useState(()=>String(lead.baths       || ""));
-  const [sqft,        setSqft]        = useState(()=>String(lead.sqft        || ""));
-  const [holdMonths,  setHoldMonths]  = useState(()=>String(lead.holdingPeriodMonths || 4.5));
-  const [targetProfit,setTargetProfit]= useState(()=>"100000");
-  const [notes2,      setNotes2]      = useState(()=>lead.notes || "");
+  // Init from _edits (persisted edits) first, then lead prop, then full JSON
+  const ed = lead._edits || {};
+  const er = ed.rehab   || {};
+  const [askPrice,    setAskPrice]    = useState(()=>String(ed.askPrice    || lead.askPrice    || ""));
+  const [arv,         setArv]         = useState(()=>String(ed.arv         || lead.arvEstimate || ""));
+  const [beds,        setBeds]        = useState(()=>String(ed.beds        || lead.beds        || ""));
+  const [baths,       setBaths]       = useState(()=>String(ed.baths       || lead.baths       || ""));
+  const [sqft,        setSqft]        = useState(()=>String(ed.sqft        || lead.sqft        || ""));
+  const [holdMonths,  setHoldMonths]  = useState(()=>String(ed.holdMonths  || lead.holdingPeriodMonths || 4.5));
+  const [targetProfit,setTargetProfit]= useState(()=>String(ed.targetProfit|| 100000));
+  const [notes2,      setNotes2]      = useState(()=>String(ed.notes2      || lead.notes       || ""));
 
   // Editable rehab line items
   const [rehab, setRehab] = useState(()=>({
-    demo:        rb.demo        || 0,
-    roof:        rb.roof        || 0,
-    hvac:        rb.hvac        || 0,
-    electrical:  rb.electrical  || 0,
-    plumbing:    rb.plumbing    || 0,
-    drywall:     rb.drywall     || 0,
-    flooring:    rb.flooring    || 0,
-    kitchen:     rb.kitchen     || 0,
-    bathrooms:   rb.bathrooms   || 0,
-    paint:       rb.paint       || 0,
-    exterior:    rb.exterior    || 0,
-    landscape:   rb.landscape   || rb.other || 0,
-    other:       0,
+    demo:        er.demo        || rb.demo        || 0,
+    roof:        er.roof        || rb.roof        || 0,
+    hvac:        er.hvac        || rb.hvac        || 0,
+    electrical:  er.electrical  || rb.electrical  || 0,
+    plumbing:    er.plumbing    || rb.plumbing    || 0,
+    drywall:     er.drywall     || rb.drywall     || 0,
+    flooring:    er.flooring    || rb.flooring    || 0,
+    kitchen:     er.kitchen     || rb.kitchen     || 0,
+    bathrooms:   er.bathrooms   || rb.bathrooms   || 0,
+    paint:       er.paint       || rb.paint       || 0,
+    exterior:    er.exterior    || rb.exterior    || 0,
+    landscape:   er.landscape   || rb.landscape   || rb.other || 0,
+    other:       er.other       || 0,
   }));
 
   // Calculated results
@@ -262,9 +262,11 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
     if (!calc) { showToast("Run Recalculate first","error"); return; }
     setSaving2(true);
     try {
+      const edits = {askPrice,arv,beds,baths,sqft,holdMonths,targetProfit,notes2,rehab};
       const updated = {
         ...lead,
         _edited: true,
+        _edits:  edits,
         askPrice:           parseFloat(askPrice)||lead.askPrice,
         arvEstimate:        parseFloat(arv)||lead.arvEstimate,
         rehabEstimate:      rehabTotal,
@@ -277,8 +279,7 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
         holdingPeriodMonths:parseFloat(holdMonths)||lead.holdingPeriodMonths,
         notes: notes2,
       };
-      await api("updateLead",{lead:updated});
-      // Update parent leads array — preserves component state since key stays same
+      await api("updateLead",{lead:{...updated,_edits:undefined,_full:undefined,_edited:undefined}});
       setLeads(prev=>prev.map(l=>l.id===lead.id?{...updated,_full:l._full}:l));
       showToast("✅ Saved — "+calc.rec+" at "+fmt$(calc.suggested));
     } catch(err) { showToast("Save failed: "+err.message,"error"); }
