@@ -263,6 +263,24 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
     setSaving2(true);
     try {
       const edits = {askPrice,arv,beds,baths,sqft,holdMonths,targetProfit,notes2,rehab};
+      // Build updated full JSON with new rehab breakdown and pro forma
+      const updatedFull = {
+        ...full,
+        rehabBreakdown: {...rehab, contingency},
+        proForma: {
+          acquisitionClosingCosts: calc.closing,
+          holdingCosts: calc.interest,
+          financingPoints: calc.points,
+          sellingCosts: calc.selling,
+          totalProjectCost: calc.totalCost,
+          netSaleProceeds: calc.netProc,
+          projectedProfit: calc.profit,
+          profitMarginPct: calc.margin,
+          roiPct: calc.roi,
+        },
+        maoNew: calc.maoNew,
+        suggestedOffer: calc.suggested,
+      };
       const updated = {
         ...lead,
         _edited: true,
@@ -278,9 +296,10 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
         recommendation:     calc.rec,
         holdingPeriodMonths:parseFloat(holdMonths)||lead.holdingPeriodMonths,
         notes: notes2,
+        fullJson: JSON.stringify(updatedFull),
       };
       await api("updateLead",{lead:{...updated,_edits:undefined,_full:undefined,_edited:undefined}});
-      setLeads(prev=>prev.map(l=>l.id===lead.id?{...updated,_full:l._full}:l));
+      setLeads(prev=>prev.map(l=>l.id===lead.id?{...updated,_full:updatedFull}:l));
       showToast("✅ Saved — "+calc.rec+" at "+fmt$(calc.suggested));
     } catch(err) { showToast("Save failed: "+err.message,"error"); }
     setSaving2(false);
