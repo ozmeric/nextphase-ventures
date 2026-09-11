@@ -206,7 +206,7 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
   const [baths,       setBaths]       = useState(()=>String(ed.baths       || lead.baths       || ""));
   const [sqft,        setSqft]        = useState(()=>String(ed.sqft        || lead.sqft        || ""));
   const [holdMonths,  setHoldMonths]  = useState(()=>String(ed.holdMonths  || lead.holdingPeriodMonths || 4.5));
-  const [targetProfit,setTargetProfit]= useState(()=>String(ed.targetProfit|| 100000));
+  const [targetProfit,setTargetProfit]= useState(()=>String(ed.targetProfit|| Math.round((parseFloat(lead.arvEstimate)||300000)*0.10)));
   const [notes2,      setNotes2]      = useState(()=>String(ed.notes2      || lead.notes       || ""));
 
   // Editable rehab line items
@@ -241,7 +241,7 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
     const p   = parseFloat(askPrice) || 0;
     const a   = parseFloat(arv)      || 0;
     const h   = parseFloat(holdMonths)|| 4.5;
-    const tp  = parseFloat(targetProfit)||100000;
+    const tp  = parseFloat(targetProfit)||Math.round(a*0.10);
     const loan = p * 0.80 + rehabTotal;
     const closing  = p * 0.04;
     const interest = loan * 0.10 / 12 * h;
@@ -667,7 +667,7 @@ function App() {
     if(!authed) return;
     const interval = setInterval(()=>{ refreshLeads(true); }, 2 * 60 * 1000);
     return ()=>clearInterval(interval);
-  },[authed]);
+  },[authed, expandedLead]);
 
   const unlock=(pin)=>{SESSION_PIN=pin;try{sessionStorage.setItem("npv-auth","ok");sessionStorage.setItem("npv-pin",pin);}catch{}setAuthed(true);};
 
