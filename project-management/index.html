@@ -351,6 +351,18 @@ const LeadCalculator=({lead,updateLeadStatus,updateLeadNotes,setDelConfirm,setMg
       full.conditionNotes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Condition: "+full.conditionNotes)
     ),
 
+    // ── Comp Report Data ──
+    full.compReportNotes&&e("div",{style:{background:"#10b98111",border:"1px solid #10b98133",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"#10b981",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"📄 Comp Report Data"),
+      e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},full.compReportNotes)
+    ),
+
+    // ── Photo Condition Assessment ──
+    full.imageConditionNotes&&e("div",{style:{background:"#a78bfa11",border:"1px solid #a78bfa33",borderRadius:8,padding:"12px 14px",marginBottom:12}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"#a78bfa",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}},"📷 Photo Condition Assessment"),
+      e("div",{style:{fontSize:12,color:"#cbd5e1",lineHeight:1.6}},full.imageConditionNotes)
+    ),
+
     // ── EDITABLE DEAL INPUTS ──
     e("div",{style:{background:"#071020",borderRadius:8,padding:"14px",marginBottom:12}},
       e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"✏️ Edit Deal Inputs"),
