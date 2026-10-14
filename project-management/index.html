@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>NextPhase Ventures</title>
+<title>NextPhase Ventures · BuildFlow</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MiA3MiI+CiAgPHJlY3Qgd2lkdGg9IjcyIiBoZWlnaHQ9IjcyIiByeD0iMTQiIGZpbGw9IiMwYTE2MjgiLz4KICA8cG9seWxpbmUgcG9pbnRzPSIxMCwzOCAzNiwxNCA2MiwzOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDRhMDE3IiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cmVjdCB4PSIzMSIgeT0iNCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjE0IiByeD0iMiIgZmlsbD0iI2Q0YTAxNyIvPgogIDxwb2x5Z29uIHBvaW50cz0iMzYsMCA0Miw4IDMwLDgiIGZpbGw9IiNkNGEwMTciLz4KICA8cmVjdCB4PSIxNCIgeT0iMzgiIHdpZHRoPSI5IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iI2Y4ZjBkOCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjMsMzggMzAsMzggNTgsNjIgNTEsNjIiIGZpbGw9IiNmOGYwZDgiLz4KICA8cmVjdCB4PSI0OSIgeT0iMzgiIHdpZHRoPSI5IiBoZWlnaHQ9IjI0IiByeD0iMiIgZmlsbD0iI2Y4ZjBkOCIvPgogIDxwb2x5Z29uIHBvaW50cz0iMjUsMzggMzMsMzggNDQsNjIgMzYsNjIiIGZpbGw9IiNkNGEwMTciLz4KPC9zdmc+"/>
 <link rel="manifest" href="./manifest.json"/>
 <link rel="apple-touch-icon" href="./icon-192.png"/>
@@ -51,11 +51,1597 @@ option{color:#e2e8f0;background:#071020}
 }
 .mobile-cards{display:none}
 </style>
+<style>
+
+/* ═══ Foreman AI (BuildFlow) — template styles scoped to .bf, in the NPV navy theme ═══ */
+.bf{
+  --navy:#14294a; --navy-2:#1e3a5f; --navy-3:#2a4a7f; --navy-ink:#c3cfe2; --navy-mute:#7a9cc5;
+  --gold:#d4a017; --gold-2:#e6b93a; --gold-soft:rgba(212,160,23,.13); --gold-ink:#e6b93a;
+  --paper:#071020; --white:#0d1f3c; --ink:#e2e8f0; --muted:#7a9cc5; --line:#1e3a5f; --line-2:#132a4a;
+  --ok:#34d399; --ok-bg:rgba(16,185,129,.16); --warn:#fbbf24; --warn-bg:rgba(245,158,11,.16); --bad:#f87171; --bad-bg:rgba(239,68,68,.16); --info:#7cb3ff; --info-bg:rgba(59,130,246,.18);
+  --display:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif; --body:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark; color:var(--ink); font-size:14px; line-height:1.45;
+}
+.bf *{box-sizing:border-box}
+.bf button{font:inherit;color:inherit}
+.bf :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.bf .brand{display:flex;align-items:center;gap:11px;min-width:0}
+.bf .brand-ic{width:36px;height:36px;flex-shrink:0;border-radius:9px;background:var(--gold);color:var(--navy);font-family:var(--display);font-weight:700;font-size:19px;display:grid;place-items:center}
+.bf .brand-name{color:#fff;font-family:var(--display);font-weight:600;font-size:20px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bf .hdr-r{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.bf .demo-chip{display:flex;align-items:center;gap:8px;border:1px solid rgba(201,162,39,.45);color:var(--gold-2);border-radius:999px;padding:4px 6px 4px 12px;font-size:12px;font-weight:600}
+.bf .demo-chip button{background:var(--navy-2);border:1px solid var(--navy-3);color:var(--navy-ink);border-radius:999px;padding:3px 10px;font-size:11.5px;cursor:pointer}
+.bf .demo-chip button:hover{color:#fff}
+.bf .bf-logo{height:34px;width:auto;display:block}
+.bf .side-label{color:var(--navy-mute);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;padding:16px 10px 6px}
+.bf .side-label.ai{color:var(--gold-2);display:flex;align-items:center;gap:6px}
+.bf .si{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 10px;color:var(--navy-ink);cursor:pointer;font-size:13.5px;font-weight:500}
+.bf .si:hover{background:var(--navy-2);color:#fff}
+.bf .si.on{background:var(--navy-2);color:#fff;box-shadow:inset 3px 0 0 var(--gold)}
+.bf .si.sub{padding:7px 10px 7px 38px;font-size:12.5px;color:var(--navy-mute)}
+.bf .si.sub.on,.bf .si.sub:hover{color:#fff}
+.bf .si .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bf .si .cnt{margin-left:auto;background:var(--gold);color:var(--navy);border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px}
+.bf .si .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bf .side-foot{margin-top:auto;padding:18px 10px 4px;color:var(--navy-mute);font-size:11px;line-height:1.5}
+.bf .side-foot b{color:var(--gold-2);font-weight:600}
+.bf .main{flex:1;overflow-y:auto;min-width:0}
+.bf .wrap{max-width:1200px;margin:0 auto;padding:26px 26px 48px}
+.bf .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.bf .ph-t{min-width:0}
+.bf .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.bf .eyebrow.gold{color:var(--gold-ink)}
+.bf h1.t{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;margin:0;letter-spacing:-.015em;text-wrap:balance}
+.bf h2.t{font-family:var(--display);font-weight:600;font-size:19px;margin:0;letter-spacing:-.01em}
+.bf .sub{color:var(--muted);margin-top:5px}
+.bf .muted{color:var(--muted)}
+.bf .num{font-variant-numeric:tabular-nums}
+.bf .card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.bf .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.bf .grid{display:grid;gap:16px}
+.bf .g-kpi{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.bf .g-split{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:start}
+.bf .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bf .g-proj{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.bf .stack{display:flex;flex-direction:column;gap:16px}
+.bf .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bf .kpi .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.bf .kpi .v{font-family:var(--display);font-size:27px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.bf .kpi .n{font-size:12.5px;color:var(--muted);margin-top:3px}
+.bf .kpi .n.bad{color:var(--bad)}
+.bf .kpi .n.ok{color:var(--ok)}
+.bf .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--gold);color:var(--navy);border:1px solid var(--gold);border-radius:8px;padding:9px 15px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.bf .btn:hover{background:var(--gold-2);border-color:var(--gold-2)}
+.bf .btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+.bf .btn.navy:hover{background:var(--navy-2)}
+.bf .btn.ghost{background:var(--white);border-color:var(--line);color:var(--ink);font-weight:600}
+.bf .btn.ghost:hover{border-color:var(--navy-mute)}
+.bf .btn.sm{padding:6px 11px;font-size:12.5px}
+.bf .btn:disabled{opacity:.5;cursor:default}
+.bf .lnk{background:none;border:0;padding:0;color:var(--info);font-weight:600;cursor:pointer;font-size:13px}
+.bf .x{background:none;border:0;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:grid;place-items:center}
+.bf .x:hover{background:var(--line-2);color:var(--bad)}
+.bf .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;border:0;line-height:1.6}
+.bf .pill.ok{background:var(--ok-bg);color:var(--ok)}
+.bf .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.bf .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.bf .pill.info{background:var(--info-bg);color:var(--info)}
+.bf .pill.mute{background:var(--line-2);color:var(--muted)}
+.bf .pill.gold{background:var(--gold-soft);color:var(--gold-ink)}
+.bf .pill.navy{background:var(--navy);color:#fff}
+.bf button.pill{cursor:pointer}
+.bf .bar{height:8px;background:var(--line-2);border-radius:99px;overflow:hidden}
+.bf .bar>i{display:block;height:100%;background:var(--navy);border-radius:99px}
+.bf .bar>i.gold{background:var(--gold)}
+.bf .bar>i.bad{background:var(--bad)}
+.bf .bar>i.ok{background:var(--ok)}
+.bf .lrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line-2);min-width:0}
+.bf .lrow:first-child{border-top:0}
+.bf .lrow .grow{flex:1;min-width:0}
+.bf .lrow .tt{font-weight:600}
+.bf .lrow .mt{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bf .over{color:var(--bad);font-weight:600}
+.bf .empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+.bf .tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:none}
+.bf .tab{padding:10px 14px;border:0;background:none;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.bf .tab:hover{color:var(--ink)}
+.bf .tab.on{color:var(--ink);border-bottom-color:var(--gold)}
+.bf .chips{display:flex;gap:6px;flex-wrap:wrap}
+.bf .chip{border:1px solid var(--line);background:var(--white);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+.bf .chip:hover{color:var(--ink)}
+.bf .chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.bf input,.bf select,.bf textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;color:var(--ink);background:var(--white)}
+.bf textarea{resize:vertical;line-height:1.5}
+.bf input:focus,.bf select:focus,.bf textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.18)}
+.bf .f{display:grid;gap:5px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;min-width:0}
+.bf .f input,.bf .f select,.bf .f textarea{text-transform:none;letter-spacing:0;font-weight:400;font-size:14px}
+.bf .form{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.bf .form .full{grid-column:1/-1}
+.bf .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.bf .aibox{background:var(--navy);color:#fff;border-radius:14px;padding:22px;position:relative;overflow:hidden;border:1px solid var(--navy-3)}
+.bf .aibox::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,39,.22),transparent 70%);pointer-events:none}
+.bf .ai-tag{display:inline-flex;align-items:center;gap:6px;color:var(--gold-2);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.bf .aibox h2.t{color:#fff;margin-top:8px}
+.bf .aibox ul{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px;position:relative;z-index:1}
+.bf .aibox li{display:flex;gap:10px;align-items:flex-start;color:var(--navy-ink)}
+.bf .aibox li b{color:#fff;font-weight:600}
+.bf .aibox li .mk{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--gold)}
+.bf .aibox li .mk.bad{background:#F07A7A}
+.bf .aibox li .mk.ok{background:#6FCF97}
+.bf .aibox li .lnk{color:var(--gold-2);margin-left:4px;font-size:12.5px}
+.bf .aibox .btn.ghost{background:transparent;color:#fff;border-color:var(--navy-3)}
+.bf .spark{color:var(--gold)}
+.bf .feed{display:grid;gap:0}
+.bf .feed .lrow .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;background:var(--gold-soft);color:var(--gold-ink)}
+.bf .pcard{cursor:pointer;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,transform .15s;text-align:left;font:inherit}
+.bf .pcard:hover{border-color:var(--gold);transform:translateY(-1px)}
+.bf .pcard .nm{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.25}
+.bf .pcard .meta{font-size:12.5px;color:var(--muted)}
+.bf .pcard .fig{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.bf .pcard .fig b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bf .phead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.bf .cat-row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:12px;align-items:center;padding:7px 0;font-size:13px}
+.bf .cat-row .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bf .trow .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);background:var(--white);display:grid;place-items:center;cursor:pointer;flex-shrink:0;color:#fff}
+.bf .trow .chk.on{background:var(--ok);border-color:var(--ok)}
+.bf .trow.done .tt{text-decoration:line-through;color:var(--muted)}
+.bf .tl{position:relative;display:grid;gap:4px}
+.bf .tl-i{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;position:relative;padding-bottom:18px}
+.bf .tl-i::before{content:"";position:absolute;left:16px;top:30px;bottom:0;width:2px;background:var(--line)}
+.bf .tl-i:last-child::before{display:none}
+.bf .tl-dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--white);display:grid;place-items:center;cursor:pointer;color:transparent}
+.bf .tl-dot.on{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.bf .tl-dot.next{border-color:var(--gold)}
+.bf .tbl-wrap{overflow-x:auto}
+.bf table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.bf .tbl th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+.bf .tbl td{padding:11px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.bf .tbl td.r,.bf .tbl th.r{text-align:right}
+.bf .qitem + .qitem{margin-top:16px}
+.bf .qrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line-2)}
+.bf .qrow.acc{background:linear-gradient(90deg,var(--gold-soft),transparent);margin:0 -18px;padding:11px 18px}
+.bf .vcard .nm{font-weight:700;font-size:15px}
+.bf .vcard .ct{display:grid;gap:3px;font-size:13px;margin-top:10px;user-select:text}
+.bf .stars{color:var(--gold);font-weight:700;font-size:12.5px}
+.bf .auto{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.bf .auto .grow{flex:1;min-width:220px}
+.bf .sw{width:50px;height:28px;border-radius:999px;background:var(--line);border:0;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.bf .sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.bf .sw.on{background:var(--gold)}
+.bf .sw.on i{left:25px}
+.bf .inbox{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:16px;align-items:start}
+.bf .ilist{padding:6px}
+.bf .irow{display:block;width:100%;text-align:left;background:none;border:0;border-radius:9px;padding:12px;cursor:pointer;border-left:3px solid transparent}
+.bf .irow:hover{background:var(--paper)}
+.bf .irow.on{background:var(--paper);border-left-color:var(--gold)}
+.bf .irow .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.bf .irow .nm{font-weight:700}
+.bf .irow .tm{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.bf .irow .ms{font-size:12.5px;color:var(--muted);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bf .irow .row{margin-top:7px}
+.bf .bubble{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;white-space:pre-wrap;line-height:1.55}
+.bf .bubble.ai{background:var(--gold-soft);border-color:rgba(212,160,23,.4)}
+.bf .writing{display:inline-flex;gap:4px;align-items:center}
+.bf .writing i{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 1s infinite}
+.bf .writing i:nth-child(2){animation-delay:.15s}
+.bf .writing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.bf .kan{display:grid;grid-template-columns:repeat(5,minmax(210px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px}
+.bf .kcol{background:var(--line-2);border-radius:12px;padding:10px;min-height:120px}
+.bf .kcol-h{display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 10px;font-weight:700;font-size:13px}
+.bf .kcol-h span{font-weight:600;color:var(--muted);font-size:12px}
+.bf .kcard{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:8px}
+.bf .kcard select{margin-top:8px;padding:5px 8px;font-size:12.5px}
+.bf .f .seg{justify-self:start;max-width:100%;overflow-x:auto}
+.bf .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.bf .seg button{border:0;background:var(--white);padding:8px 14px;font-weight:600;cursor:pointer;color:var(--muted)}
+.bf .seg button.on{background:var(--navy);color:#fff}
+.bf .mock{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:440px;margin:0 auto;width:100%}
+.bf .mock-h{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.bf .mock-h .av{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-family:var(--display);font-weight:700}
+.bf .mock-h .nm{font-weight:700;font-size:13.5px}
+.bf .mock-h .tm{font-size:11.5px;color:var(--muted)}
+.bf .mock-cap{padding:0 14px 12px;white-space:pre-wrap;font-size:13.5px;line-height:1.5}
+.bf .mock-cap.ig{padding:10px 14px 14px}
+.bf .mock-f{display:flex;justify-content:space-around;border-top:1px solid var(--line-2);padding:9px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.bf .pimg{position:relative;aspect-ratio:1.4/1;max-width:100%;overflow:hidden;background:var(--navy);color:#fff;display:flex}
+.bf .pimg.sq{aspect-ratio:1/1}
+.bf .pimg .half{flex:1;position:relative;display:flex;align-items:flex-end;padding:14px}
+.bf .pimg .before{background:repeating-linear-gradient(135deg,#5B6372 0 10px,#535A68 10px 20px);filter:saturate(.6)}
+.bf .pimg .after{background:linear-gradient(160deg,#F1E3B8 0%,#D9B85C 45%,#1F3B63 100%)}
+.bf .pimg .lbl{background:rgba(11,27,51,.82);color:#fff;font-size:11px;font-weight:700;letter-spacing:.14em;padding:5px 9px;border-radius:5px}
+.bf .pimg .after .lbl{background:var(--gold);color:var(--navy)}
+.bf .pimg .center{flex:1;display:flex;flex-direction:column;justify-content:center;padding:26px;background:radial-gradient(circle at 85% 15%,rgba(201,162,39,.35),transparent 55%),var(--navy)}
+.bf .pimg .center .k{color:var(--gold-2);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+.bf .pimg .center .h{font-family:var(--display);font-size:28px;font-weight:600;line-height:1.1;margin-top:8px}
+.bf .pimg .center .s{color:var(--navy-ink);font-size:13px;margin-top:10px}
+.bf .pimg .center .rule{width:44px;height:3px;background:var(--gold);margin-top:14px}
+.bf .pimg .wm{position:absolute;right:12px;top:10px;font-size:10.5px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.85);text-transform:uppercase}
+.bf .chat{display:flex;flex-direction:column;height:calc(100vh - 62px - 150px);min-height:420px}
+.bf .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 2px 12px}
+.bf .msg{max-width:min(620px,88%);padding:12px 15px;border-radius:14px;line-height:1.55}
+.bf .msg.me{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.bf .msg.ai{align-self:flex-start;background:var(--white);border:1px solid var(--line);border-bottom-left-radius:4px}
+.bf .msg p{margin:0}
+.bf .msg p + p{margin-top:6px}
+.bf .msg .li{display:flex;gap:8px;margin-top:5px}
+.bf .msg .li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:8px;flex-shrink:0}
+.bf .composer{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.bf .composer input{flex:1}
+.bf .mbg{position:fixed;inset:0;background:rgba(11,27,51,.55);display:grid;place-items:center;z-index:60;padding:16px}
+.bf .modal{background:var(--white);border-radius:14px;width:min(540px,100%);max-height:calc(100% - 32px);overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(11,27,51,.35)}
+.bf .modal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.bf .toast .spark{flex-shrink:0}
+.bf .mobile-only{display:none}
+@media (max-width:1000px){.bf .g-split{grid-template-columns:minmax(0,1fr)}
+.bf .inbox{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){.bf .mobile-only{display:revert}
+.bf .bnav button{flex:1;background:none;border:0;color:var(--navy-mute);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:5px 0;cursor:pointer}
+.bf .bnav button.on{color:var(--gold-2)}
+.bf .wrap{padding:18px 16px 96px}
+.bf h1.t{font-size:24px}
+.bf .brand-name{font-size:17px}
+.bf .bf-logo{height:26px}
+.bf .demo-chip span{display:none}
+.bf .demo-chip{padding:3px}
+.bf .g-2,.bf .form{grid-template-columns:minmax(0,1fr)}
+.bf .chat{height:calc(100vh - 58px - 200px)}
+.bf .inbox.has-sel .ilist-card{display:none}
+.bf .inbox:not(.has-sel) .idetail{display:none}
+.bf .cat-row{grid-template-columns:minmax(0,110px) minmax(0,1fr) auto}}
+@media (max-width:480px){.bf .bf-logo{display:none}}
+@media (prefers-reduced-motion:reduce){.bf *{transition:none!important;animation:none!important}}
+.bf .live-chip{display:flex;align-items:center;gap:7px;border:1px solid rgba(111,207,151,.45);color:#9FE2B9;border-radius:999px;padding:4px 6px 4px 11px;font-size:12px;font-weight:600}
+.bf .live-chip .ld{width:7px;height:7px;border-radius:50%;background:#6FCF97;box-shadow:0 0 0 3px rgba(111,207,151,.2)}
+.bf .live-chip button{background:var(--navy-2);border:1px solid var(--navy-3);color:var(--navy-ink);border-radius:999px;padding:3px 10px;font-size:11.5px;cursor:pointer}
+.bf .pin-wrap{flex:1;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(circle at 80% 10%,rgba(201,162,39,.18),transparent 45%),var(--navy)}
+.bf .pin-card{background:var(--white);border-radius:16px;padding:28px;width:min(380px,100%);display:grid;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.bf .pin-card input{font-size:22px;letter-spacing:.4em;text-align:center;font-variant-numeric:tabular-nums}
+.bf .err{color:var(--bad);font-size:13px}
+.bf .qr{display:grid;place-items:center;padding:16px;background:var(--white);border:1px solid var(--line);border-radius:12px}
+.bf .qr img,.bf .qr canvas{display:block;max-width:100%}
+.bf .url-box{display:flex;gap:8px;align-items:center}
+.bf .url-box code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;user-select:all}
+.bf .photo-pick{display:flex;align-items:center;gap:12px;border:1px dashed var(--line);border-radius:10px;padding:10px;cursor:pointer}
+.bf .photo-pick:hover{border-color:var(--gold)}
+.bf .photo-pick img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+.bf .photo-pick input{display:none}
+.bf .pimg-photo{display:block;width:100%;height:auto;max-width:100%}
+.bf .ai-picks{display:flex;gap:8px;align-items:flex-start;background:var(--gold-soft);border:1px solid rgba(212,160,23,.4);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;color:var(--ink)}
+.bf .ai-picks svg{color:var(--gold-ink);flex-shrink:0;margin-top:3px}
+.bf .prow{cursor:pointer;border-radius:8px}
+.bf .prow:hover{background:var(--paper)}
+.bf .ba-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bf .ba-slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:1px dashed var(--line);border-radius:10px;cursor:pointer;overflow:hidden;background:var(--paper);color:var(--muted);font-size:12.5px;font-weight:600;text-align:center}
+.bf .ba-slot:hover{border-color:var(--gold)}
+.bf .ba-slot{text-transform:none;letter-spacing:0}
+.bf .ba-slot input{display:none}
+.bf .ba-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bf .ba-slot .tag{position:absolute;left:8px;bottom:8px;font-size:10.5px;font-weight:700;letter-spacing:.12em;padding:4px 8px;border-radius:5px;background:rgba(11,27,51,.85);color:#fff}
+.bf .ba-slot .tag.after{background:var(--gold);color:var(--navy)}
+.bf .ba-slot .x{position:absolute;right:6px;top:6px;background:rgba(255,255,255,.92)}
+.bf .pimg-photo.sq{aspect-ratio:1/1;object-fit:cover}
+.bf .note{font-size:12.5px;color:var(--muted)}
+.bf .note.bad{color:var(--bad)}
+.bf a.lnk{text-decoration:none}
+.bf .mic{width:44px;padding:0;flex-shrink:0}
+.bf .mic.on{background:var(--gold);border-color:var(--gold);color:var(--navy);animation:micpulse 1.4s infinite}
+@keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(201,162,39,.55)}70%{box-shadow:0 0 0 10px rgba(201,162,39,0)}100%{box-shadow:0 0 0 0 rgba(201,162,39,0)}}
+.bf .voice-note{display:flex;align-items:center;gap:7px;padding-top:8px;font-size:12.5px;font-weight:600;color:var(--gold-ink)}
+@media (max-width:820px){.bf .chat .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.bf .chat .chips::-webkit-scrollbar{display:none}
+.bf .chat .chips .chip{white-space:nowrap;flex-shrink:0}}
+.bf .voice-note .dot{width:8px;height:8px;border-radius:50%;background:var(--bad);animation:blink 1s infinite}
+.bf .cal-day{display:grid;grid-template-columns:76px minmax(0,1fr);gap:16px;padding:14px 4px;border-top:1px solid var(--line-2)}
+.bf .cal-day:first-child{border-top:0}
+.bf .cal-day .dl{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.bf .cal-day .wd{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.bf .cal-day .dn{font-family:var(--display);font-size:26px;font-weight:600;line-height:1}
+.bf .cal-day.today .dn{color:var(--gold-ink)}
+.bf .ev{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:start;width:100%;text-align:left;font:inherit;color:inherit;background:var(--white);border:1px solid var(--line);border-left:3px solid var(--navy);border-radius:10px;padding:10px 12px;cursor:pointer}
+.bf .ev:hover{border-color:var(--gold);border-left-color:var(--navy)}
+.bf .ev .tm{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.bf .ev .gs{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.bf .ev .gs .pill{white-space:normal;overflow-wrap:anywhere;text-align:left}
+.bf .f .chips,.bf .f .chip{text-transform:none;letter-spacing:0}
+.bf .ms-mark{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;font-size:12.5px;font-weight:600;color:var(--gold-ink);background:var(--gold-soft);border:1px dashed rgba(212,160,23,.4);border-radius:8px;padding:6px 10px;cursor:pointer}
+@media (max-width:820px){.bf .cal-day{grid-template-columns:52px minmax(0,1fr);gap:10px}
+.bf .ev{grid-template-columns:62px minmax(0,1fr)}
+.bf .ev > a,.bf .ev > span:last-child{display:none}}
+.bf .acard{margin-top:10px;border:1px solid rgba(212,160,23,.4);background:var(--gold-soft);border-radius:10px;padding:12px 12px 10px}
+.bf .aitem{display:flex;gap:9px;align-items:flex-start;padding:5px 0;font-size:13.5px;line-height:1.45}
+.bf .aitem.off{color:var(--muted);text-decoration:line-through}
+.bf .aitem .lnk{margin-left:auto;font-size:12.5px;flex-shrink:0}
+.bf .aic{width:22px;height:22px;border-radius:6px;background:var(--white);display:grid;place-items:center;color:var(--gold-ink);flex-shrink:0}
+
+.bf .wrap{max-width:none;margin:0;padding:0}
+.bf h1.t{color:#f8f0d8;font-weight:900;letter-spacing:-.5px;font-size:22px}
+.bf h2.t{color:#f8f0d8;font-weight:800}
+.bf .kan{grid-template-columns:repeat(6,minmax(190px,1fr))}
+.bf .btn{color:#0a1628}
+.bf .btn.ghost{color:var(--ink)}
+.bf .btn.navy{background:var(--navy-2);border-color:var(--navy-3);color:#fff}
+.bf .aibox{background:linear-gradient(135deg,#0f2548,#0a1a33);border-color:#2a4a7f}
+.bf .aibox .btn.ghost{border-color:#2a4a7f;color:#f8f0d8}
+.bf .msg.me{background:#1e3a5f}
+.bf .chip.on{background:var(--gold);border-color:var(--gold);color:#0a1628}
+.bf .seg button.on{background:var(--gold);color:#0a1628}
+.bf .sw{background:#1e3a5f}
+.bf .qr{background:#fff}
+.bf .modal{border:1px solid #1e3a5f}
+.bf .mbg{background:rgba(3,8,18,.72)}
+.bf .chat{height:calc(100vh - 56px - 170px)}
+.bf .pill.navy{background:#2a4a7f}
+.bf option{background:#071020;color:#e2e8f0}
+@media(max-width:820px){ .bf .chat{height:calc(100vh - 56px - 230px)} .bf .ev{grid-template-columns:62px minmax(0,1fr)} }
+</style>
 </head>
 <body>
 <div id="root"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+//<![CDATA[
+/* ═══════════════════════════════════════════════════════════════════════════════════════
+   FOREMAN AI for NextPhase Ventures — BuildFlow module
+   Seller leads · Social posts · Calendar · Ask Foreman · Daily brief
+   Lives in its own closure so it can't clash with the NPV app code below it.
+
+   DATA SAFETY
+   - Reads project data with the same read actions the app uses (getExpenses, getTasks, getQuotes).
+   - Writes project data ONLY when you press Apply on an Ask Foreman card, and only through the
+     app's own paths: addExpense / addTask / updateTask on the server, and the app's own
+     milestone and vendor state (which the app saves exactly as it always has).
+   - Foreman's own data (seller leads, posts, settings) lives in separate tabs on the server.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+window.BF = (function(){
+"use strict";
+const { useState, useEffect, useRef } = React;
+const e = React.createElement;
+
+const CONFIG = {
+  companyName:  "NextPhase Ventures",
+  companyShort: "NextPhase",
+  logoText:     "N",
+  ownerName:    "",                     // greeting stays neutral: both owners use the app
+  phone:        "",
+  socialHandle: "nextphaseventures",
+  city:         "Richmond",
+  primaryColor: "#0a1628",
+  accentColor:  "#d4a017",
+  aiName:       "Foreman AI",
+  trade:        "fix-and-flip real estate company",
+  quoteFormUrl: "",                     // empty: uses sell.html next to this app
+  services:     ["Inherited / probate","Behind on payments","Needs major repairs","Tired landlord","Relocating or downsizing","Divorce or life change","Just exploring options"],
+  leadStages:   ["New","Contacted","Walkthrough Set","Offer Made","Under Contract","Lost"],
+  // filled from the NPV app on every render (single source of truth)
+  expenseCategories: [], taskCategories: [], taskPriorities: ["High","Med","Low"], taskStatuses: ["To Do","In Progress","Blocked","Done"], vendorCategories: [], assignees: [],
+};
+CONFIG.quoteFormUrl = CONFIG.quoteFormUrl || (/^https?:$/.test(location.protocol) ? new URL("sell.html", location.href).href : "");
+
+const LIVE = true;   // the NPV app is always connected to its Sheet
+
+/* ── server calls: single attempt, never retried (sending an email twice is worse than an error) ── */
+async function rawApi(action, extra){
+  let res;
+  try{ res = await fetch(API_URL,{method:"POST",body:JSON.stringify(Object.assign({pin:SESSION_PIN,action},extra||{}))}); }
+  catch(err){ throw new Error("Can't reach the server. Check your connection."); }
+  let data; try{ data = JSON.parse(await res.text()); }catch(err){ throw new Error("The server sent an unexpected response."); }
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+const api = (action, extra) => rawApi("fm."+action, extra);
+
+/* ═════ from the BuildFlow Foreman template (shared app code) ═════ */
+const DAY = 864e5;
+const T0 = (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const dOff = n => iso(new Date(T0.getTime()+n*DAY));
+const toDate = s => new Date(s+"T00:00:00");
+const daysFrom = s => Math.round((toDate(s)-T0)/DAY);
+const fmtD = s => s ? toDate(s).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+const fmtDay = s => toDate(s).toLocaleDateString("en-US",{weekday:"long"});
+const money = n => (n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+let _n=0; const uid = p => (p||"x")+Date.now().toString(36)+(_n++).toString(36);
+const ago = ts => { const m=Math.round((Date.now()-ts)/60000); if(m<1) return "just now"; if(m<60) return m+" min ago"; const h=Math.round(m/60); if(h<24) return h+" hr ago"; const d=Math.round(h/24); return d===1?"yesterday":d+" days ago"; };
+const first = name => name.split(/\s|&/)[0];
+const pick = (arr,i) => arr[((i%arr.length)+arr.length)%arr.length];
+const whenLabel = s => { const n=daysFrom(s); if(n===0) return "today"; if(n===1) return "tomorrow"; if(n===-1) return "yesterday"; if(n>1 && n<7) return fmtDay(s); return fmtD(s); };
+
+const STATUS_CLS = {"To Do":"mute","In Progress":"warn","Blocked":"bad","Done":"ok"};
+const PRI_CLS = {Low:"mute",Medium:"info",High:"warn",Urgent:"bad"};
+const PROJ_CLS = {Planning:"info",Active:"ok","On Hold":"warn",Completed:"mute"};
+const PROJ_DOT = {Planning:"#6C8FE0",Active:"#6FCF97","On Hold":"#E6A85A",Completed:"#7F93B3"};
+const STAGE_CLS = {New:"gold",Contacted:"info","Walkthrough Set":"info","Offer Made":"warn","Under Contract":"ok",Lost:"mute"};
+
+const ICONS = {
+  home:"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
+  folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+  users:"M16 20v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 20v-1a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+  inbox:"M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z",
+  mega:"M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14",
+  spark:"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z",
+  plus:"M12 5v14M5 12h14", check:"M5 12l5 5 9-10", x:"M6 6l12 12M18 6L6 18",
+  send:"M22 2L11 13M22 2l-7 20-4-9-9-4z", back:"M15 18l-6-6 6-6",
+  cal:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  mic:"M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3M8 21h8",
+  vol:"M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12", voloff:"M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6",
+  stop:"M7 7h10v10H7z", flag:"M12 3.5l8.5 8.5-8.5 8.5L3.5 12z",
+};
+const Icon = (n,s) => e("svg",{width:s||18,height:s||18,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true},e("path",{d:ICONS[n]}));
+const Pill = (cls,txt,k) => e("span",{className:"pill "+cls,key:k},txt);
+
+const store = { get:k=>{ try{ return localStorage.getItem(k); }catch(err){ return null; } }, set:(k,v)=>{ try{ v===null?localStorage.removeItem(k):localStorage.setItem(k,v); }catch(err){} } };
+/* AI answers come back as plain text; normalise list markers so the chat renderer can show bullets */
+const toLines = txt => String(txt||"").split(/\n+/).map(s=>s.trim()).filter(Boolean).map(s=>/^[-*]\s+/.test(s)?"• "+s.replace(/^[-*]\s+/,""):s);
+/* Shrink photos in the browser before upload so posts stay fast */
+function resizePhoto(file){
+  return new Promise((ok,fail)=>{
+    const r = new FileReader();
+    r.onerror = () => fail(new Error("Couldn't read that file."));
+    r.onload = () => { const img = new Image(); img.onerror = () => fail(new Error("That file isn't a supported image."));
+      img.onload = () => { const max=1600, s=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height); ok(c.toDataURL("image/jpeg",0.86)); };
+      img.src = r.result; };
+    r.readAsDataURL(file);
+  });
+}
+
+const richHTML = s => ({__html: s});
+const rich = s => s.split("**").map((part,i)=> i%2 ? e("b",{key:i},part) : part);
+
+const WEEKDAYS = [[1,"Mon"],[2,"Tue"],[3,"Wed"],[4,"Thu"],[5,"Fri"],[6,"Sat"],[7,"Sun"]];
+function defaultAutoSocial(){ return {settings:{enabled:false,mode:"approve",schedule:"smart",perWeek:3,startDate:"",days:[2,4],time:"10:00",platform:"Facebook",styles:["Progress Update","Before & After","Tip of the Week"]},next:0,photos:0,idx:0}; }
+/* Best times for home-service pages, same table the server uses (weekday 1=Mon … 7=Sun) */
+const BEST_SLOTS = {
+  "Facebook":             [[2,"09:30"],[4,"09:30"],[6,"09:00"],[3,"12:00"],[1,"11:00"],[5,"13:00"],[7,"18:00"]],
+  "Instagram":            [[2,"11:00"],[3,"11:00"],[5,"11:00"],[4,"19:00"],[6,"10:00"],[1,"12:00"],[7,"19:00"]],
+  "Facebook + Instagram": [[2,"10:00"],[4,"10:00"],[6,"09:30"],[3,"11:30"],[1,"11:00"],[5,"12:00"],[7,"18:00"]],
+};
+const WD_NAME = ["","Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const slotsForCfg = cfg => (cfg.schedule==="fixed" ? (cfg.days||[]).map(d=>[d,cfg.time]) : (BEST_SLOTS[cfg.platform]||BEST_SLOTS.Facebook).slice(0,cfg.perWeek||3)).slice().sort((a,b)=>a[0]-b[0]);
+function planSlotsLocal(cfg,from,until){
+  if(cfg.startDate){ const s0 = new Date(cfg.startDate+"T00:00:00").getTime(); if(s0>from) from = s0; }
+  const pat = slotsForCfg(cfg), out = [];
+  for(let d=0; d<21; d++){
+    const day = new Date(from+d*DAY), wd = day.getDay()===0?7:day.getDay();
+    pat.filter(x=>x[0]===wd).forEach(x=>{ const [h,m]=x[1].split(":").map(Number); const at=new Date(day); at.setHours(h,m,0,0); const t=at.getTime(); if(t>=from && t<until && out.indexOf(t)===-1) out.push(t); });
+  }
+  return out.sort((a,b)=>a-b);
+}
+const postTime = p => new Date(p.date+"T"+(p.time||"00:00")+":00").getTime();
+const isUpcomingAuto = p => p.auto && (p.status==="Draft"||p.status==="Scheduled") && postTime(p) > Date.now();
+/* Demo mode: write one automated post locally (live mode does this on the server) */
+function makeLocalAutoPost(db,cfg,i,bank,when){
+  const pool = db.projects.filter(x=>x.status!=="Planning"); let p = pool[i%pool.length];
+  const pairs = bank.filter(b=>b.kind==="ba"), singles = bank.filter(b=>b.kind!=="ba");
+  let style = cfg.styles[i%cfg.styles.length] || "Progress Update";
+  if(style==="Before & After" && !pairs.length){ const alt = cfg.styles.filter(x=>x!=="Before & After"); style = alt.length ? alt[i%alt.length] : "Progress Update"; }
+  const rank = list => list.slice().sort((a,b)=>((a.projectId===p.id?0:1)-(b.projectId===p.id?0:1)) || ((a.used||0)-(b.used||0)))[0];
+  const photo = style==="Before & After" ? rank(pairs) : rank(singles.length?singles:bank);
+  if(style==="Before & After" && photo){ const owner = pool.find(x=>x.id===photo.projectId); if(owner) p = owner; }
+  if(photo) photo.used = (photo.used||0)+1;
+  const at = when ? new Date(when) : new Date();
+  const status = cfg.mode==="approve" ? "Draft" : when ? "Scheduled" : "Posted";
+  return {id:uid("s"),projectId:p.id,platform:cfg.platform,style,caption:genPost(p,cfg.platform==="Facebook"?"Facebook":"Instagram",style,i,db),date:iso(at),time:pad2(at.getHours())+":"+pad2(at.getMinutes()),status,auto:true,image:photo?photo.image:null};
+}
+function nextRunLocal(cfg){
+  if(!cfg.days || !cfg.days.length) return 0;
+  const [hh,mm] = (cfg.time||"10:00").split(":").map(Number);
+  for(let d=0; d<15; d++){
+    const day = new Date(T0.getTime()+d*DAY); day.setHours(hh,mm,0,0);
+    const wd = day.getDay()===0 ? 7 : day.getDay();
+    if(cfg.days.indexOf(wd)>-1 && day.getTime()>Date.now()+60000) return day.getTime();
+  }
+  return 0;
+}
+const fmtWhen = ms => ms ? new Date(ms).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" at "+new Date(ms).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) : "";
+
+const validDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s||"");
+const oneOf = (v,list,fallback) => list.indexOf(v)>-1 ? v : fallback;
+function describeAction(db,a){
+  const P = projById(db,a.projectId), M = db.milestones.find(m=>m.id===a.milestoneId), T = db.tasks.find(t=>t.id===a.taskId), V = db.vendors.find(v=>v.id===a.vendorId);
+  const bad = text => ({ok:false,text});
+  switch(a.type){
+    case "addExpense":
+      if(!P) return bad("Add an expense: project not found");
+      if(!(Number(a.amount)>0)) return bad("Add an expense: amount missing");
+      return {ok:true,icon:"plus",text:`Add ${money(+a.amount)} expense to ${P.name} · ${oneOf(a.category,CONFIG.expenseCategories,"Other")}${a.vendor?" · "+a.vendor:""}${a.notes?" · "+a.notes:""}`,go:["project",P.id,"expenses"]};
+    case "addMilestone":
+      if(!P) return bad("Add a milestone: project not found");
+      if(!a.title || !validDate(a.date)) return bad("Add a milestone: title or date missing");
+      return {ok:true,icon:"flag",text:`Add milestone "${a.title}" to ${P.name} on ${fmtD(a.date)}`,go:["project",P.id,"planning"]};
+    case "updateMilestone": {
+      if(!M) return bad("Update a milestone: milestone not found");
+      const parts = [];
+      if(validDate(a.date) && a.date!==M.date) parts.push("move from "+fmtD(M.date)+" to "+fmtD(a.date));
+      if(a.title && a.title!==M.title) parts.push(`rename to "${a.title}"`);
+      if(typeof a.done==="boolean" && a.done!==M.done) parts.push(a.done?"mark done":"mark not done");
+      if(!parts.length) return bad(`"${M.title}": nothing to change`);
+      return {ok:true,icon:"flag",text:`Milestone "${M.title}" (${projById(db,M.projectId).area}): ${parts.join(", ")}`,go:["project",M.projectId,"planning"]};
+    }
+    case "addTask":
+      if(!P) return bad("Add a task: project not found");
+      if(!a.task) return bad("Add a task: task text missing");
+      return {ok:true,icon:"check",text:`Add task "${a.task}" to ${P.name}${validDate(a.due)?", due "+fmtD(a.due):""}${a.assignee?", for "+a.assignee:""}`,go:["project",P.id,"tasks"]};
+    case "updateTask": {
+      if(!T) return bad("Update a task: task not found");
+      const parts = [];
+      if(a.status && a.status!==T.status && CONFIG.taskStatuses.indexOf(a.status)>-1) parts.push("status → "+a.status);
+      if(validDate(a.due) && a.due!==T.due) parts.push("due → "+fmtD(a.due));
+      if(a.assignee && a.assignee!==T.assignee) parts.push("assign to "+a.assignee);
+      if(a.priority && a.priority!==T.priority && CONFIG.taskPriorities.indexOf(a.priority)>-1) parts.push("priority → "+a.priority);
+      if(!parts.length) return bad(`"${T.task}": nothing to change`);
+      return {ok:true,icon:"check",text:`Task "${T.task}": ${parts.join(", ")}`,go:["project",T.projectId,"tasks"]};
+    }
+    case "addVendor":
+      if(!a.name) return bad("Add a vendor: name missing");
+      return {ok:true,icon:"users",text:`Add vendor ${a.name} · ${oneOf(a.category,CONFIG.vendorCategories,"Other")}${a.phone?" · "+a.phone:""}${a.email?" · "+a.email:""}`,go:["vendors"]};
+    case "updateVendor": {
+      if(!V) return bad("Update a vendor: vendor not found");
+      const parts = ["phone","email","notes"].filter(k=>a[k] && a[k]!==V[k]).map(k=>k+" → "+a[k]);
+      if(!parts.length) return bad(`${V.name}: nothing to change`);
+      return {ok:true,icon:"users",text:`Vendor ${V.name}: ${parts.join(", ")}`,go:["vendors"]};
+    }
+    case "addEvent": {
+      const st = toISOFromLocal(a.start);
+      if(!a.title || !st) return bad("Create an event: title or time missing");
+      const en = a.end ? toISOFromLocal(a.end) : new Date(new Date(st).getTime()+(Number(a.durationMinutes)||60)*60000).toISOString();
+      const gs = (a.guests||[]).filter(g=>/@/.test(g));
+      return {ok:true,icon:"cal",text:`Create "${a.title}" · ${fmtEventTime(st,en)}${a.location?" · "+a.location:""}${gs.length?" · invite "+gs.map(g=>nameFor(db,g)).join(", "):""}`,go:["calendar"]};
+    }
+    case "updateEvent": {
+      const E = (db.events||[]).find(x=>x.id===a.eventId);
+      if(!E) return bad("Update an event: event not found");
+      const parts = [];
+      if(a.start){ const st=toISOFromLocal(a.start); if(st && st!==E.start) parts.push("move to "+fmtEventTime(st,new Date(new Date(st).getTime()+(Number(a.durationMinutes)||((new Date(E.end)-new Date(E.start))/60000))*60000).toISOString())); }
+      else if(a.durationMinutes) parts.push("length "+a.durationMinutes+" min");
+      if(a.title && a.title!==E.title) parts.push(`rename to "${a.title}"`);
+      if(a.location && a.location!==E.location) parts.push("location → "+a.location);
+      (a.addGuests||[]).forEach(g=>parts.push("invite "+nameFor(db,g)));
+      (a.removeGuests||[]).forEach(g=>parts.push("remove "+nameFor(db,g)));
+      if(!parts.length) return bad(`"${E.title}": nothing to change`);
+      return {ok:true,icon:"cal",text:`Event "${E.title}": ${parts.join(", ")}${(E.guests||[]).length||(a.addGuests||[]).length?" · guests notified":""}`,go:["calendar"]};
+    }
+    case "cancelEvent": {
+      const E = (db.events||[]).find(x=>x.id===a.eventId);
+      if(!E) return bad("Cancel an event: event not found");
+      return {ok:true,icon:"x",text:`Cancel "${E.title}" · ${fmtEventTime(E.start,E.end)}${(E.guests||[]).length?" · guests notified":""}`,go:["calendar"]};
+    }
+    default: return bad("Unsupported change: "+a.type);
+  }
+}
+/* Calendar changes go through calOps (Google Calendar in live mode) and may take a moment */
+function applyCalendarAction(ctx,a){
+  const {db,calOps} = ctx;
+  if(a.type==="addEvent"){
+    const start = toISOFromLocal(a.start);
+    const end = a.end ? toISOFromLocal(a.end) : new Date(new Date(start).getTime()+(Number(a.durationMinutes)||60)*60000).toISOString();
+    return calOps.create({title:a.title,start,end,location:a.location||"",description:a.description||"",projectId:a.projectId||"",guests:(a.guests||[]).filter(g=>/@/.test(g))}, a.sendInvites!==false);
+  }
+  const E = (db.events||[]).find(x=>x.id===a.eventId);
+  if(!E) return Promise.reject(new Error("That event is no longer on the calendar."));
+  if(a.type==="cancelEvent") return calOps.remove(E.id,true);
+  const ch = {};
+  const len = Number(a.durationMinutes) || (new Date(E.end)-new Date(E.start))/60000;
+  if(a.start){ const st=toISOFromLocal(a.start); ch.start=st; ch.end=new Date(new Date(st).getTime()+len*60000).toISOString(); }
+  else if(a.durationMinutes){ ch.start=E.start; ch.end=new Date(new Date(E.start).getTime()+len*60000).toISOString(); }
+  ["title","location","description"].forEach(k=>{ if(a[k]) ch[k]=a[k]; });
+  if((a.addGuests||[]).length || (a.removeGuests||[]).length){
+    const cur = (E.guests||[]).map(g=>g.email).filter(g=>(a.removeGuests||[]).map(x=>x.toLowerCase()).indexOf(g.toLowerCase())===-1);
+    ch.guests = cur.concat((a.addGuests||[]).filter(g=>/@/.test(g) && cur.indexOf(g)===-1));
+  }
+  return calOps.update(E.id,ch,true);
+}
+
+const pad2 = n => String(n).padStart(2,"0");
+const localStamp = d => iso(d)+"T"+pad2(d.getHours())+":"+pad2(d.getMinutes());
+const toISOFromLocal = s => { if(!s) return ""; if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return new Date(s+":00").toISOString(); const d=new Date(s); return isNaN(d.getTime())?"":d.toISOString(); };
+const fmtClock = hm => { const [h,m]=hm.split(":").map(Number); return ((h+11)%12+1)+(m?":"+pad2(m):"")+" "+(h<12?"AM":"PM"); };
+const fmtT = d => fmtClock(pad2(d.getHours())+":"+pad2(d.getMinutes()));
+const fmtEventTime = (s,e) => { const a=new Date(s), b=new Date(e); return whenLabel(iso(a)).replace(/^./,c=>c.toUpperCase())+" "+fmtT(a)+"–"+fmtT(b); };
+const GUEST = {accepted:["ok","Accepted"],declined:["bad","Declined"],tentative:["warn","Maybe"],needsAction:["mute","Invited"]};
+const CAL_TYPES = {addEvent:1,updateEvent:1,cancelEvent:1};
+const mondayOf = d => { const x=new Date(d); x.setHours(0,0,0,0); const wd=x.getDay()===0?7:x.getDay(); x.setDate(x.getDate()-(wd-1)); return x; };
+function people(db){
+  const out = [];
+  db.leads.forEach(l=>{ if(l.email) out.push({name:l.name,email:l.email,kind:"Lead"}); });
+  db.vendors.forEach(v=>{ if(v.email) out.push({name:v.name,email:v.email,kind:v.category}); });
+  return out;
+}
+const nameFor = (db,email) => { const p = people(db).find(x=>x.email.toLowerCase()===String(email).toLowerCase()); return p ? p.name : email; };
+function findPerson(db,text){
+  const em = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/); if(em) return {name:em[0],email:em[0]};
+  const t = text.toLowerCase();
+  const all = people(db);
+  return all.find(p=>t.includes(p.name.toLowerCase())) || all.find(p=>{ const f=first(p.name).toLowerCase(); return f.length>2 && new RegExp("\\b"+f.replace(/[^a-z]/g,"")+"\\b").test(t) && p.kind==="Lead"; }) || null;
+}
+function parseTime(s){
+  s = s.toLowerCase(); let m;
+  if(/\bnoon\b/.test(s)) return "12:00";
+  if((m = s.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)/))){ let h=Number(m[1])%12; if(m[3][0]==="p") h+=12; return pad2(h)+":"+(m[2]||"00"); }
+  if((m = s.match(/\bat (\d{1,2})(?::(\d{2}))?\b(?!\s*(?:days?|weeks?|\/))/))){ let h=Number(m[1]); if(h<7) h+=12; if(h>23) return null; return pad2(h)+":"+(m[2]||"00"); }
+  return null;
+}
+
+function EventForm({ctx,ev,preset,onClose}){
+  const {db,calOps} = ctx;
+  const editing = !!(ev && ev.id);
+  const base = ev || preset || {};
+  const s0 = base.start ? new Date(base.start) : (()=>{ const d=new Date(T0.getTime()+DAY); d.setHours(10,0,0,0); return d; })();
+  const dur0 = base.start && base.end ? Math.max(15,Math.round((new Date(base.end)-new Date(base.start))/60000)) : (base.durationMinutes||60);
+  const [title,setTitle] = useState(base.title||"");
+  const [date,setDate] = useState(iso(s0));
+  const [time,setTime] = useState(pad2(s0.getHours())+":"+pad2(s0.getMinutes()));
+  const [dur,setDur] = useState(String(dur0));
+  const [location,setLocation] = useState(base.location||"");
+  const [projectId,setProjectId] = useState(base.projectId||"");
+  const [guests,setGuests] = useState((base.guests||[]).map(g=>g.email||g));
+  const [guestIn,setGuestIn] = useState("");
+  const [notify,setNotifyOn] = useState(true);
+  const [busy,setBusy] = useState(false);
+  const [confirmDel,setConfirmDel] = useState(false);
+  const [err,setErr] = useState("");
+  const durs = [15,30,45,60,90,120,180,240]; if(durs.indexOf(Number(dur))===-1) durs.push(Number(dur));
+  const addGuest = () => { const v = guestIn.trim(); const m = v.match(/[\w.+-]+@[\w-]+\.[\w.]+/); if(!m){ setErr("Type a full email address, or pick someone from the list."); return; } if(guests.indexOf(m[0])===-1) setGuests(guests.concat([m[0]])); setGuestIn(""); setErr(""); };
+  const pickProject = v => { setProjectId(v); const p = projById(db,v); if(p && !location) setLocation(p.address); };
+  const save = () => {
+    const start = new Date(date+"T"+time+":00"); if(isNaN(start.getTime())){ setErr("Pick a date and time."); return; }
+    const end = new Date(start.getTime()+Number(dur)*60000);
+    const payload = {title:title.trim(),start:start.toISOString(),end:end.toISOString(),location,projectId,guests,description:base.description||""};
+    setBusy(true); setErr("");
+    (editing ? calOps.update(ev.id,payload,notify) : calOps.create(payload,notify))
+      .then(()=>{ notify && guests.length ? ctx.notify(editing?"Event updated. Guests notified.":"Event created. Invites sent.") : ctx.notify(editing?"Event updated":"Event created"); onClose(); })
+      .catch(e2=>{ setErr(e2.message); setBusy(false); });
+  };
+  const del = () => { setBusy(true); calOps.remove(ev.id,notify).then(()=>{ ctx.notify(guests.length&&notify?"Event cancelled. Guests notified.":"Event cancelled"); onClose(); }).catch(e2=>{ setErr(e2.message); setBusy(false); }); };
+  return e(Modal,{title:editing?"Edit event":"New event",onClose},
+    e("div",{className:"form"},
+      Field("Title",Inp("ev-title",title,setTitle,"text","e.g. Walkthrough — Denise Carter"),true),
+      Field("Date",Inp("ev-date",date,setDate,"date")), Field("Start",Inp("ev-time",time,setTime,"time")),
+      Field("Length",Sel("ev-dur",dur,setDur,durs.sort((a,b)=>a-b).map(m=>({v:String(m),l:m<60?m+" min":(m/60)+" hr"+(m>60?"s":"")})))),
+      Field("Project",Sel("ev-proj",projectId,pickProject,[{v:"",l:"None"}].concat(db.projects.map(p=>({v:p.id,l:p.name}))))),
+      Field("Location",Inp("ev-loc",location,setLocation,"text","Address or meeting link"),true),
+      e("div",{className:"f full"},"Guests",
+        e("div",{className:"row",style:{flexWrap:"nowrap"}}, e("input",{id:"ev-guest",list:"ev-people",value:guestIn,placeholder:"Email, or pick a lead or vendor",onChange:ev2=>{ const v=ev2.target.value; const m=v.match(/<([^>]+)>$/); setGuestIn(m?m[1]:v); },onKeyDown:ev2=>{ if(ev2.key==="Enter"){ ev2.preventDefault(); addGuest(); } }}), e("button",{className:"btn ghost sm",type:"button",onClick:addGuest},"Add")),
+        e("datalist",{id:"ev-people"}, people(db).map(p=>e("option",{key:p.email,value:p.name+" <"+p.email+">"}))),
+        guests.length ? e("div",{className:"chips",style:{marginTop:8}}, guests.map(g=>{ const st=(base.guests||[]).find(x=>(x.email||x)===g); const gs=GUEST[(st&&st.status)||"needsAction"]||GUEST.needsAction;
+          return e("span",{key:g,className:"chip",style:{display:"inline-flex",alignItems:"center",gap:6,cursor:"default"}}, nameFor(db,g), editing&&st? Pill(gs[0],gs[1]) : null, e("button",{className:"x",style:{padding:0},onClick:()=>setGuests(guests.filter(x=>x!==g)),"aria-label":"Remove "+g},Icon("x",13))); })) : null),
+      e("label",{className:"row full",style:{gap:8,fontSize:13.5}}, e("input",{id:"ev-notify",type:"checkbox",checked:notify,onChange:ev2=>setNotifyOn(ev2.target.checked),style:{width:"auto"}}), editing?"Email guests about changes":"Email calendar invites to guests")),
+    err ? e("p",{className:"err",style:{marginBottom:0}},err) : null,
+    e("div",{className:"actions",style:{justifyContent:"space-between"}},
+      editing ? (confirmDel ? e("div",{className:"row"}, e("span",{className:"note"},"Cancel this event"+(guests.length&&notify?" and tell guests?":"?")), e("button",{className:"btn navy sm",disabled:busy,onClick:del},"Yes, cancel it"), e("button",{className:"btn ghost sm",onClick:()=>setConfirmDel(false)},"Keep")) : e("button",{className:"btn ghost",onClick:()=>setConfirmDel(true)},"Cancel event")) : e("span"),
+      e("div",{className:"row"}, e("button",{className:"btn ghost",onClick:onClose},"Close"), e("button",{className:"btn",disabled:busy||!title.trim(),onClick:save},busy?"Saving…":editing?"Save changes":(guests.length&&notify?"Create & send invites":"Create event")))));
+}
+
+function CalendarView({ctx}){
+  const {db,go,loadEvents} = ctx;
+  const [week,setWeek] = useState(()=>mondayOf(T0));
+  const [form,setForm] = useState(null);
+  const [loading,setLoading] = useState(false);
+  useEffect(()=>{ if(!LIVE) return; setLoading(true); loadEvents(week, new Date(week.getTime()+7*DAY)).finally(()=>setLoading(false)); },[week.getTime()]);
+  const days = Array.from({length:7},(_,i)=>new Date(week.getTime()+i*DAY));
+  const events = (db.events||[]);
+  const label = days[0].toLocaleDateString("en-US",{month:"short",day:"numeric"})+" – "+days[6].toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow"},LIVE?"Synced with Google Calendar":"Sample schedule"), e("h1",{className:"t"},"Calendar"), e("div",{className:"sub"},"Walkthroughs, closings, inspections and contractor visits, with project milestones alongside.")),
+      e("button",{className:"btn",onClick:()=>setForm({})},Icon("plus",16),"New event")),
+    e("div",{className:"row",style:{justifyContent:"space-between",marginBottom:12}},
+      e("div",{className:"row"},
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(new Date(week.getTime()-7*DAY)),"aria-label":"Previous week"},Icon("back",15)),
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(mondayOf(T0))},"This week"),
+        e("button",{className:"btn ghost sm",onClick:()=>setWeek(new Date(week.getTime()+7*DAY)),"aria-label":"Next week",style:{transform:"scaleX(-1)"}},Icon("back",15))),
+      e("b",{className:"num"},label, loading? e("span",{className:"muted",style:{fontWeight:400}}," · loading…") : null)),
+    db.calError ? e("div",{className:"card",style:{marginBottom:12}}, e("b",null,"Google Calendar isn't connected yet. "), e("span",{className:"muted"},db.calError)) : null,
+    e("div",{className:"card",style:{paddingTop:4,paddingBottom:4}},
+      days.map(d=>{
+        const dayIso = iso(d), isToday = dayIso===iso(T0);
+        const evs = events.filter(x=>iso(new Date(x.start))===dayIso).sort((a,b)=>a.start.localeCompare(b.start));
+        const ms = db.milestones.filter(m=>m.date===dayIso);
+        return e("div",{key:dayIso,className:"cal-day"+(isToday?" today":"")},
+          e("div",{className:"dl"}, e("div",{className:"wd"},d.toLocaleDateString("en-US",{weekday:"short"})), e("div",{className:"dn"},d.getDate()), isToday? Pill("gold","Today") : null),
+          e("div",{className:"stack",style:{gap:8,minWidth:0}},
+            ms.map(m=>{ const p=projById(db,m.projectId); return e("button",{key:m.id,className:"ms-mark",onClick:()=>go("project",m.projectId,"planning")},Icon("flag",13),e("span",null,"Milestone · "+(p?p.area+": ":"")+m.title), m.done? Pill("ok","Done") : null); }),
+            evs.map(x=>{ const p=projById(db,x.projectId);
+              return e("button",{key:x.id,className:"ev",onClick:()=>setForm({ev:x})},
+                e("div",{className:"tm"},x.allDay?"All day":fmtT(new Date(x.start)), e("div",{className:"muted",style:{fontWeight:400,fontSize:12}},x.allDay?"":"to "+fmtT(new Date(x.end)))),
+                e("div",{style:{minWidth:0}},
+                  e("div",{style:{fontWeight:700}},x.title),
+                  (x.location||p) ? e("div",{className:"muted",style:{fontSize:12.5,marginTop:2}},[x.location,p&&p.name!==x.location?p.name:""].filter(Boolean).join(" · ")) : null,
+                  x.guests && x.guests.length ? e("div",{className:"gs"}, x.guests.map(g=>{ const gs=GUEST[g.status]||GUEST.needsAction; return e("span",{key:g.email,className:"pill "+gs[0]},nameFor(db,g.email)+" · "+gs[1]); })) : null),
+                x.link ? e("a",{className:"lnk",href:x.link,target:"_blank",rel:"noopener",onClick:ev2=>ev2.stopPropagation(),style:{fontSize:12.5,whiteSpace:"nowrap"}},"Google ↗") : e("span")); }),
+            !evs.length && !ms.length ? e("div",{className:"muted",style:{fontSize:13,padding:"6px 0"}},"Nothing scheduled") : null));
+      })),
+    form && e(EventForm,{ctx,ev:form.ev,preset:form.preset,onClose:()=>setForm(null)}));
+}
+
+function Modal({title,onClose,children}){
+  useEffect(()=>{ const h=ev=>{ if(ev.key==="Escape") onClose(); }; window.addEventListener("keydown",h); return ()=>window.removeEventListener("keydown",h); },[]);
+  return e("div",{className:"mbg",onMouseDown:onClose},
+    e("div",{className:"modal",role:"dialog","aria-modal":true,"aria-label":title,onMouseDown:ev=>ev.stopPropagation()},
+      e("div",{className:"modal-h"}, e("h2",{className:"t"},title), e("button",{className:"x",onClick:onClose,"aria-label":"Close"},Icon("x"))),
+      children));
+}
+const Field = (label,input,full) => e("label",{className:"f"+(full?" full":"")},label,input);
+const Sel = (id,val,set,opts) => e("select",{id,value:val,onChange:ev=>set(ev.target.value)}, opts.map(o=> typeof o==="string" ? e("option",{key:o,value:o},o) : e("option",{key:o.v,value:o.v},o.l)));
+const Inp = (id,val,set,type,ph) => e("input",{id,type:type||"text",value:val,placeholder:ph||"",onChange:ev=>set(ev.target.value)});
+
+function QuoteFormModal({onClose}){
+  const ref = useRef(null);
+  const [copied,setCopied] = useState(false);
+  useEffect(()=>{ if(ref.current && window.QRCode){ ref.current.innerHTML=""; new window.QRCode(ref.current,{text:CONFIG.quoteFormUrl,width:220,height:220,colorDark:"#0B1B33",colorLight:"#ffffff"}); } },[]);
+  const copy = () => { try{ navigator.clipboard.writeText(CONFIG.quoteFormUrl).then(()=>setCopied(true),()=>{}); }catch(err){} };
+  return e(Modal,{title:"Seller form",onClose},
+    e("p",{className:"muted",style:{marginTop:0}},"Share this link or QR code with a homeowner. Their request shows up in Seller leads within seconds, and "+CONFIG.aiName+" drafts the reply."),
+    e("div",{className:"qr"},e("div",{ref})),
+    e("div",{className:"url-box",style:{marginTop:12}},e("code",null,CONFIG.quoteFormUrl),e("button",{className:"btn ghost sm",onClick:copy},copied?"Copied":"Copy")),
+    e("div",{className:"actions"},e("a",{className:"btn",href:CONFIG.quoteFormUrl,target:"_blank",rel:"noopener"},"Open form")));
+}
+
+function Leads({ctx}){
+  const {db,up,notify,setDb,refresh} = ctx;
+  const [tab,setTab] = useState("inbox");
+  const [sel,setSel] = useState(null);
+  const [n,setN] = useState(0);
+  const [qr,setQr] = useState(false);
+  const [checking,setChecking] = useState(false);
+  const leads = db.leads.slice().sort((a,b)=>b.received-a.received);
+  const cur = leads.find(l=>l.id===sel);
+  const nr = needsReply(db).length;
+  const setLead = (id,fn) => up("leads",ls=>ls.map(l=>l.id===id?fn(l):l));
+  const replaceLead = lead => up("leads",ls=>ls.map(l=>l.id===lead.id?lead:l));
+
+  const write = (lead,variant,auto) => {
+    const before = lead.reply && lead.reply.status!=="writing" ? lead.reply : null;
+    setLead(lead.id,l=>({...l,reply:{status:"writing"}}));
+    if(LIVE){
+      api("draftReply",{id:lead.id,variant:variant||0}).then(r=>replaceLead(r.lead)).catch(err=>{ setLead(lead.id,l=>({...l,reply:before})); notify(err.message); });
+      return;
+    }
+    setTimeout(()=>{
+      const text = genReply(lead,variant||0);
+      if(auto){ setLead(lead.id,l=>({...l,stage:l.stage==="New"?"Contacted":l.stage,reply:{status:"sent",auto:true,at:Date.now(),text}})); notify(CONFIG.aiName+" replied to "+lead.name); }
+      else setLead(lead.id,l=>({...l,reply:{status:"draft",text,variant:variant||0}}));
+    }, 1300);
+  };
+  const sendReply = (lead,text) => {
+    if(!LIVE){ setLead(lead.id,l=>({...l,stage:l.stage==="New"?"Contacted":l.stage,reply:{status:"sent",auto:false,at:Date.now(),text}})); notify("Reply sent to "+lead.name); return Promise.resolve(); }
+    return api("sendReply",{id:lead.id,text}).then(r=>{ replaceLead(r.lead); notify(r.lead.reply && r.lead.reply.error ? "Marked sent. "+r.lead.reply.error : "Email sent to "+lead.email); }).catch(err=>notify(err.message));
+  };
+  const setAuto = on => {
+    setDb(d=>({...d,autopilot:on}));
+    notify(on?"Autopilot on. New leads get a reply automatically.":"Autopilot off. Replies wait for your approval.");
+    if(LIVE) api("setAutopilot",{on}).catch(err=>{ setDb(d=>({...d,autopilot:!on})); notify(err.message); });
+  };
+  const setStage = (l,v) => {
+    setLead(l.id,x=>({...x,stage:v})); if(v==="Won") notify(l.name+" marked as won");
+    if(LIVE) api("updateLead",{id:l.id,stage:v}).catch(err=>notify(err.message));
+  };
+  const simulate = () => {
+    const base = INCOMING[n%INCOMING.length]; setN(n+1); setTab("inbox");
+    if(LIVE){
+      notify("Sending a sample lead through the live system…");
+      api("submitSample",{lead:{...base,sample:true}}).then(r=>refresh().then(()=>setSel(r.id))).catch(err=>notify(err.message));
+      return;
+    }
+    const lead = {...base,id:uid("l"),received:Date.now(),stage:"New",reply:null};
+    up("leads",ls=>[lead].concat(ls)); setSel(lead.id);
+    notify("New lead from "+lead.name);
+    setTimeout(()=>write(lead,n,db.autopilot),500);
+  };
+  const gmail = () => {
+    setChecking(true);
+    api("checkGmail").then(r=>{ notify(r.note || (r.imported ? r.imported+" new lead"+(r.imported>1?"s":"")+" from Gmail" : "No new lead emails")); return refresh(); })
+      .catch(err=>notify(err.message)).finally(()=>setChecking(false));
+  };
+
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Seller leads"), e("div",{className:"sub"},"Homeowners who want to sell, from your Sell-your-house form and the seller-leads Gmail label. Wholesale deals stay in Deal Leads.")),
+      e("div",{className:"row"},
+        LIVE && CONFIG.quoteFormUrl && e("button",{className:"btn",onClick:()=>setQr(true)},"Seller form"),
+        LIVE && e("button",{className:"btn ghost",disabled:checking,onClick:gmail},Icon("inbox",16),checking?"Checking…":"Check Gmail"),
+        e("button",{className:"btn navy",onClick:simulate},Icon("plus",16),LIVE?"Sample lead":"Simulate a new lead"))),
+    e("div",{className:"card auto",style:{marginBottom:16}},
+      e("button",{className:"sw"+(db.autopilot?" on":""),role:"switch","aria-checked":db.autopilot,"aria-label":"Autopilot replies",onClick:()=>setAuto(!db.autopilot)},e("i")),
+      e("div",{className:"grow"}, e("b",null,"Autopilot replies are "+(db.autopilot?"on":"off")),
+        e("div",{className:"muted",style:{fontSize:13}}, db.autopilot? CONFIG.aiName+" answers every new lead within a minute, day or night, and offers walkthrough times." : CONFIG.aiName+" drafts a reply for each new lead. You review it and press send.")),
+      nr? Pill("gold",nr+" waiting on you") : Pill("ok","All leads answered")),
+    e("div",{className:"tabs"}, [["inbox","Inbox"],["pipeline","Pipeline"]].map(([k,l])=>e("button",{key:k,className:"tab"+(tab===k?" on":""),onClick:()=>setTab(k)},l))),
+    tab==="inbox" ?
+      e("div",{className:"inbox"+(cur?" has-sel":"")},
+        e("div",{className:"card ilist ilist-card"}, leads.length ? leads.map(l=>{ const st = !l.reply ? ["bad","No reply yet"] : l.reply.status==="writing" ? ["gold","Writing…"] : l.reply.status==="draft" ? ["gold","Draft ready"] : ["ok", l.reply.auto?"Auto-replied":"Replied"];
+          return e("button",{key:l.id,className:"irow"+(sel===l.id?" on":""),onClick:()=>setSel(l.id)},
+            e("div",{className:"top"},e("span",{className:"nm"},l.name),e("span",{className:"tm"},ago(l.received))),
+            e("div",{className:"ms"},l.message),
+            e("div",{className:"row"},Pill(st[0],st[1]),l.sample&&LIVE?Pill("mute","Sample"):null,e("span",{className:"muted",style:{fontSize:12}},l.service+" · "+l.source))); }) : e("div",{className:"empty"},"No seller leads yet. Share the seller form, or label a seller email seller-leads in Gmail.")),
+        cur ? e(LeadDetail,{key:cur.id,lead:cur,ctx,write,onSend:text=>sendReply(cur,text),back:()=>setSel(null)}) : e("div",{className:"card idetail"},e("div",{className:"empty"},"Select a lead to read it and see the AI reply.")))
+    : e("div",{className:"kan"}, CONFIG.leadStages.map(st=>{ const ls=leads.filter(l=>l.stage===st); return e("div",{className:"kcol",key:st},
+        e("div",{className:"kcol-h"},st+" ("+ls.length+")",e("span",{className:"num"},money(ls.reduce((a,l)=>a+(l.est||0),0)))),
+        ls.map(l=>e("div",{className:"kcard",key:l.id}, e("b",null,l.name), e("div",{className:"muted",style:{fontSize:12.5}},l.service+(l.est?" · "+money(l.est):"")),
+          e("select",{id:"stage-"+l.id,value:l.stage,"aria-label":"Stage for "+l.name,onChange:ev=>setStage(l,ev.target.value)}, CONFIG.leadStages.map(s=>e("option",{key:s},s)))))); })),
+    qr && e(QuoteFormModal,{onClose:()=>setQr(false)}));
+}
+
+function LeadDetail({lead,ctx,write,onSend,back}){
+  const [sched,setSched] = useState(false);
+  const upcoming = (ctx.db.events||[]).filter(x=>lead.email && (x.guests||[]).some(g=>g.email.toLowerCase()===lead.email.toLowerCase()) && new Date(x.end)>new Date());
+  const [text,setText] = useState(lead.reply && lead.reply.text || "");
+  const [variant,setVariant] = useState((lead.reply && lead.reply.variant) || 0);
+  const [sending,setSending] = useState(false);
+  useEffect(()=>{ if(lead.reply && lead.reply.status==="draft") setText(lead.reply.text); },[lead.reply && lead.reply.status, lead.reply && lead.reply.text]);
+  const r = lead.reply;
+  const send = () => { setSending(true); Promise.resolve(onSend(text)).finally(()=>setSending(false)); };
+  const contact = [lead.address,lead.phone,lead.email].filter(Boolean).join(" · ");
+  return e("div",{className:"card idetail stack",style:{gap:14}},
+    e("button",{className:"lnk mobile-only",style:{alignSelf:"flex-start",color:"var(--muted)"},onClick:back},"← All leads"),
+    e("div",{className:"row",style:{justifyContent:"space-between",alignItems:"flex-start"}},
+      e("div",{style:{minWidth:0}}, e("h2",{className:"t"},lead.name), e("div",{className:"muted",style:{fontSize:13,marginTop:3,userSelect:"text",overflowWrap:"anywhere"}},contact)),
+      e("div",{className:"row"}, Pill(STAGE_CLS[lead.stage]||"mute",lead.stage), Pill("mute",lead.source), e("button",{className:"btn ghost sm",onClick:()=>setSched(true)},Icon("cal",14),"Schedule walkthrough"))),
+    upcoming.length ? e("div",{className:"note"},Icon("cal",13)," ",upcoming.map(x=>x.title+", "+fmtEventTime(x.start,x.end)).join(" · ")) : null,
+    sched && e(EventForm,{ctx,preset:{title:"Walkthrough — "+lead.name,durationMinutes:30,location:lead.address||"",guests:lead.email?[lead.email]:[],description:lead.service+" (seller lead): "+(lead.message||"").slice(0,400)},onClose:()=>setSched(false)}),
+    e("div",{className:"row muted",style:{fontSize:12.5}}, e("span",null,lead.service), lead.est? e("span",null,"· Asking "+money(lead.est)) : null, e("span",null,"· Received "+ago(lead.received))),
+    e("div",{className:"bubble"},lead.message),
+    e("div",{className:"eyebrow gold",style:{marginTop:4}},Icon("spark",13), !r ? "No reply yet" : r.status==="writing" ? CONFIG.aiName+" is writing" : r.status==="draft" ? "Draft reply · waiting for your approval" : (r.auto?"Sent automatically by ":"Approved by "+CONFIG.ownerName+" · written by ")+CONFIG.aiName+" · "+ago(r.at)),
+    r && r.error && r.status!=="writing" ? e("div",{className:"note"+(r.status==="sent"?"":" bad")},r.error) : null,
+    !r ? e("div",{className:"row"}, e("button",{className:"btn",onClick:()=>write(lead,variant,false)},Icon("spark",15),"Write reply with "+CONFIG.aiName.split(" ")[0])) :
+    r.status==="writing" ? e("div",{className:"bubble ai"},e("span",{className:"writing"},e("i"),e("i"),e("i"))) :
+    r.status==="draft" ? e(React.Fragment,null,
+      e("textarea",{id:"reply-"+lead.id,rows:12,value:text,onChange:ev=>setText(ev.target.value),style:{background:"var(--gold-soft)",borderColor:"rgba(212,160,23,.4)"}}),
+      LIVE && lead.email && !lead.sample ? e("div",{className:"note"},"Sends by email to "+lead.email+".") : null,
+      e("div",{className:"row",style:{justifyContent:"flex-end"}},
+        e("button",{className:"btn ghost",disabled:sending,onClick:()=>{ const v=variant+1; setVariant(v); write(lead,v,false); }},"Rewrite"),
+        e("button",{className:"btn",disabled:sending||!text.trim(),onClick:send},Icon("send",15),sending?"Sending…":"Approve & send"))) :
+    e("div",{className:"bubble ai"},r.text));
+}
+
+const STYLES = ["Before & After","Progress Update","Tip of the Week","Special Offer"];
+const PLATFORMS = [["Facebook","Facebook"],["Instagram","Instagram"],["Facebook + Instagram","Both"]];
+const PLAT_CLS = {"Facebook":"info","Instagram":"gold","Facebook + Instagram":"navy"};
+function PostImage({p,style,square}){
+  const info = TYPE_INFO[p.type] || TYPE_INFO["Full Gut"];
+  if(style==="Before & After") return e("div",{className:"pimg"+(square?" sq":"")}, e("div",{className:"half before"},e("span",{className:"lbl"},"BEFORE")), e("div",{className:"half after"},e("span",{className:"lbl"},"AFTER")), e("span",{className:"wm"},p.city||p.area));
+  const k = style==="Progress Update" ? "In progress · "+(p.city||p.area) : style==="Tip of the Week" ? "Tip of the week" : "Sell as-is";
+  const h = style==="Progress Update" ? "Fix & flip renovation" : style==="Tip of the Week" ? info.tips[0].split(".")[0] : "We buy houses for cash";
+  const s = CONFIG.companyName;
+  return e("div",{className:"pimg"+(square?" sq":"")}, e("div",{className:"center"}, e("div",{className:"k"},k), e("div",{className:"h",style:style==="Tip of the Week"?{fontSize:22}:null},h), e("div",{className:"rule"}), e("div",{className:"s"},s)));
+}
+function PostPreview({p,platform,style,caption,when,photo}){
+  const ig = platform==="Instagram";
+  const img = photo ? e("img",{className:"pimg-photo"+(ig?" sq":""),src:photo,alt:"Post photo"}) : e(PostImage,{p,style,square:ig});
+  return e("div",{className:"mock"},
+    e("div",{className:"mock-h"}, e("div",{className:"av"},CONFIG.logoText), e("div",null, e("div",{className:"nm"},ig?CONFIG.socialHandle:CONFIG.companyName), e("div",{className:"tm"},(when||"Just now")+(ig?"":" · Public")))),
+    !ig && e("div",{className:"mock-cap"},caption),
+    img,
+    ig && e("div",{className:"mock-cap ig"},e("b",null,CONFIG.socialHandle+" "),caption),
+    e("div",{className:"mock-f"}, ig ? [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share"),e("span",{key:4},"Save")] : [e("span",{key:1},"Like"),e("span",{key:2},"Comment"),e("span",{key:3},"Share")]));
+}
+/* Before & after: two photos become one branded side-by-side image (square for Instagram, wide for Facebook) */
+function loadImg(src){ return new Promise((ok,fail)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=()=>fail(new Error("Couldn't read that photo.")); i.src=src; }); }
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function combineBeforeAfter(beforeUrl,afterUrl,square){
+  return Promise.all([loadImg(beforeUrl),loadImg(afterUrl)]).then(([A,B])=>{
+    const W = square?1080:1600, H = square?1080:900, gap = Math.round(W*0.005), half = (W-gap)/2, m = Math.round(H*0.04);
+    const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0,0,W,H);
+    const draw = (img,x) => { const sc = Math.max(half/img.width,H/img.height), sw = half/sc, sh = H/sc; g.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,x,0,half,H); };
+    draw(A,0); draw(B,half+gap);
+    const pill = (text,x,bg,fg) => {
+      g.font = "700 "+Math.round(H*0.034)+"px 'Instrument Sans', Arial, sans-serif";
+      const tw = g.measureText(text).width, ph = Math.round(H*0.068), pw = tw+ph, y = H-ph-m;
+      g.fillStyle = bg; roundRect(g,x,y,pw,ph,ph*0.2); g.fill();
+      g.fillStyle = fg; g.textBaseline = "middle"; g.fillText(text,x+(pw-tw)/2,y+ph/2+1);
+    };
+    pill("BEFORE",m,"rgba(11,27,51,0.88)","#ffffff");
+    pill("AFTER",half+gap+m,CONFIG.accentColor,CONFIG.primaryColor);
+    g.font = "600 "+Math.round(H*0.026)+"px 'Instrument Sans', Arial, sans-serif";
+    const nm = CONFIG.companyName, tw = g.measureText(nm).width, bh = Math.round(H*0.052);
+    g.fillStyle = "rgba(11,27,51,0.62)"; roundRect(g,W-tw-m-bh*0.8,m,tw+bh*0.8,bh,bh*0.25); g.fill();
+    g.fillStyle = "#ffffff"; g.textBaseline = "middle"; g.fillText(nm,W-tw-m-bh*0.4,m+bh/2+1);
+    return c.toDataURL("image/jpeg",0.88);
+  });
+}
+function BASlots({ba,setBa,prefix,notify}){
+  const pick = which => ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(u=>setBa(b=>({...b,[which]:u}))).catch(err=>notify(err.message)); };
+  return e("div",{className:"ba-pick"}, [["before","Before"],["after","After"]].map(([k,l])=>e("label",{key:k,className:"ba-slot"},
+    e("input",{id:prefix+"-"+k,type:"file",accept:"image/*",onChange:pick(k)}),
+    ba[k] ? e("img",{src:ba[k],alt:l+" photo"}) : e(React.Fragment,null,Icon("plus",20),"Add "+l.toLowerCase()+" photo"),
+    ba[k] ? e("span",{className:"tag"+(k==="after"?" after":"")},l.toUpperCase()) : null,
+    ba[k] ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setBa(b=>({...b,[k]:null}));},"aria-label":"Remove "+l.toLowerCase()+" photo"},Icon("x",14)) : null)));
+}
+function PairModal({ctx,onClose,onAdd}){
+  const {db,notify} = ctx;
+  const [pid,setPid] = useState((db.projects.find(p=>p.status==="Completed")||db.projects[0]||{}).id||"");
+  const [ba,setBa] = useState({before:null,after:null});
+  const [busy,setBusy] = useState(false);
+  const add = () => { setBusy(true); combineBeforeAfter(ba.before,ba.after,true).then(img=>onAdd(img,pid)).then(onClose).catch(err=>{ notify(err.message); setBusy(false); }); };
+  return e(Modal,{title:"Add a before & after pair",onClose},
+    e("p",{className:"muted",style:{marginTop:0}},CONFIG.aiName.split(" ")[0]+" uses pairs for automated Before & After posts. Each pair is saved as one labeled side-by-side image that works on Facebook and Instagram."),
+    Field("Project these photos show",Sel("pair-proj",pid,setPid,db.projects.map(p=>({v:p.id,l:p.name})))),
+    e("div",{style:{marginTop:12}},e(BASlots,{ba,setBa,prefix:"pair",notify})),
+    e("div",{className:"actions"}, e("button",{className:"btn ghost",onClick:onClose},"Cancel"), e("button",{className:"btn",disabled:busy||!(ba.before&&ba.after),onClick:add},busy?"Saving…":"Add pair")));
+}
+const POST_STATUS = s => s==="Posted"?["ok","Posted"]:s==="Failed"?["bad","Failed"]:s==="Draft"?["gold","Needs approval"]:["warn",s];
+function PostModal({ctx,post,onClose,onApprove,onDiscard}){
+  const {db,up,notify} = ctx;
+  const remote = LIVE && post.live;
+  const [img,setImg] = useState(post.image||null);
+  const [loading,setLoading] = useState(!post.image && remote);
+  const [cap,setCap] = useState(post.caption||"");
+  const [busy,setBusy] = useState("");
+  useEffect(()=>{ if(post.image || !remote) return; api("getPostImage",{id:post.id}).then(r=>setImg(r.image||null)).catch(()=>{}).finally(()=>setLoading(false)); },[post.id]);
+  const editable = post.status==="Draft" || post.status==="Scheduled" || post.status==="Failed";
+  const dirty = cap!==(post.caption||"");
+  const pr = projById(db,post.projectId) || {area:post.projectName||"",type:"Full Gut",name:post.projectName||""};
+  const st = POST_STATUS(post.status);
+  const saveCap = () => {
+    if(!dirty) return Promise.resolve();
+    if(!remote){ up("posts",ps=>ps.map(p=>p.id===post.id?{...p,caption:cap}:p)); return Promise.resolve(); }
+    return api("updatePost",{id:post.id,caption:cap}).then(r=>up("posts",ps=>ps.map(p=>p.id===post.id?{...p,caption:r.post.caption}:p)));
+  };
+  const doSave = () => { setBusy("save"); saveCap().then(()=>notify("Caption saved")).catch(err=>notify(err.message)).finally(()=>setBusy("")); };
+  const doApprove = () => { setBusy("approve"); saveCap().then(()=>onApprove({...post,caption:cap})).then(okd=>{ if(okd!==false) onClose(); }).catch(err=>notify(err.message)).finally(()=>setBusy("")); };
+  return e(Modal,{title:post.status==="Draft"?"Review draft":post.status==="Scheduled"?"Scheduled post":post.status==="Failed"?"Post failed":"Published post",onClose},
+    e("div",{className:"row",style:{marginBottom:12}}, post.auto?Pill("gold","Auto"):null, Pill(PLAT_CLS[post.platform]||"mute",post.platform==="Facebook + Instagram"?"FB + IG":post.platform), Pill(st[0],st[1]),
+      e("span",{className:"muted",style:{fontSize:12.5}},(post.style||"")+" · "+fmtD(post.date)+(post.time?" at "+fmtClock(post.time):""))),
+    loading ? e("div",{className:"empty"},"Loading photo…") : e(PostPreview,{p:pr,platform:post.platform==="Instagram"?"Instagram":"Facebook",style:post.style,photo:img,caption:cap}),
+    post.platform==="Facebook + Instagram" ? e("div",{className:"note",style:{textAlign:"center",marginTop:6}},"Instagram gets the same photo and caption, cropped square.") : null,
+    post.error ? e("div",{className:"note"+(post.status==="Failed"?" bad":""),style:{marginTop:10}},post.error) : null,
+    editable ? e("div",{style:{marginTop:14}},Field("Caption",e("textarea",{id:"pm-cap",rows:7,value:cap,onChange:ev=>setCap(ev.target.value)}))) : null,
+    e("div",{className:"actions",style:{justifyContent:"space-between"}},
+      e("div",{className:"row"},
+        post.fbUrl ? e("a",{className:"btn ghost sm",href:post.fbUrl,target:"_blank",rel:"noopener"},"View on Facebook ↗") : null,
+        post.igUrl ? e("a",{className:"btn ghost sm",href:post.igUrl,target:"_blank",rel:"noopener"},"View on Instagram ↗") : null,
+        editable ? e("button",{className:"btn ghost sm",disabled:!!busy,onClick:()=>{ onDiscard(post); onClose(); }},post.status==="Scheduled"?"Delete":"Discard") : null),
+      e("div",{className:"row"},
+        editable && dirty ? e("button",{className:"btn ghost",disabled:!!busy,onClick:doSave},busy==="save"?"Saving…":"Save caption") : null,
+        post.status==="Draft"||post.status==="Failed" ? e("button",{className:"btn",disabled:!!busy,onClick:doApprove},Icon(postTime(post)>Date.now()+60000?"check":"send",15),busy==="approve"?"Saving…":post.status==="Failed"?"Try again":postTime(post)>Date.now()+60000?"Approve for "+fmtD(post.date)+" "+fmtClock(post.time||"10:00"):"Approve & publish now")
+          : e("button",{className:"btn ghost",onClick:onClose},"Close"))));
+}
+function AutoPostPanel({ctx,onCreated}){
+  const {db,setDb,up,notify,refresh} = ctx;
+  const st = db.autoSocial || defaultAutoSocial();
+  const base = {...defaultAutoSocial().settings, ...st.settings};
+  const [cfg,setCfg] = useState(base);
+  const [busy,setBusy] = useState("");
+  const [open,setOpen] = useState(!!base.enabled);
+  const [pairOpen,setPairOpen] = useState(false);
+  const bank = st.bank || [];
+  const nPhotos = LIVE ? (st.photos||0) : bank.length;
+  const nPairs = LIVE ? (st.pairs||0) : bank.filter(b=>b.kind==="ba").length;
+  const sig = JSON.stringify(base);
+  useEffect(()=>{ setCfg(base); },[sig]);
+  const dirty = JSON.stringify(cfg)!==sig;
+  const upcoming = db.posts.filter(isUpcomingAuto).sort((a,b)=>postTime(a)-postTime(b));
+  const setAuto = fn => setDb(d=>({...d,autoSocial:fn(d.autoSocial||defaultAutoSocial())}));
+  const picks = slotsForCfg(cfg).map(x=>WD_NAME[x[0]]+" "+fmtClock(x[1]));
+  const valid = cfg.styles.length && (cfg.schedule==="smart" || cfg.days.length);
+  /* Save settings; when on, (re)plan the next 2 weeks */
+  const persist = (settings,replan) => {
+    setBusy("save");
+    if(!LIVE){
+      setTimeout(()=>{
+        setDb(d=>{
+          const a = {...(d.autoSocial||defaultAutoSocial())}, bk = (a.bank||[]).map(x=>({...x}));
+          let posts = d.posts;
+          const removed = posts.filter(isUpcomingAuto).length;
+          if(replan || !settings.enabled) posts = posts.filter(p=>!isUpcomingAuto(p));
+          let made = 0, i = a.idx||0;
+          if(settings.enabled){
+            const taken = {}; posts.filter(isUpcomingAuto).forEach(p=>taken[p.date]=1);
+            planSlotsLocal(settings,Date.now()+30*60000,Date.now()+14*DAY).filter(t=>!taken[iso(new Date(t))]).slice(0,6).forEach(t=>{ posts = posts.concat([makeLocalAutoPost(d,settings,i,bk,t)]); i++; made++; });
+          }
+          setTimeout(()=>notify(!settings.enabled ? "Autopilot posting off"+(removed?". "+removed+" planned post"+(removed>1?"s":"")+" removed.":".") : made ? made+" post"+(made>1?"s":"")+" planned. Check the content calendar." : "Schedule saved"),0);
+          return {...d,posts,autoSocial:{...a,settings,idx:i,bank:bk}};
+        });
+        setBusy("");
+      },900);
+      return;
+    }
+    api("saveAutoSocial",{settings,replan:!!replan}).then(r=>{
+      setAuto(a=>({...a,...r.autoSocial}));
+      notify(!settings.enabled ? "Autopilot posting off"+(r.removed?". "+r.removed+" planned post"+(r.removed>1?"s":"")+" removed.":".") : r.created ? r.created+" post"+(r.created>1?"s":"")+" planned. Check the content calendar." : "Schedule saved");
+      return refresh();
+    }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
+  };
+  const toggle = () => { const s2 = {...cfg,enabled:!base.enabled}; setCfg(s2); setOpen(true); persist(s2,false); };
+  const toggleIn = (key,val) => setCfg(c=>{ const arr=c[key]||[]; const nx = arr.indexOf(val)>-1 ? arr.filter(x=>x!==val) : arr.concat([val]); return {...c,[key]: key==="days" ? nx.sort((a,b)=>a-b) : nx}; });
+  const runNow = () => {
+    setBusy("run");
+    if(LIVE){
+      api("runAutoSocialNow").then(r=>{ up("posts",ps=>[r.post].concat(ps)); setAuto(a=>({...a,...r.autoSocial})); if(onCreated) onCreated(r.post.id);
+        notify(r.post.status==="Draft"?"Draft ready for your approval":r.post.status==="Posted"?"Published to "+r.post.platform:(r.post.error||"The post failed")); })
+        .catch(err=>notify(err.message)).finally(()=>setBusy(""));
+      return;
+    }
+    setTimeout(()=>{
+      const bk = bank.map(x=>({...x})), i = st.idx||0;
+      const post = makeLocalAutoPost(db,cfg,i,bk,null);
+      up("posts",ps=>[post].concat(ps));
+      setAuto(a=>({...a,idx:i+1,bank:bk}));
+      if(onCreated) onCreated(post.id);
+      notify(post.status==="Draft"?"Draft ready for your approval":"Posted to "+cfg.platform); setBusy("");
+    },1100);
+  };
+  const addPhotos = ev => {
+    const files = Array.from(ev.target.files||[]).slice(0,10); ev.target.value=""; if(!files.length) return;
+    setBusy("photos");
+    Promise.all(files.map(resizePhoto)).then(imgs=>{
+      const msg = imgs.length+" photo"+(imgs.length>1?"s":"")+" added to the library";
+      if(!LIVE){ setAuto(a=>({...a,bank:(a.bank||[]).concat(imgs.map(im=>({id:uid("ph"),image:im,projectId:"",kind:"",used:0}))).slice(-12)})); notify(msg); return; }
+      return api("uploadPhotos",{images:imgs}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify(msg); });
+    }).catch(err=>notify(err.message)).finally(()=>setBusy(""));
+  };
+  const addPair = (img,projectId) => {
+    if(!LIVE){ setAuto(a=>({...a,bank:(a.bank||[]).concat([{id:uid("ph"),image:img,projectId,kind:"ba",used:0}]).slice(-12)})); notify("Before & after pair added"); return Promise.resolve(); }
+    return api("uploadPhotos",{images:[img],projectId,kind:"ba"}).then(r=>{ setAuto(a=>({...a,...r.autoSocial})); notify("Before & after pair added"); });
+  };
+  const clear = () => { if(!LIVE){ setAuto(a=>({...a,bank:[]})); return; } api("clearPhotos").then(r=>setAuto(a=>({...a,...r.autoSocial}))).catch(err=>notify(err.message)); };
+  const nextP = upcoming[0], lastP = upcoming[upcoming.length-1];
+  const nDraft = upcoming.filter(p=>p.status==="Draft").length;
+  return e("div",{className:"card",style:{marginBottom:16}},
+    e("div",{className:"auto"},
+      e("button",{className:"sw"+(base.enabled?" on":""),role:"switch","aria-checked":!!base.enabled,"aria-label":"Autopilot posting",disabled:busy==="save",onClick:toggle},e("i")),
+      e("div",{className:"grow"}, e("b",null,"Autopilot posting is "+(base.enabled?"on":"off")),
+        e("div",{className:"muted",style:{fontSize:13}}, base.enabled
+          ? (upcoming.length ? upcoming.length+" post"+(upcoming.length>1?"s":"")+" planned through "+fmtD(lastP.date)+". Next: "+fmtWhen(postTime(nextP))+"."+(nDraft? " "+nDraft+" waiting for your approval." : "") : "Planning posts…")
+          : "Let "+CONFIG.aiName+" plan, write and schedule posts about your projects, with your photos.")),
+      e("button",{className:"btn ghost sm","aria-expanded":open,onClick:()=>setOpen(!open)},open?"Hide settings":"Settings")),
+    open && e("div",{className:"stack",style:{gap:14,marginTop:16,paddingTop:16,borderTop:"1px solid var(--line-2)"}},
+      e("div",{className:"f"},"Schedule", e("div",{className:"seg"}, [["smart",CONFIG.aiName.split(" ")[0]+" picks the best times"],["fixed","I'll choose days & time"]].map(([v,l])=>e("button",{key:v,className:cfg.schedule===v?"on":"",onClick:()=>setCfg({...cfg,schedule:v})},l)))),
+      cfg.schedule==="smart"
+        ? e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)"}},
+            Field("Posts per week",Sel("ap-per",String(cfg.perWeek),v=>setCfg({...cfg,perWeek:Number(v)}),[1,2,3,4,5,6,7].map(n=>({v:String(n),l:n+" post"+(n>1?"s":"")})))),
+            Field("Start date",e("input",{id:"ap-start",type:"date",min:iso(T0),value:cfg.startDate||iso(T0),onChange:ev=>setCfg({...cfg,startDate:ev.target.value})})),
+            e("div",{className:"full ai-picks"}, Icon("spark",14), e("span",null, e("b",null,CONFIG.aiName.split(" ")[0]+"'s picks for "+(cfg.platform==="Facebook + Instagram"?"Facebook and Instagram":cfg.platform)+": "), picks.join(" · "), ". Based on when local home-service pages typically get the most engagement, so posts land while homeowners are planning projects.")))
+        : e("div",{className:"form",style:{gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr)"}},
+            e("div",{className:"f full"},"Days", e("div",{className:"chips"}, WEEKDAYS.map(([n,l])=>e("button",{key:n,className:"chip"+(cfg.days.indexOf(n)>-1?" on":""),onClick:()=>toggleIn("days",n)},l)))),
+            Field("Time",Inp("ap-time",cfg.time,v=>setCfg({...cfg,time:v}),"time")),
+            Field("Start date",e("input",{id:"ap-start2",type:"date",min:iso(T0),value:cfg.startDate||iso(T0),onChange:ev=>setCfg({...cfg,startDate:ev.target.value})}))),
+      e("div",{className:"f"},"Before posting", e("div",{className:"seg"}, [["approve","Ask me first"],["auto","Publish automatically"]].map(([v,l])=>e("button",{key:v,className:cfg.mode===v?"on":"",onClick:()=>setCfg({...cfg,mode:v})},l)))),
+      e("div",{className:"f"},"Post to", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:cfg.platform===v?"on":"",onClick:()=>setCfg({...cfg,platform:v})},l)))),
+      e("div",{className:"f"},"Rotate through", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(cfg.styles.indexOf(x)>-1?" on":""),onClick:()=>toggleIn("styles",x)},x)))),
+      e("div",{className:"photo-pick",style:{cursor:"default",flexWrap:"wrap"}},
+        e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",fontFamily:"var(--display)",fontSize:20,fontWeight:600}},nPhotos),
+        e("div",{style:{flex:"1 1 200px",minWidth:0}}, e("b",null,"Your photos"),
+          e("div",{className:"note"}, nPhotos+" photo"+(nPhotos===1?"":"s")+", including "+nPairs+" before & after pair"+(nPairs===1?"":"s")+". "+(cfg.styles.indexOf("Before & After")>-1 && !nPairs ? "Add a pair to include Before & After posts." : CONFIG.aiName.split(" ")[0]+" attaches one to each post"+(/Instagram/.test(cfg.platform)?"; Instagram posts need one.":".")))),
+        e("div",{className:"row"},
+          e("label",{className:"btn ghost sm",style:{cursor:"pointer"}},busy==="photos"?"Uploading…":"Add photos",e("input",{id:"ap-photos",type:"file",accept:"image/*",multiple:true,onChange:addPhotos})),
+          e("button",{className:"btn ghost sm",onClick:()=>setPairOpen(true)},"Add before & after pair"),
+          nPhotos ? e("button",{className:"btn ghost sm",onClick:clear},"Clear") : null)),
+      pairOpen && e(PairModal,{ctx,onClose:()=>setPairOpen(false),onAdd:addPair}),
+      base.enabled && dirty && upcoming.length ? e("div",{className:"note"},"Saving replaces the "+upcoming.length+" planned post"+(upcoming.length>1?"s":"")+" with a new plan.") : null,
+      e("div",{className:"row",style:{justifyContent:"flex-end"}},
+        e("button",{className:"btn ghost",disabled:!!busy,onClick:runNow},Icon("spark",15),busy==="run"?"Writing…":"Write one now"),
+        base.enabled
+          ? e("button",{className:"btn",disabled:!dirty||!!busy||!valid,onClick:()=>persist(cfg,true)},busy==="save"?"Planning…":"Save & re-plan")
+          : e("button",{className:"btn",disabled:!!busy||!valid,onClick:()=>{ const s2={...cfg,enabled:true}; setCfg(s2); persist(s2,false); }},busy==="save"?"Planning…":"Turn on & plan 2 weeks"))));
+}
+function Social({ctx}){
+  const {db,up,notify} = ctx;
+  const flips = db.projects.filter(x=>x.status!=="General");
+  const [pid,setPid] = useState(flips[0] ? flips[0].id : "");
+  const [platform,setPlatform] = useState("Facebook");
+  const [style,setStyle] = useState("Before & After");
+  const [variant,setVariant] = useState(0);
+  const [caption,setCaption] = useState("");
+  const [busy,setBusy] = useState(false);
+  const [posting,setPosting] = useState("");
+  const [photo,setPhoto] = useState(null);
+  const [ba,setBa] = useState({before:null,after:null});
+  const [baImg,setBaImg] = useState(null);
+  const [view,setView] = useState(null);
+  const [date,setDate] = useState(dOff(1)), [time,setTime] = useState("10:00");
+  const p = projById(db,pid) || flips[0] || {id:"",name:"",area:"",city:"",type:"Fix & Flip"};
+  const gen = v => {
+    setBusy(true);
+    if(LIVE){ api("generatePost",{project:projSummary(db,p),platform,style,variant:v}).then(r=>setCaption(r.caption)).catch(err=>notify(err.message)).finally(()=>setBusy(false)); return; }
+    setTimeout(()=>{ setCaption(genPost(p,platform==="Facebook"?"Facebook":"Instagram",style,v,db)); setBusy(false); },900);
+  };
+  const isBA = style==="Before & After";
+  const squareOut = platform!=="Facebook";
+  useEffect(()=>{
+    if(!isBA || !(ba.before && ba.after)){ setBaImg(null); return; }
+    let live = true;
+    combineBeforeAfter(ba.before,ba.after,squareOut).then(u=>{ if(live) setBaImg(u); }).catch(err=>notify(err.message));
+    return ()=>{ live = false; };
+  },[ba.before,ba.after,squareOut,isBA]);
+  const postPhoto = isBA ? (baImg || ba.after || ba.before || null) : photo;
+  const pickBA = which => ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(u=>setBa(b=>({...b,[which]:u}))).catch(err=>notify(err.message)); };
+  const clearPhotos = () => { setPhoto(null); setBa({before:null,after:null}); };
+  const pickPhoto = ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value=""; if(!f) return; resizePhoto(f).then(setPhoto).catch(err=>notify(err.message)); };
+  const save = status => {
+    const when = new Date(date+"T"+(time||"10:00")).getTime();
+    if(status==="Scheduled" && !(when>Date.now())) return notify("Pick a date and time in the future.");
+    if(LIVE){
+      if(/Instagram/.test(platform) && !postPhoto) return notify("Instagram posts need a photo. Add one first.");
+      if(isBA && !(ba.before && ba.after) && (ba.before || ba.after)) notify("Only one photo added, so it will post without the side-by-side.");
+      setPosting(status);
+      const post = {projectId:p.id,projectName:p.name,platform,style,caption,scheduledAt:when};
+      api(status==="Posted"?"publishPost":"schedulePost",{post,image:postPhoto||""})
+        .then(r=>{ up("posts",ps=>[r.post].concat(ps)); setCaption(""); clearPhotos(); notify(status==="Posted"?"Published to "+platform:"Scheduled for "+whenLabel(date)+" at "+time); })
+        .catch(err=>notify(err.message)).finally(()=>setPosting(""));
+      return;
+    }
+    up("posts",ps=>ps.concat([{id:uid("s"),projectId:p.id,platform,style,caption,date:status==="Posted"?dOff(0):date,time,status,image:postPhoto||null}])); setCaption(""); clearPhotos();
+    notify(status==="Posted"?"Posted to "+platform:"Scheduled for "+whenLabel(date)+" at "+time);
+  };
+  const isQueued = x => x.status==="Draft" || x.status==="Scheduled";
+  const upcomingPosts = db.posts.filter(isQueued).sort((a,b)=>postTime(a)-postTime(b));
+  const pastPosts = db.posts.filter(x=>!isQueued(x)).sort((a,b)=>postTime(b)-postTime(a));
+  const booked = x => "Approved. Posts "+whenLabel(x.date)+" at "+fmtClock(x.time||"10:00")+".";
+  const approve = x => {
+    const future = postTime(x) > Date.now()+60000;
+    if(!(LIVE && x.live)){ up("posts",ps=>ps.map(p=>p.id===x.id?(future?{...p,caption:x.caption,status:"Scheduled",error:""}:{...p,caption:x.caption,status:"Posted",date:dOff(0),error:""}):p)); notify(future?booked(x):"Published to "+x.platform); return Promise.resolve(true); }
+    setPosting("a"+x.id);
+    return api("approvePost",{id:x.id}).then(r=>{ up("posts",ps=>ps.map(p=>p.id===x.id?r.post:p)); notify(r.post.status==="Scheduled"?booked(r.post):"Published to "+x.platform); return true; })
+      .catch(err=>{ notify(err.message); return false; }).finally(()=>setPosting(""));
+  };
+  const discard = x => { up("posts",ps=>ps.filter(p=>p.id!==x.id)); if(LIVE && x.live) api("deletePost",{id:x.id}).catch(err=>notify(err.message)); notify(x.status==="Scheduled"?"Scheduled post deleted":"Draft discarded"); };
+  const viewPost = view && db.posts.find(p=>p.id===view);
+  return e("div",{className:"wrap"},
+    e("div",{className:"ph"}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),CONFIG.aiName), e("h1",{className:"t"},"Social posts"), e("div",{className:"sub"},LIVE?"Write with AI, then publish straight to your Facebook Page and Instagram.":"Turn any project into a Facebook or Instagram post in one click."))),
+    db.liveLoaded && !db.social.facebook ? e("div",{className:"card",style:{marginBottom:16}}, e("b",null,"Facebook and Instagram aren't connected yet."), e("div",{className:"muted",style:{fontSize:13,marginTop:4}},"You can write captions now. Publishing, scheduling and autopilot start working once FB_PAGE_ID and FB_PAGE_TOKEN are added in Script properties (SETUP.md, step 7).")) : null,
+    e(AutoPostPanel,{ctx,onCreated:id=>setView(id)}),
+    viewPost && e(PostModal,{key:viewPost.id,ctx,post:viewPost,onClose:()=>setView(null),onApprove:approve,onDiscard:discard}),
+    e("div",{className:"grid g-2",style:{alignItems:"start",marginBottom:16}},
+      e("div",{className:"card stack",style:{gap:14}},
+        e("h2",{className:"t"},"Create a post"),
+        Field("Project",Sel("sp-proj",pid,v=>{setPid(v);setCaption("");},flips.map(x=>({v:x.id,l:x.name})))),
+        e("div",{className:"f"},"Platform", e("div",{className:"seg"}, PLATFORMS.map(([v,l])=>e("button",{key:v,className:platform===v?"on":"",onClick:()=>{setPlatform(v);setCaption("");}},l)))),
+        e("div",{className:"f"},"Post type", e("div",{className:"chips"}, STYLES.map(x=>e("button",{key:x,className:"chip"+(style===x?" on":""),onClick:()=>{setStyle(x);setCaption("");}},x)))),
+        isBA ? e("div",{className:"f"},"Before & after photos",
+          e(BASlots,{ba,setBa,prefix:"sp",notify}),
+          e("div",{className:"note",style:{textTransform:"none",letterSpacing:0,fontWeight:400}}, ba.before&&ba.after ? "Combined into one side-by-side image"+(squareOut?" (square for Instagram).":".") : "Add both and "+CONFIG.aiName.split(" ")[0]+" combines them into one side-by-side image.")) :
+        e("label",{className:"photo-pick"},
+          e("input",{id:"sp-photo",type:"file",accept:"image/*",onChange:pickPhoto}),
+          photo ? e("img",{src:photo,alt:"Selected photo"}) : e("div",{style:{width:56,height:56,borderRadius:8,background:"var(--paper)",display:"grid",placeItems:"center",color:"var(--muted)"}},Icon("plus",20)),
+          e("div",{style:{flex:1,minWidth:0}}, e("b",null,photo?"Photo added":"Add a project photo"), e("div",{className:"note"}, photo?"Tap to change it.":/Instagram/.test(platform)?"Required for Instagram.":"Optional for Facebook. Posts with a photo get more reach.")),
+          photo ? e("button",{className:"x",onClick:ev=>{ev.preventDefault();setPhoto(null);},"aria-label":"Remove photo"},Icon("x",15)) : null),
+        !caption && e("button",{className:"btn",disabled:busy,onClick:()=>gen(variant)}, busy? e("span",{className:"writing"},e("i"),e("i"),e("i")) : e(React.Fragment,null,Icon("spark",15)," Write it for me")),
+        caption && e(React.Fragment,null,
+          Field("Caption",e("textarea",{id:"sp-cap",rows:9,value:caption,onChange:ev=>setCaption(ev.target.value)})),
+          e("div",{className:"form"}, Field("Date",Inp("sp-date",date,setDate,"date")), Field("Time",Inp("sp-time",time,setTime,"time"))),
+          e("div",{className:"row",style:{justifyContent:"flex-end"}},
+            e("button",{className:"btn ghost",disabled:busy||!!posting,onClick:()=>{ const v=variant+1; setVariant(v); gen(v); }},busy?"Writing…":"Rewrite"),
+            e("button",{className:"btn ghost",disabled:!!posting,onClick:()=>save("Scheduled")},Icon("cal",15),posting==="Scheduled"?"Scheduling…":"Schedule"),
+            e("button",{className:"btn",disabled:!!posting,onClick:()=>save("Posted")},Icon("send",15),posting==="Posted"?"Publishing…":"Post now")),
+          LIVE ? e("div",{className:"note"},"Post now publishes to your real "+(platform==="Facebook + Instagram"?"Facebook Page and Instagram":platform==="Instagram"?"Instagram account":"Facebook Page")+".") : null)),
+      e("div",{className:"stack",style:{gap:10}},
+        e("div",{className:"eyebrow"},"Preview"),
+        e(PostPreview,{p,platform:platform==="Instagram"?"Instagram":"Facebook",style,photo:postPhoto,caption: caption || (busy?"…":"Press Write it for me and the caption appears here.")}))),
+    e("div",{className:"card"},
+      e("div",{className:"card-h"},e("h2",{className:"t"},"Content calendar"),e("span",{className:"muted"},upcomingPosts.length+" upcoming")),
+      e("div",{className:"eyebrow",style:{marginTop:4}},"Upcoming"),
+      upcomingPosts.length ? upcomingPosts.map(x=>e(PostRow,{key:x.id,x,db,setView,approve,discard,posting})) : e("div",{className:"empty",style:{margin:"6px 0 14px"}},"Nothing scheduled. Turn on Autopilot posting or schedule a post above."),
+      e("div",{className:"eyebrow",style:{marginTop:18}},"Published"),
+      pastPosts.length ? pastPosts.map(x=>e(PostRow,{key:x.id,x,db,setView,approve,discard,posting})) : e("div",{className:"empty"},"No posts yet")));
+}
+function PostRow({x,db,setView,approve,discard,posting}){
+  const pr = projById(db,x.projectId), d = toDate(x.date);
+  const future = postTime(x) > Date.now()+60000;
+  return e("div",{className:"lrow prow",role:"button",tabIndex:0,title:"Open post",onClick:()=>setView(x.id),onKeyDown:ev=>{ if(ev.key==="Enter") setView(x.id); }},
+    e("div",{style:{width:52,textAlign:"center",flexShrink:0}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}},d.toLocaleDateString("en-US",{weekday:"short"})),
+      e("div",{style:{fontFamily:"var(--display)",fontSize:22,fontWeight:600,lineHeight:1}},d.getDate()),
+      e("div",{style:{fontSize:10.5,color:"var(--muted)"}},d.toLocaleDateString("en-US",{month:"short"}))),
+    e("div",{className:"grow"},
+      e("div",{className:"tt"},(x.time?fmtClock(x.time)+" · ":"")+x.style+" · "+(pr?pr.area:(x.projectName||""))),
+      e("div",{className:"mt",style:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},(x.caption||"").split("\n")[0]),
+      x.error ? e("div",{className:"note"+(x.status==="Failed"?" bad":"")},x.error) : null,
+      x.status==="Draft" ? e("div",{className:"row",style:{marginTop:8}},
+        e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();setView(x.id);}},"Preview"),
+        e("button",{className:"btn sm",disabled:posting==="a"+x.id,onClick:ev=>{ev.stopPropagation();approve(x);}},Icon(future?"check":"send",14),posting==="a"+x.id?"Saving…":future?"Approve":"Approve & publish now"),
+        e("button",{className:"btn ghost sm",onClick:ev=>{ev.stopPropagation();discard(x);}},"Discard")) : null,
+      (x.fbUrl||x.igUrl) ? e("div",{className:"row",style:{marginTop:4}}, x.fbUrl? e("a",{className:"lnk",href:x.fbUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Facebook ↗"):null, x.igUrl? e("a",{className:"lnk",href:x.igUrl,target:"_blank",rel:"noopener",onClick:ev=>ev.stopPropagation()},"View on Instagram ↗"):null) : null),
+    x.auto ? Pill("gold","Auto") : null,
+    Pill(PLAT_CLS[x.platform]||"mute",x.platform==="Facebook + Instagram"?"FB + IG":x.platform),
+    Pill(x.status==="Posted"?"ok":x.status==="Failed"?"bad":x.status==="Draft"?"gold":"warn",x.status==="Draft"?"Needs approval":x.status));
+}
+
+const suggestFor = db => { const a = db.projects.find(p=>p.status==="Active") || db.projects[0] || {name:"the active flip"};
+  return ["What needs my attention today?","Which new deals should I look at first?","How is "+a.name+" tracking against the rehab budget?","Add a $450 materials expense to "+a.name+" from Home Depot","Schedule a walkthrough at "+a.name+" Friday at 10am","Add vendor Blue Ridge Painting, interior paint, (804) 555-0170","What's on my calendar this week?"]; };
+/* ── Voice: speech-to-text and read-aloud, built into Chrome, Edge and Safari (no API key) ── */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const CAN_TALK = !!SpeechRec, CAN_SPEAK = "speechSynthesis" in window;
+const SAY_APPLY = /^(?:yes|yeah|yep|ok|okay)?[\s,.]*(?:apply|confirm|approve|do it|go ahead|yes|make (?:the|that|it) change|sounds good)(?: it| that| them| the changes?| please)?[.!]?$/i;
+const SAY_CANCEL = /^(?:no|nope)?[\s,.]*(?:cancel|never ?mind|don't|do not|stop|no)(?: it| that| please)?[.!]?$/i;
+function speakText(lines){
+  if(!CAN_SPEAK) return;
+  try{
+    window.speechSynthesis.cancel();
+    const text = (Array.isArray(lines)?lines:[lines]).map(l=>String(l).replace(/\*\*/g,"").replace(/^• /,"").trim()).filter(Boolean)
+      .map(l=>/[.:!?]$/.test(l)?l:l+".").join(" ").slice(0,700);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = navigator.language || "en-US"; u.rate = 1.05;
+    window.speechSynthesis.speak(u);
+  }catch(err){}
+}
+const stopSpeaking = () => { try{ if(CAN_SPEAK) window.speechSynthesis.cancel(); }catch(err){} };
+const MIC_ERRORS = {
+  "not-allowed": "Microphone is blocked. Allow microphone access for this site in your browser, then tap the mic again.",
+  "service-not-allowed": "Voice input is turned off in this browser. Try Chrome, Edge or Safari.",
+  "no-speech": "Didn't catch that. Tap the mic and try again.",
+  "audio-capture": "No microphone found. Plug one in or check your device settings.",
+  "network": "Voice needs an internet connection.",
+};
+function ActionCard({msg,ctx,onDone}){
+  const [items] = useState(()=>msg.actions.map(a=>({a,d:describeAction(ctx.db,a)})));
+  const good = items.filter(x=>x.d.ok);
+  const [busy,setBusy] = useState(false);
+  const apply = async () => {
+    setBusy(true); let done = 0; const fails = [];
+    for(const x of good){
+      try{ if(CAL_TYPES[x.a.type]) await applyCalendarAction(ctx,x.a); else await applyNpvAction(ctx,x.a); done++; }
+      catch(err){ fails.push(err.message); }
+    }
+    if(done){ try{ ctx.reloadAll(); ctx.npv.reload(); }catch(err){} }
+    setBusy(false); onDone(done ? "applied" : "pending", done, fails);
+    ctx.notify(fails.length ? (done? done+" applied. ":"")+fails[0] : done+" change"+(done>1?"s":"")+" applied");
+  };
+  useEffect(()=>{ if(msg.trigger==="apply" && msg.state==="pending" && good.length && !busy) apply(); },[msg.trigger]);
+  return e("div",{className:"acard"},
+    e("div",{className:"eyebrow gold",style:{marginBottom:4}},Icon(msg.state==="applied"?"check":"spark",12), msg.state==="applied" ? "Applied" : msg.state==="cancelled" ? "Cancelled" : "Proposed change"+(items.length>1?"s":"")),
+    items.map((x,j)=>e("div",{key:j,className:"aitem"+(x.d.ok&&msg.state!=="cancelled"?"":" off")}, e("span",{className:"aic"},Icon(x.d.ok?(x.d.icon||"check"):"x",13)), e("span",null,x.d.text),
+      x.d.ok && msg.state==="applied" && x.d.go ? e("button",{className:"lnk",onClick:()=>ctx.go(...x.d.go)},"View") : null)),
+    msg.state==="pending" && good.length ? e("div",{className:"row",style:{justifyContent:"flex-end",marginTop:8}},
+      e("button",{className:"btn ghost sm",onClick:()=>onDone("cancelled")},"Cancel"),
+      e("button",{className:"btn sm",disabled:busy,onClick:apply},Icon("check",14),busy?"Applying…":good.length>1?"Apply "+good.length+" changes":"Apply")) : null);
+}
+function Ask({ctx}){
+  const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi, I'm ${CONFIG.aiName}. I can see your flips, budgets, tasks, quotes, vendors, deal leads, seller leads and calendar. Ask me anything, or tell me what to change, like "add a $300 permit expense to ${((ctx.db.projects.find(p=>p.status==="Active"))||{name:"Lincoln"}).name}". I'll show you the change before I make it.`+(CAN_TALK?" Tap the microphone to talk to me.":"")]}]);
+  const [q,setQ] = useState(""), [busy,setBusy] = useState(false);
+  const [listening,setListening] = useState(false);
+  const [voiceOut,setVoiceOut] = useState(()=>store.get("bf-voice")!=="off");
+  const box = useRef(null), recRef = useRef(null), msgsRef = useRef(msgs), sendRef = useRef(null), voiceRef = useRef(voiceOut);
+  msgsRef.current = msgs; voiceRef.current = voiceOut;
+  useEffect(()=>{ if(box.current) box.current.scrollTop = box.current.scrollHeight; },[msgs,busy]);
+  useEffect(()=>()=>{ try{ if(recRef.current) recRef.current.abort(); }catch(err){} stopSpeaking(); },[]);
+  const reply = (msg,via) => {
+    setMsgs(m=>m.concat([msg]));
+    if(via==="voice" && voiceRef.current) speakText(msg.t.concat(msg.actions && msg.actions.length ? ["Say apply to make the change, or cancel."] : []));
+  };
+  const send = (t,via) => {
+    t=(t||q).trim(); if(!t||busy) return;
+    setQ(""); setMsgs(m=>m.concat([{r:"me",t:[t],via}])); setBusy(true);
+    if(LIVE){
+      const history = msgs.slice(1).map(m=>({role:m.r==="me"?"user":"ai",text:m.t.join("\n")}));
+      api("ask",{question:t,history,data:snapshot(ctx.db)})
+        .then(r=>{ const lines = toLines(r.answer); const acts = Array.isArray(r.actions) ? r.actions : [];
+          reply({r:"ai",t:lines.length?lines:["Here's what I'll change. Review it, then press Apply."],actions:acts,state:"pending"},via); })
+        .catch(err=>reply({r:"ai",t:["I couldn't reach the AI just now. "+err.message]},via))
+        .finally(()=>setBusy(false));
+      return;
+    }
+    setTimeout(()=>{ const cmd = parseCommand(ctx.db,t);
+      reply(cmd ? {r:"ai",t:cmd.answer,actions:cmd.actions,state:"pending"} : {r:"ai",t:answer(ctx.db,t)},via); setBusy(false); },850);
+  };
+  sendRef.current = send;
+  /* What was said: "apply"/"cancel" answers the open change card, anything else is a question */
+  const heard = t => {
+    const ms = msgsRef.current, i = ms.map(m=>!!(m.actions&&m.actions.length&&m.state==="pending")).lastIndexOf(true);
+    if(i>-1 && SAY_APPLY.test(t.trim())){ setQ(""); setMsgs(m=>m.map((x,k)=>k===i?{...x,trigger:"apply"}:x)); return; }
+    if(i>-1 && SAY_CANCEL.test(t.trim())){ setQ(""); setMsgs(m=>m.map((x,k)=>k===i?{...x,state:"cancelled"}:x)); if(voiceRef.current) speakText("Cancelled."); return; }
+    sendRef.current(t,"voice");
+  };
+  const toggleMic = () => {
+    if(listening && recRef.current){ recRef.current.stop(); return; }
+    if(!CAN_TALK){ ctx.notify("Voice isn't supported in this browser. Try Chrome, Edge or Safari."); return; }
+    stopSpeaking();
+    let said = "", failed = false;
+    const rec = new SpeechRec();
+    rec.lang = navigator.language || "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = ev => { let interim = ""; for(let k=ev.resultIndex; k<ev.results.length; k++){ const r = ev.results[k]; if(r.isFinal) said += r[0].transcript; else interim += r[0].transcript; } setQ((said+" "+interim).replace(/\s+/g," ").trim()); };
+    rec.onerror = ev => { failed = true; if(ev.error==="aborted") return;
+      const inFrame = (()=>{ try{ return window.self !== window.top; }catch(err){ return true; } })();
+      ctx.notify(ev.error==="not-allowed" && inFrame ? "Voice needs the app opened on its own page. The microphone is blocked inside this preview." : (MIC_ERRORS[ev.error] || "Voice input stopped. Tap the mic to try again.")); };
+    rec.onend = () => { setListening(false); recRef.current = null; const t = said.trim(); if(t && !failed) heard(t); };
+    try{ rec.start(); recRef.current = rec; setListening(true); }
+    catch(err){ ctx.notify("Couldn't start the microphone. Tap it again."); }
+  };
+  const toggleVoiceOut = () => { const v = !voiceOut; setVoiceOut(v); store.set("bf-voice",v?"on":"off"); if(!v) stopSpeaking(); ctx.notify(v?"Foreman will read answers aloud when you talk":"Spoken answers off"); };
+  const onCardDone = (i,state,done) => {
+    const m = msgsRef.current[i];
+    setMsgs(ms=>ms.map((x,k)=>k===i?{...x,state}:x));
+    if(m && m.trigger==="apply" && voiceRef.current) speakText(state==="applied" ? "Done. "+done+" change"+(done>1?"s":"")+" applied." : "That didn't go through. Check the card for details.");
+  };
+  return e("div",{className:"wrap",style:{paddingBottom:16}},
+    e("div",{className:"ph",style:{marginBottom:12}}, e("div",{className:"ph-t"}, e("div",{className:"eyebrow gold"},Icon("spark",13),LIVE?"Assistant · live":"Assistant"), e("h1",{className:"t"},"Ask "+CONFIG.aiName)),
+      CAN_TALK && CAN_SPEAK ? e("button",{className:"btn ghost sm","aria-pressed":voiceOut,onClick:toggleVoiceOut,title:"Read answers aloud when you ask by voice"},Icon(voiceOut?"vol":"voloff",15),voiceOut?"Spoken answers on":"Spoken answers off") : null),
+    e("div",{className:"card chat"},
+      e("div",{className:"msgs",ref:box,"aria-live":"polite"},
+        msgs.map((m,i)=>e("div",{key:i,className:"msg "+m.r}, m.via==="voice" ? e("div",{style:{fontSize:11,opacity:.7,display:"flex",alignItems:"center",gap:4,marginBottom:2}},Icon("mic",11),"Spoken") : null,
+          m.t.map((line,j)=> line.startsWith("• ") ? e("div",{key:j,className:"li"},e("span",null,rich(line.slice(2)))) : e("p",{key:j},rich(line))),
+          m.actions && m.actions.length ? e(ActionCard,{key:"ac",msg:m,ctx,onDone:(state,done)=>onCardDone(i,state,done)}) : null)),
+        busy && e("div",{className:"msg ai"},e("span",{className:"writing"},e("i"),e("i"),e("i")))),
+      e("div",{className:"chips",style:{padding:"10px 0 0"}}, suggestFor(ctx.db).map(s=>e("button",{key:s,className:"chip",onClick:()=>send(s)},s))),
+      listening ? e("div",{className:"voice-note",role:"status"},e("span",{className:"dot"}),"Listening… speak now. Tap the mic again to stop.") : null,
+      e("form",{className:"composer",onSubmit:ev=>{ev.preventDefault();send();}},
+        e("input",{id:"ask-input",value:q,onChange:ev=>setQ(ev.target.value),placeholder:listening?"Listening…":"Ask a question or tell Foreman what to change…","aria-label":"Ask a question"}),
+        e("button",{className:"btn ghost mic"+(listening?" on":""),type:"button",onClick:toggleMic,"aria-pressed":listening,"aria-label":listening?"Stop listening":"Talk to "+CONFIG.aiName,title:CAN_TALK?(listening?"Stop listening":"Talk to "+CONFIG.aiName):"Voice isn't supported in this browser"},Icon(listening?"stop":"mic",18)),
+        e("button",{className:"btn",type:"submit",disabled:busy||!q.trim(),"aria-label":"Send"},Icon("send",16)))));
+}
+
+/* ═══════════════════════ NPV adapter: the app's data, seen through Foreman ═══════════════════════ */
+const isGeneralP = p => String(p.description||"").includes("No budget");
+const isSoldP    = p => String(p.description||"").includes("Sold");
+const cityOf     = p => (String(p.description||"").split("|")[0].split("—")[0].trim()) || "Richmond, VA";
+const ACQ = ["Down Payment","Closing Costs","Loan Expenses"];
+const PRI_IN  = {High:"High",Med:"Med",Medium:"Med",Low:"Low",Urgent:"High"};
+const isoOf = v => { if(!v) return ""; if(typeof v==="string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10); const d=new Date(v); return isNaN(d.getTime())?"":iso(d); };
+
+/* Build the read-only view Foreman works with. Composite ids (projectId|id) keep tasks and
+   milestones unambiguous across projects. */
+function buildDb(npv, pAll, fdb){
+  const projects = (npv.projects||[]).map(p=>({
+    id:String(p.id), name:p.name, area:p.name, address:p.name+", "+cityOf(p), city:cityOf(p),
+    type:"Fix & Flip", status: isGeneralP(p)?"General":isSoldP(p)?"Completed":"Active", client:"",
+    purchasePrice:parseFloat(p.purchasePrice)||0, rehabBudget:parseFloat(p.rehabBudget)||0,
+  }));
+  const pick = (key,pid) => (String(npv.activeId)===pid && npv.current && npv.current[key]) ? npv.current[key] : ((pAll[key]||{})[pid]||[]);
+  const expenses=[], tasks=[], quotes=[], milestones=[];
+  projects.forEach(p=>{
+    pick("expenses",p.id).forEach(x=>expenses.push({id:x.id,projectId:p.id,date:isoOf(x.date),category:x.category,amount:parseFloat(x.amount)||0,vendor:x.vendor||"",notes:x.notes||"",description:x.description||""}));
+    pick("tasks",p.id).forEach(t=>tasks.push({id:p.id+"|"+t.id,projectId:p.id,task:t.task,status:t.status||"To Do",priority:t.priority||"Med",assignee:t.assignee||"",due:isoOf(t.dueDate),category:t.category||"",milestone:t.milestone?p.id+"|"+t.milestone:"",raw:t}));
+    pick("quotes",p.id).forEach(q=>quotes.push({id:q.id,projectId:p.id,item:q.item,vendor:q.vendor,amount:parseFloat(q.amount)||0,status:q.status||"Pending",category:q.category}));
+    const st = (npv.allMsStatus||{})[p.id]||{};
+    ((npv.allMilestones||{})[p.id]||[]).forEach(m=>milestones.push({id:p.id+"|"+m.id,projectId:p.id,title:m.week||"Milestone",date:isoOf(m.date),done:st[m.id]==="done",items:m.items||[]}));
+  });
+  const vendors = [];
+  Object.keys(npv.vendors||{}).forEach(cat=>(npv.vendors[cat]||[]).forEach(v=>vendors.push({id:v.id,name:v.name,category:cat,phone:v.phone||"",email:v.email||"",notes:v.notes||"",rating:0})));
+  return {projects,expenses,tasks,quotes,milestones,vendors,
+    leads:fdb.leads||[], posts:fdb.posts||[], events:fdb.events||[], autopilot:!!fdb.autopilot, autoSocial:fdb.autoSocial||defaultAutoSocial(),
+    social:fdb.social||{}, calError:fdb.calError||"", liveError:fdb.error||"", liveLoaded:!!fdb.loaded,
+    deals:npv.dealLeads||[], pipeline:npv.mgmtMilestones||[], pipelineStatus:npv.mgmtMsStatus||{}, generalTasks:npv.mgmtTasks||[]};
+}
+
+const spentRehab = (db,pid) => db.expenses.filter(x=>x.projectId===pid && ACQ.indexOf(x.category)===-1).reduce((a,x)=>a+x.amount,0);
+const spentAcq   = (db,pid) => db.expenses.filter(x=>x.projectId===pid && ACQ.indexOf(x.category)>-1).reduce((a,x)=>a+x.amount,0);
+const pTasks = (db,pid) => db.tasks.filter(t=>t.projectId===pid);
+const isOverdue = t => t.status!=="Done" && t.due && daysFrom(t.due)<0;
+const openProjects = db => db.projects.filter(p=>p.status==="Active");
+const projById = (db,id) => db.projects.find(p=>p.id===String(id));
+const nextMilestone = (db,pid) => db.milestones.filter(m=>m.projectId===pid && !m.done && m.date).sort((a,b)=>a.date.localeCompare(b.date))[0];
+const needsReply = db => db.leads.filter(l=>!l.reply || l.reply.status==="draft");
+
+/* What the AI writer gets for a post (no street address, no money) */
+function projSummary(db,p){
+  const ts=pTasks(db,p.id), nm=nextMilestone(db,p.id), ms=db.milestones.filter(m=>m.projectId===p.id);
+  const first = ms.map(m=>m.date).filter(Boolean).sort()[0];
+  return {id:p.id,name:p.name,neighborhood:p.city,type:"Fix & flip renovation",status:p.status==="Completed"?"Completed (sold)":"In progress",
+    scope:ts.slice(0,12).map(t=>String(t.task).split(" — ")[0]).filter((v,i,a)=>a.indexOf(v)===i).slice(0,8),
+    tasksDone:ts.filter(t=>t.status==="Done").length,tasksTotal:ts.length,nextMilestone:nm?nm.title:"",
+    completedMilestones:ms.filter(m=>m.done).map(m=>m.title),
+    weeksIn:first?Math.max(1,Math.ceil((T0-toDate(first))/DAY/7)):0};
+}
+
+/* Everything Ask Foreman is allowed to see, in a compact form */
+function snapshot(db){
+  const num = v => (v===null||v===undefined||v==="") ? null : Number(v);
+  return {
+    today: iso(T0), now: localStamp(new Date()), company: CONFIG.companyName,
+    lists: {expenseCategories:CONFIG.expenseCategories, taskCategories:CONFIG.taskCategories, taskPriorities:CONFIG.taskPriorities, taskStatuses:CONFIG.taskStatuses, vendorCategories:CONFIG.vendorCategories, assignees:CONFIG.assignees},
+    projects: db.projects.map(p=>{ const ts=pTasks(db,p.id); const cats={}; db.expenses.filter(x=>x.projectId===p.id).forEach(x=>{cats[x.category]=(cats[x.category]||0)+x.amount;});
+      return {id:p.id,name:p.name,city:p.city,status:p.status,purchasePrice:p.purchasePrice,rehabBudget:p.rehabBudget,rehabSpent:spentRehab(db,p.id),acquisitionSpent:spentAcq(db,p.id),
+        rehabRemaining:p.rehabBudget-spentRehab(db,p.id),spendByCategory:cats,tasksDone:ts.filter(t=>t.status==="Done").length,
+        openTasks:ts.filter(t=>t.status!=="Done").slice(0,40).map(t=>({id:t.id,task:t.task,status:t.status,priority:t.priority,due:t.due,assignee:t.assignee,category:t.category,overdue:!!isOverdue(t)})),
+        milestones:db.milestones.filter(m=>m.projectId===p.id).map(m=>({id:m.id,title:m.title,date:m.date,done:m.done})),
+        quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
+        recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8).map(x=>({date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,description:x.description}))}; }),
+    vendors: db.vendors.map(v=>({id:v.id,name:v.name,trade:v.category,phone:v.phone,email:v.email,notes:v.notes})),
+    events: (db.events||[]).filter(x=>new Date(x.end)>=new Date(T0.getTime()-DAY) && new Date(x.start)<=new Date(T0.getTime()+60*DAY)).map(x=>({id:x.id,title:x.title,start:localStamp(new Date(x.start)),end:localStamp(new Date(x.end)),location:x.location,projectId:x.projectId,guests:(x.guests||[]).map(g=>({email:g.email,name:nameFor(db,g.email),status:g.status}))})),
+    sellerLeads: db.leads.map(l=>({name:l.name,email:l.email,phone:l.phone,property:l.address,situation:l.service,source:l.source,stage:l.stage,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
+    dealLeads: (db.deals||[]).slice(0,30).map(d=>({address:d.address,recommendation:d.recommendation,status:d.status,askPrice:num(d.askPrice),suggestedOffer:num(d.suggestedOffer),arv:num(d.arvEstimate),rehab:num(d.rehabEstimate),projectedProfit:num(d.projectedProfit),received:d.receivedAt,notes:(d.notes||"").slice(0,200)})),
+    pipeline: (db.pipeline||[]).map(m=>({name:m.week,date:m.date,notes:m.notes,status:db.pipelineStatus[m.id]||"upcoming"})),
+    generalTasks: (db.generalTasks||[]).map(t=>({task:t.task,status:t.status,assignee:t.assignee})),
+    socialPosts: db.posts.slice(0,20).map(p=>({platform:p.platform,type:p.style,date:p.date,status:p.status})),
+    autopilot: db.autopilot,
+  };
+}
+
+/* Daily brief for the Home page */
+function brief(db){
+  const out = [];
+  const od = db.tasks.filter(isOverdue);
+  if(od.length){ const p0=projById(db,od[0].projectId); out.push({tone:"bad",text:`<b>${od.length} overdue task${od.length>1?"s":""}</b>, including "${esc(od[0].task)}"${p0?" on "+esc(p0.name):""}.`,go:["project",od[0].projectId,"tasks"],cta:"View tasks"}); }
+  openProjects(db).forEach(p=>{ const sp=spentRehab(db,p.id); if(p.rehabBudget>0 && sp>p.rehabBudget) out.push({tone:"bad",text:`<b>${esc(p.name)}</b> is ${money(sp-p.rehabBudget)} over its rehab budget.`,go:["project",p.id,"dashboard"],cta:"See budget"}); });
+  const newDeals = (db.deals||[]).filter(d=>d.status==="New"), pursue = newDeals.filter(d=>d.recommendation==="Pursue");
+  if(newDeals.length) out.push({tone:"gold",text:`<b>${newDeals.length} new deal${newDeals.length>1?"s":""}</b> from the Deal Checker${pursue.length?", "+pursue.length+" marked Pursue":""}.`,go:["deals"],cta:"Review deals"});
+  const nr = needsReply(db);
+  if(nr.length) out.push({tone:"gold",text:`<b>${nr.length} seller lead${nr.length>1?"s":""}</b> waiting on a reply. Replies are drafted for you to approve.`,go:["leads"],cta:"Review"});
+  const todayEv = (db.events||[]).filter(x=>iso(new Date(x.start))===iso(T0) && new Date(x.end)>new Date()).sort((a,b)=>a.start.localeCompare(b.start));
+  if(todayEv.length) out.push({tone:"ok",text:`<b>${todayEv.length} appointment${todayEv.length>1?"s":""} today</b>, next is ${esc(todayEv[0].title)} at ${fmtT(new Date(todayEv[0].start))}.`,go:["calendar"],cta:"Calendar"});
+  const pq = db.quotes.filter(q=>q.status==="Pending");
+  if(pq.length){ const it=pq[0]; const p1=projById(db,it.projectId); out.push({tone:"gold",text:`<b>${pq.length} quote${pq.length>1?"s":""}</b> waiting on a decision, starting with ${esc(String(it.item).toLowerCase())}${p1?" for "+esc(p1.name):""}.`,go:["project",it.projectId,"quotes"],cta:"Compare"}); }
+  const drafts = db.posts.filter(p=>p.status==="Draft");
+  if(drafts.length) out.push({tone:"gold",text:`<b>${drafts.length} social post${drafts.length>1?"s":""}</b> waiting for your approval.`,go:["social"],cta:"Open"});
+  else { const sch = db.posts.filter(p=>p.status==="Scheduled").sort((a,b)=>a.date.localeCompare(b.date))[0]; if(sch) out.push({tone:"ok",text:`Next social post goes out <b>${whenLabel(sch.date)}</b> on ${esc(sch.platform)}.`,go:["social"],cta:"Open"}); }
+  return out.slice(0,6);
+}
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* Demo-mode writers aren't used here (the app is always live); kept as safe no-ops */
+const genReply = () => "", genPost = () => "", parseCommand = () => null, answer = () => [];
+const TYPE_INFO = {"Fix & Flip":{tag:"FixAndFlip",hl:["a full renovation"],tips:["Selling as-is means no repairs, no cleaning and no showings"]}};
+TYPE_INFO["Full Gut"] = TYPE_INFO["Fix & Flip"];
+
+/* Sample seller leads (the "Sample lead" button). @example.com addresses are never emailed. */
+const INCOMING = [
+  {name:"Denise Carter",service:"Inherited / probate",source:"Website form",address:"(sample) Highland Park, Richmond",phone:"(804) 555-0155",email:"denise.carter@example.com",message:"My mother passed last spring and left me her house. It needs a lot of work and I live out of state. I'd like to sell it as-is if possible."},
+  {name:"Marcus Webb",service:"Tired landlord",source:"Website form",address:"(sample) Lakeside, Henrico",phone:"(804) 555-0172",email:"mwebb@example.com",message:"I've rented this place for 12 years and I'm done being a landlord. Tenant moves out at the end of next month. What would you offer?"},
+  {name:"Angela Ruiz",service:"Needs major repairs",source:"Website form",address:"(sample) Chesterfield",phone:"(804) 555-0188",email:"angela.ruiz@example.com",message:"Roof leaks and the foundation has cracks. I can't afford the repairs and agents told me it won't sell on the market."},
+];
+
+/* ═══════════════════════ Apply a confirmed Ask Foreman change through the NPV app ═══════════════════════ */
+const genId8 = () => Math.random().toString(36).slice(2,10);
+const splitId = s => { const i=String(s||"").indexOf("|"); return i<0 ? [null,String(s||"")] : [String(s).slice(0,i),String(s).slice(i+1)]; };
+async function applyNpvAction(ctx,a){
+  const n = ctx.npv, db = ctx.db;
+  switch(a.type){
+    case "addExpense": {
+      const P = projById(db,a.projectId); if(!P) throw new Error("Project not found.");
+      const exp = {id:genId8(),description:(a.description||a.notes||a.category||"Expense").slice(0,200),amount:Number(a.amount),date:validDate(a.date)?a.date:dOff(0),
+        category:oneOf(a.category,CONFIG.expenseCategories,"Other"),vendor:a.vendor||"",notes:a.notes||"Added by Foreman AI"};
+      if(!(exp.amount>0)) throw new Error("The amount is missing.");
+      await rawApi("addExpense",{projectId:P.id,expense:exp});
+      break;
+    }
+    case "addTask": {
+      const P = projById(db,a.projectId); if(!P) throw new Error("Project not found.");
+      const [mpid,mid] = splitId(a.milestoneId);
+      const task = {id:genId8(),task:String(a.task||"").slice(0,300),status:"To Do",assignee:oneOf(a.assignee,CONFIG.assignees,CONFIG.assignees[0]||"Me"),
+        dueDate:validDate(a.due)?a.due:"",notes:"Added by Foreman AI",category:oneOf(a.category,CONFIG.taskCategories,"Other"),priority:PRI_IN[a.priority]||"Med",milestone:mpid===P.id?mid:""};
+      if(!task.task) throw new Error("The task text is missing.");
+      await rawApi("addTask",{projectId:P.id,task});
+      break;
+    }
+    case "updateTask": {
+      const T = db.tasks.find(t=>t.id===a.taskId); if(!T) throw new Error("That task isn't there anymore.");
+      const upd = {...T.raw};                                         // start from the full saved task, so no column is blanked
+      if(CONFIG.taskStatuses.indexOf(a.status)>-1) upd.status = a.status;
+      if(validDate(a.due)) upd.dueDate = a.due;
+      if(a.assignee) upd.assignee = a.assignee;
+      if(PRI_IN[a.priority]) upd.priority = PRI_IN[a.priority];
+      await rawApi("updateTask",{projectId:T.projectId,task:upd});
+      break;
+    }
+    case "addMilestone": {
+      if(!n.milestonesReady) throw new Error("Milestones haven't loaded yet. Reload the app and try again.");
+      const P = projById(db,a.projectId); if(!P) throw new Error("Project not found.");
+      n.setAllMilestones(prev=>({...prev,[P.id]:(prev[P.id]||[]).concat([{id:"ms-"+Date.now(),date:a.date,week:String(a.title).slice(0,120),items:[]}]).sort((x,y)=>new Date(x.date)-new Date(y.date))}));
+      break;
+    }
+    case "updateMilestone": {
+      if(!n.milestonesReady) throw new Error("Milestones haven't loaded yet. Reload the app and try again.");
+      const [pid,mid] = splitId(a.milestoneId);
+      if(!pid || !((n.allMilestones||{})[pid]||[]).some(m=>m.id===mid)) throw new Error("That milestone isn't there anymore.");
+      if(a.title || validDate(a.date)) n.setAllMilestones(prev=>({...prev,[pid]:(prev[pid]||[]).map(m=>m.id!==mid?m:{...m,...(a.title?{week:String(a.title).slice(0,120)}:{}),...(validDate(a.date)?{date:a.date}:{})}).sort((x,y)=>new Date(x.date)-new Date(y.date))}));
+      if(typeof a.done==="boolean") n.setAllMsStatus(prev=>({...prev,[pid]:{...(prev[pid]||{}),[mid]:a.done?"done":""}}));
+      break;
+    }
+    case "addVendor": {
+      if(!n.vendorsReady) throw new Error("Vendors haven't loaded yet. Reload the app and try again.");
+      const cat = oneOf(a.category,CONFIG.vendorCategories,"Other");
+      n.setVendors(prev=>({...prev,[cat]:(prev[cat]||[]).concat([{id:"v-"+Date.now(),name:String(a.name).slice(0,120),phone:a.phone||"",email:a.email||"",notes:a.notes||""}])}));
+      break;
+    }
+    case "updateVendor": {
+      if(!n.vendorsReady) throw new Error("Vendors haven't loaded yet. Reload the app and try again.");
+      const V = db.vendors.find(v=>v.id===a.vendorId); if(!V) throw new Error("That vendor isn't there anymore.");
+      const ch = ["phone","email","notes"].reduce((o,k)=>(a[k]?{...o,[k]:a[k]}:o),{});
+      n.setVendors(prev=>({...prev,[V.category]:(prev[V.category]||[]).map(v=>v.id===V.id?{...v,...ch}:v)}));
+      break;
+    }
+    default: throw new Error("Unsupported change: "+a.type);
+  }
+}
+
+/* ═══════════════════════ Hook used by the NPV App: all Foreman state lives here ═══════════════════════ */
+function useForeman(o){
+  // o: {authed, npv:{...app state and setters...}, go(view,id,tab), notify(msg,type)}
+  const n = o.npv;
+  CONFIG.expenseCategories = n.lists.expenseCategories; CONFIG.taskCategories = n.lists.taskCategories;
+  CONFIG.taskPriorities = n.lists.taskPriorities; CONFIG.taskStatuses = n.lists.taskStatuses;
+  CONFIG.vendorCategories = n.lists.vendorCategories; CONFIG.assignees = n.lists.assignees;
+
+  const [fdb,setFdb] = useState({leads:[],posts:[],events:[],autopilot:false,autoSocial:defaultAutoSocial(),social:{},loaded:false,error:"",calError:""});
+  const [pAll,setPAll] = useState({expenses:{},tasks:{},quotes:{},at:0});
+  const known = useRef(null);
+  const notify = msg => o.notify(msg, /fail|error|couldn|can't|isn't|not set|refused/i.test(String(msg)) ? "error" : "success");
+
+  const applyLive = r => {
+    const ids = new Set((r.leads||[]).map(l=>l.id));
+    if(known.current){ const fresh=(r.leads||[]).filter(l=>!known.current.has(l.id)); if(fresh.length) notify("New seller lead from "+fresh[0].name+(fresh.length>1?" and "+(fresh.length-1)+" more":"")); }
+    known.current = ids;
+    setFdb(d=>({...d,leads:r.leads||[],posts:r.posts||[],autopilot:!!r.autopilot,autoSocial:{...defaultAutoSocial(),...(r.autoSocial||{})},social:r.social||{},loaded:true,error:""}));
+  };
+  const refresh = () => api("getLive").then(applyLive);
+
+  useEffect(()=>{
+    if(!o.authed) return;
+    refresh().catch(err=>setFdb(d=>({...d,error:err.message})));
+    const t = setInterval(()=>{ if(!document.hidden) refresh().catch(()=>{}); },60000);
+    return ()=>clearInterval(t);
+  },[o.authed]);
+
+  /* Calendar */
+  const loadEvents = (from,to) => api("listEvents",{from:from.toISOString(),to:to.toISOString()})
+    .then(r=>setFdb(d=>{ const keep=(d.events||[]).filter(x=>!(new Date(x.start)>=from && new Date(x.start)<to) && !r.events.some(m=>m.id===x.id)); return {...d,calError:"",events:keep.concat(r.events)}; }))
+    .catch(err=>setFdb(d=>({...d,calError:err.message})));
+  useEffect(()=>{
+    if(!o.authed) return;
+    const pull = () => { if(!document.hidden) loadEvents(new Date(T0.getTime()-7*DAY), new Date(T0.getTime()+45*DAY)); };
+    pull(); const t = setInterval(pull,180000);
+    return ()=>clearInterval(t);
+  },[o.authed]);
+  const up = (key,fn) => { if(["leads","posts","events"].indexOf(key)===-1) return; setFdb(d=>({...d,[key]:fn(d[key]||[])})); };
+  const setDb = fn => setFdb(d=>{ const r = fn(d); return {...d,leads:r.leads,posts:r.posts,events:r.events,autopilot:r.autopilot,autoSocial:r.autoSocial}; });
+  const calOps = {
+    create: (ev,send) => api("createEvent",{event:ev,notify:send}).then(r=>{ up("events",es=>es.concat([r.event])); return r.event; }),
+    update: (id,ch,send) => api("updateEvent",{id,changes:ch,notify:send}).then(r=>{ up("events",es=>es.map(x=>x.id===id?r.event:x)); return r.event; }),
+    remove: (id,send) => api("deleteEvent",{id,notify:send}).then(()=>up("events",es=>es.filter(x=>x.id!==id))),
+  };
+
+  /* Read every project's expenses, tasks and quotes (read-only), so the brief and Ask Foreman see the whole business */
+  const projKey = (n.projects||[]).map(p=>p.id).join(",");
+  const loadAll = () => Promise.all((n.projects||[]).map(p=>
+      Promise.all([rawApi("getExpenses",{projectId:p.id}),rawApi("getTasks",{projectId:p.id}),rawApi("getQuotes",{projectId:p.id})])
+        .then(([x,t,q])=>[String(p.id),x.expenses||[],t.tasks||[],q.quotes||[]]).catch(()=>[String(p.id),null,null,null])))
+    .then(list=>setPAll(prev=>{ const m={expenses:{...prev.expenses},tasks:{...prev.tasks},quotes:{...prev.quotes},at:Date.now()};
+      list.forEach(([id,x,t,q])=>{ if(x) m.expenses[id]=x; if(t) m.tasks[id]=t; if(q) m.quotes[id]=q; }); return m; }));
+  useEffect(()=>{
+    if(!o.authed || !projKey) return;
+    loadAll();
+    const t = setInterval(()=>{ if(!document.hidden) loadAll(); },300000);
+    return ()=>clearInterval(t);
+  },[o.authed, projKey]);
+
+  const db = buildDb(n, pAll, fdb);
+
+  /* Keep the server's copy of project info current, so automated posts know about the flips */
+  const sumKey = JSON.stringify(db.projects.filter(p=>p.status!=="General").map(p=>projSummary(db,p)));
+  useEffect(()=>{
+    if(!o.authed || !fdb.loaded || !projKey) return;
+    const t = setTimeout(()=>{ api("syncProjects",{projects:JSON.parse(sumKey)}).catch(()=>{}); },4000);
+    return ()=>clearTimeout(t);
+  },[o.authed, fdb.loaded, sumKey]);
+
+  const ctx = {db,setDb,up,notify,go:o.go,refresh,calOps,loadEvents,npv:n,reloadAll:loadAll};
+  return ctx;
+}
+
+/* ═══════════════════════ Home: daily brief card ═══════════════════════ */
+function Brief({ctx}){
+  const {db,go} = ctx;
+  const items = brief(db);
+  const hr = new Date().getHours();
+  const hello = hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";
+  const links = [["Seller leads","leads","inbox"],["Social","social","mega"],["Calendar","calendar","cal"],["Ask Foreman","ask","spark"],["Vendors","vendors","users"]];
+  return e("div",{className:"aibox",style:{marginBottom:20}},
+    e("div",{className:"ai-tag"},Icon("spark",13),CONFIG.aiName+" · Daily brief"),
+    e("h2",{className:"t"},hello+". "+(items.length?"Here's what needs you today.":"Nothing urgent right now.")),
+    db.liveError ? e("div",{className:"note",style:{color:"#F0B4B4",marginTop:8,position:"relative",zIndex:1}},"Foreman isn't connected yet: "+db.liveError) : null,
+    items.length ? e("ul",null, items.map((b,i)=>e("li",{key:i}, e("span",{className:"mk "+(b.tone==="bad"?"bad":b.tone==="ok"?"ok":"")}),
+      e("span",null, e("span",{dangerouslySetInnerHTML:richHTML(b.text)}), e("button",{className:"lnk",onClick:()=>go(...b.go)},b.cta+" →"))))) : null,
+    e("div",{className:"row",style:{marginTop:16,position:"relative",zIndex:1}}, links.map(([l,v,ic])=>e("button",{key:v,className:"btn ghost sm",onClick:()=>go(v)},Icon(ic,14),l))));
+}
+
+/* Wrap a Foreman screen in the scoped BuildFlow styles */
+const Screen = (Comp) => function ScreenWrap({ctx}){ return e("div",{className:"bf"}, e(Comp,{ctx})); };
+
+return {
+  useForeman, needsReply, CONFIG,
+  Brief: Screen(Brief),
+  Leads: Screen(Leads),
+  Social: Screen(Social),
+  Calendar: Screen(CalendarView),
+  Ask: Screen(Ask),
+  _test: {buildDb, snapshot, brief, projSummary, applyNpvAction, describeAction},
+};
+})();
+
+//]]>
+</script>
 <script>
 //<![CDATA[
 const { useState, useEffect, useRef } = React;
@@ -574,6 +2160,7 @@ function App() {
   const [leadFilter,setLeadFilter]     = useState("All");
   const [leadStatus,setLeadStatus]     = useState("All");
   const [expandedLead,setExpandedLead] = useState(null);
+  const [loadWarn,setLoadWarn]         = useState([]);   // BuildFlow: which loads failed (saves stay blocked)
 
   // Derived — per-project planning state
   const milestones = allMilestones[activeId]||[];
@@ -704,7 +2291,7 @@ function App() {
         setAllMilestones(prev=>({...prev,...data.milestones}));
       }
       setMilestonesLoaded(true);
-    }).catch(()=>setMilestonesLoaded(true));
+    }).catch(()=>{ setLoadWarn(w=>w.concat(["milestones"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     // Load vendors from Sheet
     api("getVendors").then(data=>{
@@ -712,7 +2299,7 @@ function App() {
       if(data.categories&&data.categories.length>0) setVendorCategories(data.categories);
       setVendorsLoaded(true);
       vendorsLoadedRef.current=true;
-    }).catch(()=>{setVendorsLoaded(true);vendorsLoadedRef.current=true;});
+    }).catch(()=>{ setLoadWarn(w=>w.concat(["vendors"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     api("getLeads").then(function(data){
       setLeads(data.leads||[]);
@@ -725,21 +2312,7 @@ function App() {
       });
     }
 
-    api("getLeads").then(function(data){
-      setLeads(data.leads||[]);
-    }).catch(function(){});
 
-    // Listen for notification click → navigate to leads
-    if("serviceWorker" in navigator){
-    }
-
-    api("getLeads").then(function(data){
-      setLeads(data.leads||[]);
-    }).catch(function(){});
-
-    // Listen for notification click → navigate to leads
-    if("serviceWorker" in navigator){
-    }
 
     // Load management data from Sheet
     api("getMgmtData").then(data=>{
@@ -749,7 +2322,7 @@ function App() {
       if(d.mgmtMsStatus) setMgmtMsStatus(d.mgmtMsStatus);
       setMgmtLoaded(true);
       mgmtLoadedRef.current=true;
-    }).catch(()=>{setMgmtLoaded(true);mgmtLoadedRef.current=true;});
+    }).catch(()=>{ setLoadWarn(w=>w.concat(["management"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced, only after initial load)
@@ -1001,6 +2574,30 @@ function App() {
 
   const navTo=(v)=>{setView(v);window.scrollTo(0,0);};
 
+  // ── BuildFlow · Foreman AI ──────────────────────────────────────────────
+  const fmGo=(v,id,tab)=>{
+    if(v==="project"){ setActiveId(id); setTaskFilter(""); setTaskWorkFilter(""); setReloadTick(t=>t+1); navTo(tab||"dashboard"); return; }
+    setActiveId(null);
+    if(v==="deals") return navTo("leads");
+    if(["leads","social","calendar","ask"].indexOf(v)>-1) return navTo("fm-"+v);
+    navTo(v);
+  };
+  const fm = BF.useForeman({
+    authed,
+    notify: showToast,
+    go: fmGo,
+    npv: {
+      projects, activeId, current:{expenses,tasks,quotes},
+      allMilestones, setAllMilestones, allMsStatus, setAllMsStatus, milestonesReady: milestonesLoaded,
+      vendors, setVendors, vendorsReady: vendorsLoaded,
+      dealLeads: leads, mgmtMilestones, mgmtMsStatus, mgmtTasks,
+      reload: ()=>setReloadTick(t=>t+1),
+      lists: {expenseCategories:CATEGORIES, taskCategories:TASK_CATEGORIES, taskPriorities:PRIORITIES, taskStatuses:TASK_STATUSES, vendorCategories:VENDOR_CATEGORIES, assignees:ASSIGNEES},
+    },
+  });
+  const fmWaiting = BF.needsReply(fm.db).length;
+  const isFm = view.indexOf("fm-")===0;
+
   if(!authed) return React.createElement(PinScreen,{onUnlock:unlock});
 
   const e=React.createElement;
@@ -1251,9 +2848,17 @@ function App() {
       isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
       e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
       e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
-        e("span",null,"📬 Leads"),
+        e("span",null,"📬 Deal Leads"),
         leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
       ),
+      e("div",{key:"fm-label",style:{...S.sideLabel,marginTop:14,color:"#d4a017"}},"✨ Foreman AI"),
+      e("div",{key:"fm-leads",style:{...S.sideItem(view==="fm-leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("fm-leads");}},
+        e("span",null,"🏡 Seller Leads"),
+        fmWaiting>0&&e("span",{style:{background:"#d4a017",color:"#0a1628",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},fmWaiting)
+      ),
+      e("div",{key:"fm-social",style:S.sideItem(view==="fm-social"),onClick:()=>{setActiveId(null);navTo("fm-social");}},"📣 Social Posts"),
+      e("div",{key:"fm-calendar",style:S.sideItem(view==="fm-calendar"),onClick:()=>{setActiveId(null);navTo("fm-calendar");}},"📅 Calendar"),
+      e("div",{key:"fm-ask",style:S.sideItem(view==="fm-ask"),onClick:()=>{setActiveId(null);navTo("fm-ask");}},"✨ Ask Foreman"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"dashboard",style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"expenses",style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"tasks",style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
@@ -1286,7 +2891,7 @@ function App() {
     const isProject = activeProject&&!activeProject.description?.includes("No budget");
     const isMgmt = view==="management";
     const isVendors = view==="vendors";
-    const items = (isProject&&!isVendors) ? [
+    const items = (isProject&&!isVendors&&["dashboard","expenses","tasks","quotes","planning"].indexOf(view)>-1) ? [
       {icon:"🏠",label:"Projects",v:"home"},
       {icon:"📊",label:"Dashboard",v:"dashboard"},
       {icon:"✅",label:"Tasks",v:"tasks"},
@@ -1294,15 +2899,18 @@ function App() {
       {icon:"📅",label:"Planning",v:"planning"},
     ] : [
       {icon:"🏠",label:"Projects",v:"home"},
-      {icon:"📋",label:"Management",v:"management"},
-      {icon:"📇",label:"Vendors",v:"vendors"},
-      {icon:"📬",label:"Leads",v:"leads"},
+      {icon:"📋",label:"Mgmt",v:"management"},
+      {icon:"📬",label:"Deals",v:"leads"},
+      {icon:"🏡",label:"Sellers",v:"fm-leads"},
+      {icon:"📅",label:"Calendar",v:"fm-calendar"},
+      {icon:"✨",label:"Ask AI",v:"fm-ask"},
     ];
     return e("div",{style:{display:"flex"},className:"bottom-nav"},
       ...items.map(item=>e("div",{key:item.v,
         style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"8px 2px",cursor:"pointer",
           color:view===item.v?"#d4a017":"#4a6fa5",fontSize:9,fontWeight:view===item.v?700:400,gap:2},
         onClick:()=>{
+          if(item.v.indexOf("fm-")===0||item.v==="management"||item.v==="leads"){setActiveId(null);}
           if(item.v==="add-expense"&&!activeProject){navTo("add-project");return;}
           if(item.v==="add-expense"){view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense();return;}
           navTo(item.v);
@@ -1314,6 +2922,7 @@ function App() {
   };
 
   const HomeView=()=>e("div",null,
+    e(BF.Brief,{ctx:fm}),
     e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
       e("div",null,
         e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Projects"),
@@ -2328,10 +3937,11 @@ function App() {
     e("div",{style:S.header},
       e("div",{style:{fontWeight:800,fontSize:15,color:"#f8f0d8",display:"flex",alignItems:"center",gap:8,cursor:"pointer"},onClick:()=>navTo("home"),className:"header-title"},
         e("div",{style:{width:28,height:28,background:"#1e3a5f",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#d4a017",flexShrink:0}},"N"),
-        "NextPhase Ventures"
+        "NextPhase Ventures",
+        e("span",{style:{fontSize:10,fontWeight:700,color:"#d4a017",border:"1px solid #d4a01755",borderRadius:99,padding:"2px 8px",marginLeft:4,letterSpacing:"0.04em"}},"BuildFlow")
       ),
       saving&&e("span",{style:{fontSize:12,color:"#d4a017",marginLeft:4}},"Saving…"),
-      activeProject&&view!=="home"&&e("div",{style:{marginLeft:"auto"}},
+      activeProject&&view!=="home"&&!isFm&&e("div",{style:{marginLeft:"auto"}},
         e("button",{style:{...S.btn(),fontSize:13},onClick:()=>view==="tasks"?openAddTask():view==="quotes"?openAddQuote():openAddExpense()},view==="tasks"?"+ Task":view==="quotes"?"+ Quote":"+ Add")
       )
     ),
@@ -2339,6 +3949,8 @@ function App() {
     e("div",{style:{display:"flex",flex:1,minHeight:0}},
       Sidebar(),
       e("div",{style:{...S.content},className:"main-content"},
+        loadWarn.length>0&&e("div",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#fca5a5",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13}},
+          "⚠️ Couldn't load "+loadWarn.join(", ")+". To protect your data, changes there won't be saved until you reload the app."),
         view==="home"      ?HomeView():
         view==="management"?ManagementView():
         view==="vendors"   ?VendorsView():
@@ -2347,7 +3959,11 @@ function App() {
         view==="tasks"     ?TasksView():
         view==="quotes"    ?QuotesView():
         view==="planning"  ?PlanningView():
-        view==="leads"     ?LeadsView():null
+        view==="leads"     ?LeadsView():
+        view==="fm-leads"    ?e(BF.Leads,{ctx:fm}):
+        view==="fm-social"   ?e(BF.Social,{ctx:fm}):
+        view==="fm-calendar" ?e(BF.Calendar,{ctx:fm}):
+        view==="fm-ask"      ?e(BF.Ask,{ctx:fm}):null
       )
     ),
 
