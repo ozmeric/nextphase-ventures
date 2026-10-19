@@ -384,6 +384,158 @@ option{color:#e2e8f0;background:#071020}
 <script>
 //<![CDATA[
 /* ═══════════════════════════════════════════════════════════════════════════════════════
+   NPV date picker — replaces every <input type="date"> in the app with a navy/gold calendar.
+   Tap anywhere on a date field → calendar opens. Switch month and year with the arrows or
+   the dropdowns, tap a day, or use Today / Clear. You can also type a date (10/18/2026).
+   The value stays "YYYY-MM-DD", exactly what the native field gave, so nothing that saves
+   dates changes. Add  "data-native": true  to an input to keep the browser's own picker.
+   ═══════════════════════════════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+const h = React.createElement;
+const { useState, useEffect, useRef, useLayoutEffect } = React;
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const WD = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+const pad = n => String(n).padStart(2,"0");
+const toIso = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const norm = v => { if(!v) return ""; const s = String(v); if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10); const d = new Date(s); return isNaN(d.getTime()) ? "" : toIso(d); };
+const parseIso = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||""); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; };
+const show = s => { const d = parseIso(s); return d ? d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : ""; };
+/* What people type: 10/18/2026, 10/18/26, 10-18, 2026-10-18, Oct 18 2026, "today", "tomorrow" */
+function parseTyped(t){
+  t = String(t||"").trim().toLowerCase(); if(!t) return "";
+  const now = new Date(); now.setHours(0,0,0,0);
+  if(t==="today") return toIso(now);
+  if(t==="tomorrow"){ now.setDate(now.getDate()+1); return toIso(now); }
+  if(t==="yesterday"){ now.setDate(now.getDate()-1); return toIso(now); }
+  let m;
+  if((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t))) return valid(+m[1],+m[2],+m[3]);
+  if((m = /^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?$/.exec(t))){ let y = m[3] ? +m[3] : now.getFullYear(); if(y<100) y += 2000; return valid(y,+m[1],+m[2]); }
+  const d = new Date(t); return isNaN(d.getTime()) ? null : toIso(d);
+}
+function valid(y,mo,d){ const x = new Date(y,mo-1,d); return (x.getFullYear()===y && x.getMonth()===mo-1 && x.getDate()===d) ? toIso(x) : null; }
+
+const C = { bg:"#0d1f3c", panel:"#071020", line:"#1e3a5f", ink:"#e2e8f0", mute:"#7a9cc5", gold:"#d4a017", gold2:"#e6b93a", navy:"#0a1628" };
+const CAL_ICON = h("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:1.8,strokeLinecap:"round",strokeLinejoin:"round","aria-hidden":true},h("path",{d:"M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"}));
+const LAYOUT_KEYS = ["flex","flexGrow","flexShrink","flexBasis","width","minWidth","maxWidth","margin","marginTop","marginBottom","marginLeft","marginRight","gridColumn","alignSelf","justifySelf"];
+
+function Calendar({value,min,max,onPick,onClose,anchor}){
+  const sel = parseIso(value);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = sel || today;
+  const [view,setView] = useState({y:start.getFullYear(), m:start.getMonth()});
+  const [pos,setPos] = useState(null);
+  const box = useRef(null);
+  const minD = parseIso(norm(min)), maxD = parseIso(norm(max));
+  const place = () => {
+    if(!anchor.current || !box.current) return;
+    const r = anchor.current.getBoundingClientRect(), W = box.current.offsetWidth, H = box.current.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let left = Math.min(Math.max(8, r.left), vw - W - 8);
+    let top = r.bottom + 6;
+    if(top + H > vh - 8 && r.top - H - 6 > 8) top = r.top - H - 6;          // not enough room below: open above
+    if(top + H > vh - 8) top = Math.max(8, vh - H - 8);
+    setPos({left, top});
+  };
+  useLayoutEffect(place, [view.y, view.m]);
+  useEffect(()=>{
+    const out = ev => { if(box.current && !box.current.contains(ev.target) && anchor.current && !anchor.current.contains(ev.target)) onClose(); };
+    const key = ev => { if(ev.key==="Escape"){ ev.stopPropagation(); onClose(); } };
+    document.addEventListener("mousedown", out, true); document.addEventListener("touchstart", out, true);
+    document.addEventListener("keydown", key, true);
+    window.addEventListener("resize", place); window.addEventListener("scroll", place, true);
+    return ()=>{ document.removeEventListener("mousedown", out, true); document.removeEventListener("touchstart", out, true);
+      document.removeEventListener("keydown", key, true); window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  },[]);
+  const step = n => setView(v => { const d = new Date(v.y, v.m + n, 1); return {y:d.getFullYear(), m:d.getMonth()}; });
+  const first = new Date(view.y, view.m, 1), lead = first.getDay(), days = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = []; for(let i=0;i<lead;i++) cells.push(null); for(let d=1; d<=days; d++) cells.push(new Date(view.y, view.m, d));
+  while(cells.length % 7) cells.push(null);
+  const yNow = today.getFullYear(), yLo = Math.min(yNow - 10, view.y, sel ? sel.getFullYear() : yNow), yHi = Math.max(yNow + 6, view.y);
+  const years = []; for(let y=yLo; y<=yHi; y++) years.push(y);
+  const off = d => (minD && d < minD) || (maxD && d > maxD);
+  const sel_ = {background:C.panel,border:"1px solid "+C.line,borderRadius:6,color:C.ink,fontSize:13,fontWeight:700,padding:"5px 6px",cursor:"pointer",outline:"none",width:"auto"};
+  const arrow = {background:"none",border:"1px solid "+C.line,borderRadius:6,color:C.ink,width:30,height:30,cursor:"pointer",fontSize:16,lineHeight:"26px",padding:0,flexShrink:0};
+  const foot = {background:"none",border:0,color:C.gold2,fontWeight:700,fontSize:13,cursor:"pointer",padding:"6px 4px"};
+  return ReactDOM.createPortal(
+    h("div",{ref:box,role:"dialog","aria-label":"Choose a date",className:"npv-dp",
+      style:{position:"fixed",left:pos?pos.left:-9999,top:pos?pos.top:-9999,zIndex:10000,width:288,background:C.bg,border:"1px solid "+C.line,borderRadius:12,
+        boxShadow:"0 18px 50px rgba(0,0,0,.55)",padding:12,color:C.ink,fontFamily:"inherit",fontSize:13,userSelect:"none"}},
+      h("div",{style:{display:"flex",alignItems:"center",gap:6,marginBottom:10}},
+        h("button",{type:"button",style:arrow,"aria-label":"Previous month",onClick:()=>step(-1)},"‹"),
+        h("div",{style:{flex:1,display:"flex",gap:6,justifyContent:"center"}},
+          h("select",{"aria-label":"Month",value:view.m,style:sel_,onChange:ev=>setView(v=>({...v,m:+ev.target.value}))}, MONTHS.map((n,i)=>h("option",{key:i,value:i},n))),
+          h("select",{"aria-label":"Year",value:view.y,style:sel_,onChange:ev=>setView(v=>({...v,y:+ev.target.value}))}, years.map(y=>h("option",{key:y,value:y},y)))),
+        h("button",{type:"button",style:arrow,"aria-label":"Next month",onClick:()=>step(1)},"›")),
+      h("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center"}},
+        WD.map(w=>h("div",{key:w,style:{fontSize:11,fontWeight:700,color:C.mute,padding:"4px 0"}},w)),
+        cells.map((d,i)=>{
+          if(!d) return h("div",{key:"e"+i});
+          const iso = toIso(d), isSel = value===iso, isToday = +d===+today, dis = off(d);
+          return h("button",{key:iso,type:"button",disabled:dis,"aria-label":d.toDateString(),"aria-pressed":isSel,onClick:()=>onPick(iso),
+            style:{height:34,borderRadius:8,border:isToday&&!isSel?"1px solid "+C.gold:"1px solid transparent",cursor:dis?"default":"pointer",
+              background:isSel?C.gold:"transparent",color:isSel?C.navy:dis?"#3b5679":C.ink,fontWeight:isSel||isToday?800:500,fontSize:13,padding:0},
+            onMouseEnter:ev=>{ if(!isSel&&!dis) ev.currentTarget.style.background="#1e3a5f"; },
+            onMouseLeave:ev=>{ if(!isSel) ev.currentTarget.style.background="transparent"; }}, d.getDate());
+        })),
+      h("div",{style:{display:"flex",justifyContent:"space-between",borderTop:"1px solid "+C.line,marginTop:8,paddingTop:6}},
+        h("button",{type:"button",style:foot,onClick:()=>{ if(!off(today)) onPick(toIso(today)); else setView({y:today.getFullYear(),m:today.getMonth()}); }},"Today"),
+        h("button",{type:"button",style:{...foot,color:C.mute},onClick:()=>onPick("")},"Clear"))),
+    document.body);
+}
+
+function DateField(props){
+  const {value, onChange, style, className, id, min, max, disabled, required, placeholder, name} = props;
+  const v = norm(value);
+  const [open,setOpen] = useState(false);
+  const [text,setText] = useState(show(v));
+  const [typing,setTyping] = useState(false);
+  const wrap = useRef(null), inp = useRef(null);
+  useEffect(()=>{ if(!typing) setText(show(v)); },[v, typing]);
+  const emit = iso => { if(onChange) onChange({target:{value:iso, name, id}, currentTarget:{value:iso}, preventDefault(){}, stopPropagation(){}}); };
+  const pick = iso => { setTyping(false); setText(show(iso)); emit(iso); setOpen(false); };
+  const commit = () => {
+    if(!typing) return; setTyping(false);
+    const iso = parseTyped(text);
+    if(iso === null){ setText(show(v)); return; }                        // couldn't read it: keep the old date
+    if(iso !== v) emit(iso); setText(show(iso));
+  };
+  const outer = {position:"relative",display:"block",width:"100%"};
+  const inner = {...(style||{})};
+  LAYOUT_KEYS.forEach(k=>{ if(inner[k]!==undefined){ outer[k] = inner[k]; delete inner[k]; } });
+  inner.width = "100%"; inner.paddingRight = 36; inner.cursor = disabled ? "default" : "pointer";
+  return h("div",{ref:wrap,style:outer},
+    h("input",{ref:inp,id,name,type:"text",inputMode:"none",autoComplete:"off",className,style:inner,disabled,required,
+      value:text, placeholder:placeholder||"Select date", "aria-haspopup":"dialog","aria-expanded":open,
+      onClick:()=>{ if(!disabled) setOpen(true); },
+      onFocus:()=>{ if(!disabled) setOpen(true); },
+      onChange:ev=>{ setTyping(true); setText(ev.target.value); },
+      onBlur:commit,
+      onKeyDown:ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); commit(); setOpen(false); } else if(ev.key==="Tab") setOpen(false); else if(ev.key==="ArrowDown"&&!open) setOpen(true); }}),
+    h("button",{type:"button",tabIndex:-1,"aria-label":"Open calendar",disabled,onClick:()=>{ setOpen(o=>!o); if(inp.current) inp.current.focus(); },
+      style:{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",background:"none",border:0,color:C.gold,cursor:"pointer",padding:4,display:"grid",placeItems:"center"}}, CAL_ICON),
+    open && h(Calendar,{value:v,min,max,anchor:wrap,onPick:pick,onClose:()=>setOpen(false)}));
+}
+
+/* Every <input type="date"> anywhere in the app becomes a DateField. This runs before the app
+   code, so both the NPV screens and the Foreman screens pick it up. */
+const orig = React.createElement;
+React.createElement = function(type, props){
+  if(type === "input" && props && props.type === "date" && !props["data-native"]){
+    const args = Array.prototype.slice.call(arguments);
+    args[0] = DateField; args[1] = Object.assign({}, props); delete args[1].type;
+    return orig.apply(React, args);
+  }
+  return orig.apply(React, arguments);
+};
+window.NPVDate = { DateField, parseTyped, norm };
+})();
+
+//]]>
+</script>
+<script>
+//<![CDATA[
+/* ═══════════════════════════════════════════════════════════════════════════════════════
    FOREMAN AI for NextPhase Ventures — BuildFlow module
    Seller leads · Social posts · Calendar · Ask Foreman · Daily brief
    Lives in its own closure so it can't clash with the NPV app code below it.
@@ -2504,7 +2656,7 @@ function App() {
         if(q.item===quote.item && q.status==="Pending") return {...q,status:"Rejected"};
         return q;
       }));
-      const newExp={id:"qte-"+quote.id,description:quote.item,amount:quote.amount,date:new Date().toISOString().slice(0,10),category:quote.category||"Materials",vendor:quote.vendor,notes:"Converted from accepted quote"};
+      const newExp={id:"qte-"+quote.id,description:quote.item,amount:quote.amount,date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),category:quote.category||"Materials",vendor:quote.vendor,notes:"Converted from accepted quote"};
       setExpenses(prev=>[...prev,newExp]);
       showToast("Quote accepted and added to expenses.");
     }catch(e){showToast("Failed: "+e.message,"error");}
@@ -2558,7 +2710,7 @@ function App() {
   };
 
   const openAddExpense=(expense=null)=>{
-    setForm(expense?{...expense}:{date:new Date().toISOString().slice(0,10),category:CATEGORIES[0]});
+    setForm(expense?{...expense}:{date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),category:CATEGORIES[0]});
     setView("add-expense");
   };
 
