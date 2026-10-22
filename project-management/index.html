@@ -1823,8 +1823,9 @@ const QUOTE_STATUSES = ["Pending","Accepted","Rejected"];
 const QUOTE_STATUS_COLORS = {"Pending":"#f59e0b","Accepted":"#10b981","Rejected":"#ef4444"};
 
 const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
-const fmtDate = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
-const fmtDateShort = d => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
+const fmtDate = d => d ? pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
+const fmtDateShort = d => d ? pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
 const genId   = () => Math.random().toString(36).slice(2,10);
 
 let SESSION_PIN = (()=>{try{return sessionStorage.getItem("npv-pin")||"";}catch{return "";}})();
@@ -2783,12 +2784,12 @@ function App() {
   const over      =rehabRem<0;
   const acqByCat  =ACQUISITION_CATEGORIES.map(c=>({name:c,total:acqExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
   const rehabByCat=REHAB_CATEGORIES.map(c=>({name:c,total:rehabExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
-  const recent    =[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  const recent    =[...expenses].sort((a,b)=>pDate(b.date)-pDate(a.date)).slice(0,5);
   const filtered  =expenses.filter(ex=>{
     if(filter.category&&ex.category!==filter.category)return false;
     if(filter.search&&!ex.description?.toLowerCase().includes(filter.search.toLowerCase())&&!ex.vendor?.toLowerCase().includes(filter.search.toLowerCase()))return false;
     return true;
-  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  }).sort((a,b)=>pDate(b.date)-pDate(a.date));
 
   // ── FORM VIEWS ──
   if(view==="add-expense"||view==="add-project"||view==="edit-project"||view==="add-task"||view==="add-quote"){
@@ -2856,7 +2857,7 @@ function App() {
               e("select",{style:S.input,value:form.milestone||"",onChange:ev=>setForm({...form,milestone:ev.target.value})},
                 e("option",{value:""},"— No milestone —"),
                 milestones.map(ms=>e("option",{key:ms.id,value:ms.id},
-                  new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})+" — "+ms.week
+                  pDate(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})+" — "+ms.week
                 ))
               )
             ),
@@ -2895,7 +2896,7 @@ function App() {
   // ── LEADS VIEW ──────────────────────────────────────────────────────────
   const LeadsView=()=>{
     const fmt$=n=>n?"$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}):"—";
-    const fmtD=d=>d?new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"—";
+    const fmtD=d=>d?pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"—";
     const filtered=leads.filter(l=>{
       if(leadFilter!=="All"&&l.recommendation!==leadFilter)return false;
       if(leadStatus!=="All"&&l.status!==leadStatus)return false;
@@ -3379,7 +3380,7 @@ function App() {
         )
       :e("div",null,...filteredTasks.map(t=>{
           const isDone=t.status==="Done";
-          const isOverdue=t.dueDate&&!isDone&&!(new Date(t.dueDate).getTime()>=new Date(new Date().toDateString()).getTime());
+          const isOverdue=t.dueDate&&!isDone&&!(pDate(t.dueDate).getTime()>=new Date(new Date().toDateString()).getTime());
           return e("div",{key:t.id,style:{...S.card,marginBottom:10,opacity:isDone?0.65:1,borderColor:isOverdue?"#ef444455":"#1e3a5f"}},
             e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:8}},
               e("div",{style:{flex:1}},
@@ -3400,7 +3401,7 @@ function App() {
                 t.assignee&&e("span",null,"👤 "+t.assignee),
                 t.dueDate&&e("span",{style:{color:isOverdue?"#ef4444":"#4a6fa5",fontWeight:isOverdue?700:400}},(isOverdue?"⚠️ ":"📅 ")+fmtDateShort(t.dueDate)),
                 t.milestone&&milestones.find(m=>m.id===t.milestone)&&e("span",{style:{background:"#8b5cf622",color:"#a78bfa",padding:"2px 8px",borderRadius:99,fontSize:11,fontWeight:600}},
-                  "🏁 "+new Date(milestones.find(m=>m.id===t.milestone)?.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
+                  "🏁 "+pDate(milestones.find(m=>m.id===t.milestone)?.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})
                 )
               ),
               e("div",{style:{display:"flex",gap:4}},
@@ -3484,7 +3485,7 @@ function App() {
     const getStatus=ms=>{
       if(msStatus[ms.id]==="done") return "done";
       if(msStatus[ms.id]==="in-progress") return "in-progress";
-      return !(new Date(ms.date).getTime()>=today.getTime())?"overdue":"upcoming";
+      return !(pDate(ms.date).getTime()>=today.getTime())?"overdue":"upcoming";
     };
     const sCol={done:"#10b981","in-progress":"#f59e0b",overdue:"#ef4444",upcoming:"#4a6fa5"};
     const sIcon={done:"✅","in-progress":"🔄",overdue:"⚠️",upcoming:"📅"};
@@ -3505,7 +3506,7 @@ function App() {
           const st=getStatus(ms);
           const col=sCol[st];
           const isSel=selMs===ms.id;
-          const dateStr=new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+          const dateStr=pDate(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
           const comments=msComments[ms.id]||[];
           const cInput=commentInput[ms.id]||"";
           // Task progress for this milestone
@@ -3614,7 +3615,7 @@ function App() {
                 const items=[];
                 if(msForm.interior)items.push({type:"Interior",text:msForm.interior});
                 if(msForm.exterior)items.push({type:"Exterior",text:msForm.exterior});
-                setMilestones(p=>[...p,{id:"ms-"+Date.now(),date:msForm.date,week:msForm.week,items}].sort((a,b)=>new Date(a.date)-new Date(b.date)));
+                setMilestones(p=>[...p,{id:"ms-"+Date.now(),date:msForm.date,week:msForm.week,items}].sort((a,b)=>pDate(a.date)-pDate(b.date)));
                 setShowAddMs(false);setMsForm({date:"",week:"",interior:"",exterior:""});
               }},"Add")
             )
@@ -3639,7 +3640,7 @@ function App() {
                 const items=[];
                 if(editMsForm.interior)items.push({type:"Interior",text:editMsForm.interior});
                 if(editMsForm.exterior)items.push({type:"Exterior",text:editMsForm.exterior});
-                setMilestones(p=>p.map(m=>m.id===editMs?{...m,date:editMsForm.date,week:editMsForm.week,items}:m).sort((a,b)=>new Date(a.date)-new Date(b.date)));
+                setMilestones(p=>p.map(m=>m.id===editMs?{...m,date:editMsForm.date,week:editMsForm.week,items}:m).sort((a,b)=>pDate(a.date)-pDate(b.date)));
                 setEditMs(null);
               }},"Save")
             )
@@ -3864,7 +3865,7 @@ function App() {
     const [lf,setLf]=useState({week:"",date:"",notes:""});
     const submit=()=>{
       if(!lf.week)return;
-      setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:lf.date,week:lf.week,notes:lf.notes}].sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)));
+      setMgmtMilestones(p=>[...p,{id:"mgmt-"+Date.now(),date:lf.date,week:lf.week,notes:lf.notes}].sort((a,b)=>pDate(a.date||0)-pDate(b.date||0)));
       setShowAddMgmtMs(false);
     };
     return e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
@@ -3986,7 +3987,7 @@ function App() {
               e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"},onClick:()=>setMgmtSelMs(isSel?null:ms.id)},
                 e("div",null,
                   e("div",{style:{fontSize:14,fontWeight:700,color:"#f8f0d8"}},ms.week),
-                  ms.date&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},new Date(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}))
+                  ms.date&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},pDate(ms.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}))
                 ),
                 e("div",{style:{display:"flex",gap:6,alignItems:"center"}},
                   e("span",{style:{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99,background:col+"22",color:col}},st==="in-progress"?"🔄 Active":st==="done"?"✅ Done":"📅 Planned"),
