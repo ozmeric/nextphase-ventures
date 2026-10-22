@@ -1823,6 +1823,7 @@ const QUOTE_STATUSES = ["Pending","Accepted","Rejected"];
 const QUOTE_STATUS_COLORS = {"Pending":"#f59e0b","Accepted":"#10b981","Rejected":"#ef4444"};
 
 const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
+const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
 const fmtDate = d => d ? pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
 const fmtDateShort = d => d ? pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
@@ -2247,7 +2248,7 @@ function App() {
   const [saving,setSaving]         = useState(false);
   const [view,setView]             = useState("home");
   const [form,setForm]             = useState({});
-  const [filter,setFilter]         = useState({category:"",search:""});
+  const [filter,setFilter]         = useState({category:"",search:"",vendor:""});
   const [toast,setToast]           = useState(null);
   const [delConfirm,setDelConfirm] = useState(null);
   const [error,setError]           = useState(null);
@@ -2735,6 +2736,7 @@ function App() {
     if(["leads","social","calendar","ask"].indexOf(v)>-1) return navTo("fm-"+v);
     navTo(v);
   };
+  useEffect(()=>{ setFilter(f=>f.vendor?{...f,vendor:""}:f); },[activeId]);
   const fm = BF.useForeman({
     authed,
     notify: showToast,
@@ -2787,6 +2789,7 @@ function App() {
   const recent    =[...expenses].sort((a,b)=>pDate(b.date)-pDate(a.date)).slice(0,5);
   const filtered  =expenses.filter(ex=>{
     if(filter.category&&ex.category!==filter.category)return false;
+    if(filter.vendor&&(filter.vendor==="__none__"?vKey(ex.vendor)!=="":vKey(ex.vendor)!==filter.vendor))return false;
     if(filter.search&&!ex.description?.toLowerCase().includes(filter.search.toLowerCase())&&!ex.vendor?.toLowerCase().includes(filter.search.toLowerCase()))return false;
     return true;
   }).sort((a,b)=>pDate(b.date)-pDate(a.date));
@@ -3273,6 +3276,27 @@ function App() {
   );
 
   // ── EXPENSES VIEW ──
+  // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
+  const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
+    return Object.values(m).map(o=>({key:o.key,n:o.n,label:Object.keys(o.names).sort((a,b)=>o.names[b]-o.names[a])[0]})).sort((a,b)=>a.label.localeCompare(b.label)); })();
+  const expHasNoVendor=expenses.some(ex=>!vKey(ex.vendor));
+  const filteredTotal=filtered.reduce((s,ex)=>s+(parseFloat(ex.amount)||0),0);
+  const vendorLabel=filter.vendor==="__none__"?"No vendor":((expVendors.find(v=>v.key===filter.vendor)||{}).label||"");
+  const expFilterLabel=[filter.category,vendorLabel,filter.search?"“"+filter.search+"”":""].filter(Boolean).join(" · ");
+  const vendorAll=(()=>{ if(!filter.vendor||filter.vendor==="__none__") return null;
+    const xs=(fm.db.expenses||[]).filter(x=>vKey(x.vendor)===filter.vendor); const byP={};
+    xs.forEach(x=>{ byP[x.projectId]=(byP[x.projectId]||0)+x.amount; });
+    return {total:xs.reduce((s,x)=>s+x.amount,0),count:xs.length,projects:Object.keys(byP).map(id=>({name:(projects.find(p=>String(p.id)===id)||{}).name||id,total:byP[id]})).sort((a,b)=>b.total-a.total)}; })();
+  const expTotalCard=(cls,crossOnly)=>e("div",{className:cls||undefined,style:{...S.card,marginTop:10,display:"flex",flexDirection:"column",gap:8,borderColor:"#d4a01755"}},
+    !crossOnly&&e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:10}},
+      e("div",null,e("div",{style:{fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a9cc5"}},"Total"+(expFilterLabel?" — "+expFilterLabel:"")),
+        e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},filtered.length+" expense"+(filtered.length===1?"":"s")+(activeProject?" · "+activeProject.name:""))),
+      e("div",{style:{fontWeight:900,fontSize:22,color:"#d4a017",whiteSpace:"nowrap"}},fmt(filteredTotal))),
+    vendorAll&&vendorAll.projects.length>1&&e("div",{style:crossOnly?null:{borderTop:"1px solid #1e3a5f",paddingTop:8}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,color:"#f8f0d8"}},
+        e("span",null,"All projects with "+vendorLabel+" ("+vendorAll.count+")"),e("span",{style:{color:"#d4a017"}},fmt(vendorAll.total))),
+      ...vendorAll.projects.map(p=>e("div",{key:p.name,style:{display:"flex",justifyContent:"space-between",fontSize:12,color:"#7a9cc5",marginTop:3}},e("span",null,p.name),e("span",null,fmt(p.total)))))
+  );
   const ExpensesView=()=>loadingExp?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):e("div",null,
     e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16},className:"page-header"},
       e("h2",{style:{fontWeight:800,fontSize:18,color:"#f8f0d8"}},"All Expenses"),
@@ -3281,12 +3305,22 @@ function App() {
       )
     ),
     e("div",{style:{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}},
-      e("input",{style:{...S.input,maxWidth:220,flex:1},placeholder:"Search…",value:filter.search,autoComplete:"off",onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,search:v}));}}),
-      e("select",{style:{...S.input,maxWidth:180,flex:1},value:filter.category,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,category:v}));},},
+      e("input",{style:{...S.input,maxWidth:220,minWidth:150,flex:1},placeholder:"Search…",value:filter.search,autoComplete:"off",onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,search:v}));}}),
+      e("select",{style:{...S.input,maxWidth:180,minWidth:150,flex:1},value:filter.category,onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,category:v}));},},
         e("option",{value:""},"All Categories"),
         e("optgroup",{label:"Acquisition"},ACQUISITION_CATEGORIES.map(c=>e("option",{key:c},c))),
         e("optgroup",{label:"Rehab"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
-      )
+      ),
+      e("select",{style:{...S.input,maxWidth:200,minWidth:150,flex:1},value:filter.vendor,"aria-label":"Vendor",onChange:ev=>{const v=ev.target.value;setFilter(prev=>({...prev,vendor:v}));}},
+        e("option",{value:""},"All Vendors"),
+        expVendors.map(v=>e("option",{key:v.key,value:v.key},v.label+" ("+v.n+")")),
+        expHasNoVendor&&e("option",{value:"__none__"},"(No vendor)")
+      ),
+      (filter.category||filter.vendor||filter.search)&&e("button",{style:{background:"none",border:"1px solid #1e3a5f",color:"#7a9cc5",borderRadius:7,padding:"0 12px",cursor:"pointer",fontSize:12,fontWeight:600},onClick:()=>setFilter({category:"",search:"",vendor:""})},"✕ Clear")
+    ),
+    filtered.length>0&&e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:12,fontSize:13,color:"#7a9cc5"}},
+      e("span",null,filtered.length+" expense"+(filtered.length===1?"":"s")+(expFilterLabel?" · "+expFilterLabel:"")),
+      e("span",{style:{fontWeight:800,color:"#d4a017",fontSize:15}},fmt(filteredTotal))
     ),
     filtered.length===0
       ?e("div",{style:{...S.card,textAlign:"center",padding:"36px 16px",color:"#4a6fa5"}},
@@ -3317,9 +3351,15 @@ function App() {
                     e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"🗑️")
                   )
                 )
+              )),
+              e("tfoot",null,e("tr",{style:{background:"#0a1a33"}},
+                e("td",{colSpan:4,style:{...S.td,borderTop:"2px solid #d4a01755",fontWeight:700,color:"#f8f0d8"}},"Total"+(expFilterLabel?" — "+expFilterLabel:"")+" ("+filtered.length+")"),
+                e("td",{style:{...S.td,borderTop:"2px solid #d4a01755",textAlign:"right",fontWeight:800,color:"#d4a017",fontSize:15,whiteSpace:"nowrap"}},fmt(filteredTotal)),
+                e("td",{style:{...S.td,borderTop:"2px solid #d4a01755"}})
               ))
             )
           ),
+          vendorAll&&vendorAll.projects.length>1&&expTotalCard("desktop-table",true),
           // Mobile cards
           e("div",{className:"mobile-cards"},
             ...filtered.map(ex=>e("div",{key:ex.id,style:{...S.card,marginBottom:10}},
@@ -3341,7 +3381,8 @@ function App() {
                   e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"Delete")
                 )
               )
-            ))
+            )),
+            expTotalCard("")
           )
         )
   );
