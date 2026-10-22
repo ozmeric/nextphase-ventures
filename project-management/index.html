@@ -1871,17 +1871,16 @@ async function api(action, extra={}, retries=2) {
         body: JSON.stringify({pin:SESSION_PIN, action, ...extra})
       });
       const text = await res.text();
-      try {
-        const data = JSON.parse(text);
-        if (data.error) throw new Error(data.error);
-        return data;
-      } catch(parseErr) {
+        let data = null;
+        try { data = JSON.parse(text); } catch(parseErr) { data = null; }
+        if (data && !data.error) return data;
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
           continue;
         }
-        throw new Error("Server error — please retry");
-      }
+        // BuildFlow: say what the server said, so problems can be fixed instead of guessed
+        if (data && data.error) throw new Error(String(data.error).replace(/^Error:\s*/, ""));
+        throw new Error(/<html|<!doctype/i.test(text) ? "The server sent a web page instead of data (check the Apps Script deployment: access must be Anyone)" : "Server error — please retry");
     } catch(err) {
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
@@ -3326,6 +3325,11 @@ function App() {
   const DRAW_CLR={Requested:"#7a9cc5",Inspection:"#f59e0b",Approved:"#06b6d4",Funded:"#10b981",Denied:"#ef4444"};
   const todayIso=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
   const num=v=>{const n=parseFloat(String(v==null?"":v).replace(/[$,\s]/g,""));return isNaN(n)?0:n;};
+  const loanHint=m=>/Unknown action/i.test(m)?" — Apps Script is still running the old version: Deploy → Manage deployments → ✏️ Edit → New version → Deploy."
+    :/Loans is not defined/i.test(m)?" — Loans.gs isn't in Apps Script yet: add it (+ → Script → Loans), save, then deploy a new version."
+    :/different columns/i.test(m)?" — rename that tab in your Sheet, then reload."
+    :/Unauthorized/i.test(m)?" — your PIN expired: close the app and sign in again."
+    :/Server error/i.test(m)?" — Apps Script didn't answer. Reload in a minute; if it keeps happening, check the latest Executions in Apps Script.":"";
   const saveLoan=async l=>{
     setLoanBusy(true);
     try{ const r=await api("loan.saveLoan",{loan:l},0); setLoans(m=>({...m,[String(l.projectId)]:r.loan})); setLoanEdit(null); showToast("Loan saved"); }
@@ -3387,7 +3391,7 @@ function App() {
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openLoanEdit},loan?"Edit loan":"Add loan details"),
         e("button",{style:S.btn(),disabled:!loansLoaded,onClick:()=>openDrawForm(null)},"+ Request draw"))),
     loanErr&&e("div",{style:{background:"#ef444422",border:"1px solid #ef4444",color:"#fca5a5",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13}},
-      "⚠️ Couldn't load loans: "+loanErr+(/Unknown action/.test(loanErr)?" — add Loans.gs to Apps Script and deploy a new version.":"")),
+      "⚠️ Couldn't load loans: "+loanErr+loanHint(loanErr)),
     !loansLoaded&&!loanErr?e("div",{style:{color:"#4a6fa5",padding:20}},"Loading…"):null,
     loansLoaded&&!loan&&e("div",{style:{...S.card,textAlign:"center",padding:"30px 16px",marginBottom:16}},
       e("div",{style:{fontSize:28,marginBottom:8}},"🏦"),
