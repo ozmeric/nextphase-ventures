@@ -1823,6 +1823,25 @@ const QUOTE_STATUSES = ["Pending","Accepted","Rejected"];
 const QUOTE_STATUS_COLORS = {"Pending":"#f59e0b","Accepted":"#10b981","Rejected":"#ef4444"};
 
 const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
+// BuildFlow: profit projection. Realtor 5% / seller closing 1% / 6 months hold are defaults, editable per project.
+const calcProfit=({pp,rb,expenses,deal,loan,drawn})=>{
+  const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
+  const arv=n(deal&&deal.arv); if(!(arv>0)) return null;
+  const rPct=blank(deal.realtorPct)?5:n(deal.realtorPct), cPct=blank(deal.sellerClosingPct)?1:n(deal.sellerClosingPct);
+  const months=blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
+  const isEMD=x=>/\bemd\b|earnest/i.test(String(x.description||""));
+  const sum=xs=>xs.reduce((s,x)=>s+n(x.amount),0);
+  const acqAll=(expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Loan Expenses");
+  const acq=sum(acqAll.filter(x=>!isEMD(x))), emdExcluded=sum(acqAll.filter(isEMD));
+  const rehabSpent=sum((expenses||[]).filter(x=>REHAB_CATEGORIES.includes(x.category)));
+  const rehab=Math.max(n(rb),rehabSpent);
+  const adv=loan?(n(loan.initialAdvance)||Math.max(0,n(loan.loanAmount)-n(loan.holdback))):0;
+  const balance=loan?adv+n(drawn):0, interestMo=loan?balance*n(loan.rate)/100/12:0;
+  const monthly=interestMo+other, holding=monthly*months;
+  const realtor=arv*rPct/100, closing=arv*cPct/100;
+  const profit=arv-n(pp)-acq-rehab-holding-realtor-closing;
+  return {arv,pp:n(pp),rPct,cPct,months,acq,emdExcluded,rehab,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv};
+};
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
 const fmtDate = d => d ? pDate(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
@@ -2291,6 +2310,7 @@ function App() {
   const VENDOR_CATEGORIES = vendorCategories;
   const [vendors,setVendors] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
+  const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -2481,7 +2501,7 @@ function App() {
     }).catch(()=>{ setLoadWarn(w=>w.concat(["management"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     // BuildFlow: loans & Kiavi draws (Loans.gs)
-    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); setLoansLoaded(true); setLoanErr(""); })
+    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
   },[authed]);
 
@@ -2797,6 +2817,8 @@ function App() {
   const spentNotDrawn=Math.max(0,rehabSpent-drawnFunded-drawPending);
   const maturityDays=loan&&loan.maturityDate?Math.round((pDate(String(loan.maturityDate).slice(0,10))-new Date(new Date().toDateString()))/864e5):null;
   const loanAmt   =(loan&&nz(loan.loanAmount))||Math.max(0,pp-dpAmt);
+  const deal      =activeProject?deals[String(activeProject.id)]:null;
+  const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded});
   const totalCost =pp+rb;
   const rehabRem  =rb-rehabSpent;
   const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
@@ -3163,6 +3185,7 @@ function App() {
                     e("div",{style:{fontSize:15,fontWeight:800,color:"#d4a017"}},fmt(p.rehabBudget))
                   )
                 ),
+            homeProfit(p),
             e("div",{style:{marginTop:12,display:"flex",alignItems:"center",justifyContent:"space-between"}},
               e("div",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open project →"),
               e("div",{style:{display:"flex",gap:6}},
@@ -3215,6 +3238,7 @@ function App() {
       )
     ),
 
+    !isGeneral&&DealCard(),
     !isGeneral&&DrawsCard(),
 
     // Rehab Budget — hidden for General Expenses
@@ -3483,6 +3507,84 @@ function App() {
               saveDraw(out,d._new&&d._addFee);}},loanBusy?"Saving…":"Save draw")))];
     })()))
   ];
+
+  // ── BuildFlow: ARV, realtor fee & potential profit ────────────────────────
+  const homeProfit=p=>{
+    if(String(p.description||"").includes("No budget")) return null;
+    const dl=deals[String(p.id)]; if(!dl||!(+dl.arv>0)) return null;
+    const pid=String(p.id), ln=loans[pid];
+    const exps=(fm.db.expenses||[]).filter(x=>String(x.projectId)===pid);
+    const dr=draws.filter(d=>String(d.projectId)===pid&&d.status==="Funded").reduce((s,d)=>s+(parseFloat(d.amountFunded)||parseFloat(d.amountRequested)||0),0);
+    const c=calcProfit({pp:p.purchasePrice,rb:p.rehabBudget,expenses:exps,deal:dl,loan:ln,drawn:dr});
+    if(!c) return null;
+    return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}},
+      e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+        e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"ARV"),
+        e("div",{style:{fontSize:15,fontWeight:800,color:"#a78bfa"}},fmt(c.arv))),
+      e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
+        e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Est. profit"),
+        e("div",{style:{fontSize:15,fontWeight:800,color:c.profit<0?"#ef4444":"#10b981"}},fmt(c.profit))));
+  };
+
+  const dealDefaults=()=>({projectId:String(activeId),arv:"",realtorPct:5,sellerClosingPct:1,holdMonths:loan&&+loan.rate?6:0,otherMonthly:"",notes:""});
+  const openDealEdit=()=>setDealEdit({...dealDefaults(),...(deal||{})});
+  const saveDeal=async d=>{
+    setLoanBusy(true);
+    try{ const r=await api("loan.saveDeal",{deal:d},0); setDeals(m=>({...m,[String(d.projectId)]:r.deal})); setDealEdit(null); showToast("Deal numbers saved"); }
+    catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
+  };
+  const pctTxt=v=>(Math.round(v*100)/100)+"%";
+  const breakdown=c=>[
+    ["ARV",c.arv,"#a78bfa",false],
+    ["Purchase price",-c.pp,null,false],
+    ["Acquisition costs (closing + loan fees)",-c.acq,null,false],
+    [c.rehabFromBudget?"Rehab (budget)":"Rehab (spent, over budget)",-c.rehab,null,false],
+    ["Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
+    ["Realtor fee ("+pctTxt(c.rPct)+" of ARV)",-c.realtor,"#f59e0b",false],
+    ["Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
+  ];
+  const DealCard=()=>{
+    const c=projCalc;
+    return e("div",{style:{...S.card,marginBottom:16,padding:20}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:c?12:0}},
+        e("div",null,
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"📈 Profit Projection"),
+          !c&&e("div",{style:{fontSize:13,color:"#7a9cc5"}},loanErr?"Couldn't load deal numbers: "+loanErr:"Add the ARV to see the realtor fee and potential profit.")),
+        e("button",{style:{...S.btn(c?"ghost":undefined),fontSize:12},disabled:!loansLoaded,onClick:openDealEdit},c?"Edit ARV":"+ Add ARV")),
+      c&&e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10},className:"summary-grid"},
+        statTile("ARV",fmt(c.arv),"#a78bfa"),
+        statTile("Realtor fee",fmt(c.realtor),"#f59e0b",pctTxt(c.rPct)+" of ARV"),
+        statTile("Potential profit",fmt(c.profit),c.profit<0?"#ef4444":"#10b981",pctTxt(c.margin*100)+" of ARV")),
+      c&&e("div",{style:{marginTop:12,borderTop:"1px solid #1e3a5f",paddingTop:8}},
+        ...breakdown(c).map(([l,v,col],i)=>e("div",{key:i,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"#7a9cc5"}},
+          e("span",null,l),e("span",{style:{color:col||(v<0?"#c3cfe2":"#f8f0d8"),fontWeight:i===0?700:500,whiteSpace:"nowrap"}},(v<0?"− ":"")+fmt(Math.abs(v))))),
+        e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:14,fontWeight:800,padding:"6px 0 0",marginTop:4,borderTop:"1px solid #d4a01755"}},
+          e("span",{style:{color:"#f8f0d8"}},"Potential profit"),e("span",{style:{color:c.profit<0?"#ef4444":"#10b981"}},fmt(c.profit))),
+        c.emdExcluded>0&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:6}},"EMD ("+fmt(c.emdExcluded)+") is part of the purchase price, so it isn't counted again.")));
+  };
+  const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
+    const d=dealEdit, set=setDealEdit;
+    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)},loan,drawn:drawnFunded});
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},"ARV & selling costs"),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        fld("ARV (after-repair value) *",moneyIn(d,set,"arv","e.g. 685,000")),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Realtor fee (% of ARV)",moneyIn(d,set,"realtorPct","5")),
+          fld("Seller closing costs (%)",moneyIn(d,set,"sellerClosingPct","1"))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Months to hold",moneyIn(d,set,"holdMonths","6")),
+          fld("Other monthly costs ($)",moneyIn(d,set,"otherMonthly","taxes, insurance, utilities"))),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},loan&&+loan.rate?"Interest is estimated on the current loan balance ("+fmt(prev?prev.balance:0)+" at "+(+loan.rate)+"%). If you log monthly interest payments as expenses, set months to 0.":"Add the loan on Loan & Draws to include interest in holding costs."),
+        prev&&e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",fontSize:13}},
+          e("span",{style:{color:"#7a9cc5"}},"Realtor fee ",e("b",{style:{color:"#f59e0b"}},fmt(prev.realtor))),
+          e("span",{style:{color:"#7a9cc5"}},"Profit ",e("b",{style:{color:prev.profit<0?"#ef4444":"#10b981"}},fmt(prev.profit))))),
+      e("div",{key:"a",style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:16}},
+        e("button",{style:S.btn("ghost"),onClick:()=>setDealEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:loanBusy||!(num(d.arv)>0),onClick:()=>{const o={...d};
+          ["arv","realtorPct","sellerClosingPct","holdMonths","otherMonthly"].forEach(k=>{o[k]=String(o[k]==null?"":o[k]).trim()===""?"":num(o[k]);});
+          saveDeal(o);}},loanBusy?"Saving…":"Save"))];
+  })()));
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
@@ -4374,6 +4476,7 @@ function App() {
     e("div",{style:{background:"#071020",borderTop:"1px solid #1e3a5f",padding:"7px 16px",textAlign:"center",flexShrink:0}},e("span",{style:{fontSize:10,color:"#2a4a7f",fontFamily:"system-ui,sans-serif",letterSpacing:"0.04em"}},"Powered by BuildFlow — Weblina LLC")),
 
     ...LoanModals(),
+    DealModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
