@@ -3638,7 +3638,7 @@ function App() {
       fixArv?e("button",{style:{...S.btn(),fontSize:12},disabled:loanBusy,onClick:()=>saveDeal({...dealDefaults(),...(deal||{}),arv:fixArv})},"Use "+fmt(fixArv))
         :e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"Fix ARV"));
     const rows=[
-      ["Purchase price",c.pp],
+      [loan&&+loan.downPayment>0?"Purchase price (incl. "+fmt(+loan.downPayment)+" down)":"Purchase price",c.pp],
       [c.acqFromLoan?"Loan closing fees (from Kiavi)":"Closing & loan costs paid",c.acq],
       ["Rehab spent so far",c.rehabSpent],
       [c.interestLogged?"Kiavi interest (in your expenses)":c.interestNeedsClosing?"Kiavi interest (add closing date)":"Kiavi interest so far (est.)",c.interestToDate],
@@ -3671,11 +3671,14 @@ function App() {
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
-    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)},loan,drawn:drawnFunded,funded:fundedList});
+    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)||""},loan,drawn:drawnFunded,funded:fundedList});
     return [
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},"ARV & selling costs"),
       e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
-        fld("ARV (after-repair value) *",moneyIn(d,set,"arv",loan&&+loan.lenderArv?"Kiavi estimate: "+fmt(+loan.lenderArv):"e.g. 685,000 or 685k")),
+        fld(loan&&+loan.lenderArv?"Your ARV (leave blank to use Kiavi's estimate)":"ARV (after-repair value) *",moneyIn(d,set,"arv",loan&&+loan.lenderArv?"Kiavi estimate: "+fmt(+loan.lenderArv):"e.g. 685,000 or 685k")),
+        loan&&+loan.lenderArv>0&&e("div",{style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",fontSize:12,color:"#7a9cc5",marginTop:-6}},
+          String(d.arv==null?"":d.arv).trim()===""?e("span",{style:{color:"#a78bfa"}},"✓ Using Kiavi's estimated ARV "+fmt(+loan.lenderArv))
+            :e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"3px 8px"},onClick:()=>set(o=>({...o,arv:""}))},"Use Kiavi's estimate ("+fmt(+loan.lenderArv)+")")),
         arvTooLow(num(d.arv))&&e("div",{style:{fontSize:12,color:"#fcd34d",marginTop:-6,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
           "⚠️ "+fmt(num(d.arv))+" is far below the purchase price. Type the full amount (e.g. 550,000 or 550k).",
           arvGuess(num(d.arv))&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"3px 8px"},onClick:()=>set(o=>({...o,arv:arvGuess(num(o.arv))}))},"Use "+fmt(arvGuess(num(d.arv))))),
@@ -3695,7 +3698,7 @@ function App() {
           e("span",{style:{color:"#7a9cc5"}},"At finish ",e("b",{style:{color:prev.profit<0?"#ef4444":"#10b981"}},fmt(prev.profit))))),
       e("div",{key:"a",style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:16}},
         e("button",{style:S.btn("ghost"),onClick:()=>setDealEdit(null)},"Cancel"),
-        e("button",{style:S.btn(),disabled:loanBusy||!(num(d.arv)>0)||arvTooLow(num(d.arv)),onClick:()=>{const o={...d};
+        e("button",{style:S.btn(),disabled:loanBusy||!(num(d.arv)>0||(String(d.arv==null?"":d.arv).trim()===""&&loan&&+loan.lenderArv>0))||arvTooLow(num(d.arv)),onClick:()=>{const o={...d};
           ["arv","realtorPct","sellerClosingPct","holdMonths","otherMonthly"].forEach(k=>{o[k]=String(o[k]==null?"":o[k]).trim()===""?"":num(o[k]);});
           saveDeal(o);}},loanBusy?"Saving…":"Save"))];
   })()));
