@@ -3343,7 +3343,7 @@ function App() {
   const DRAW_STATUSES=["Requested","Inspection","Approved","Funded","Denied"];
   const DRAW_CLR={Requested:"#7a9cc5",Inspection:"#f59e0b",Approved:"#06b6d4",Funded:"#10b981",Denied:"#ef4444"};
   const todayIso=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const num=v=>{const n=parseFloat(String(v==null?"":v).replace(/[$,\s]/g,""));return isNaN(n)?0:n;};
+  const num=v=>{const t=String(v==null?"":v).replace(/[$,\s]/g,"").toLowerCase(), m=/k$/.test(t)?1e3:/m$/.test(t)?1e6:1, n=parseFloat(t);return isNaN(n)?0:Math.round(n*m*100)/100;};
   const loanHint=m=>/Unknown action/i.test(m)?" — Apps Script is still running the old version: Deploy → Manage deployments → ✏️ Edit → New version → Deploy."
     :/Loans is not defined/i.test(m)?" — Loans.gs isn't in Apps Script yet: add it (+ → Script → Loans), save, then deploy a new version."
     :/different columns/i.test(m)?" — rename that tab in your Sheet, then reload."
@@ -3351,7 +3351,12 @@ function App() {
     :/Server error/i.test(m)?" — Apps Script didn't answer. Reload in a minute; if it keeps happening, check the latest Executions in Apps Script.":"";
   const saveLoan=async l=>{
     setLoanBusy(true);
-    try{ const r=await api("loan.saveLoan",{loan:l},0); setLoans(m=>({...m,[String(l.projectId)]:r.loan})); setLoanEdit(null); showToast("Loan saved"); }
+    try{ const r=await api("loan.saveLoan",{loan:l},0);
+      setLoans(m=>({...m,[String(l.projectId)]:r.loan}));
+      // An older Loans.gs only stores the original columns and silently drops the rest → say so, keep the form open
+      const lost=Object.keys(l).filter(k=>String(l[k]==null?"":l[k]).trim()!==""&&r.loan&&!(k in r.loan));
+      if(lost.length){ showToast("Only part of the loan was saved — Apps Script is running an older Loans.gs. Paste in the new Loans.gs, then Deploy → Manage deployments → ✏️ Edit → New version.","error"); return; }
+      setLoanEdit(null); showToast("Loan saved"); }
     catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
   };
   const saveDraw=async(d,addFee)=>{
@@ -3581,10 +3586,14 @@ function App() {
   const openDealEdit=()=>setDealEdit({...dealDefaults(),...(deal||{})});
   const saveDeal=async d=>{
     setLoanBusy(true);
-    try{ const r=await api("loan.saveDeal",{deal:d},0); setDeals(m=>({...m,[String(d.projectId)]:r.deal})); setDealEdit(null); showToast("Deal numbers saved"); }
+    try{ const r=await api("loan.saveDeal",{deal:d},0); setDeals(m=>({...m,[String(d.projectId)]:r.deal}));
+      if(String(d.interestLogged||"")==="yes"&&r.deal&&!("interestLogged" in r.deal)){ showToast("ARV saved, but the interest checkbox wasn't — Apps Script is running an older Loans.gs. Paste in the new Loans.gs and deploy a new version.","error"); return; }
+      setDealEdit(null); showToast("Deal numbers saved"); }
     catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
   };
   const pctTxt=v=>(Math.round(v*100)/100)+"%";
+  const arvTooLow=a=>a>0&&(a<10000||(+pp>0&&a<+pp*0.5));                 // e.g. 550 typed for 550,000
+  const arvGuess=a=>a>0&&a<10000?a*1000:null;
   const breakdown=c=>[
     ["ARV",c.arv,"#a78bfa",false],
     ["Purchase price",-c.pp,null,false],
@@ -3623,6 +3632,11 @@ function App() {
         e("div",{style:{fontSize:13,color:"#7a9cc5"}},"Add the ARV to see where this deal stands today.")),
       e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"+ Add ARV")):null;
     const good=c.profitToday>=0;
+    const fixArv=c.arvSource==="yours"&&arvTooLow(c.arv)?arvGuess(c.arv):null;
+    const arvWarn=c.arvSource==="yours"&&arvTooLow(c.arv)&&e("div",{style:{background:"#3b1d0a",border:"1px solid #f59e0b",borderRadius:8,padding:"10px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",fontSize:13,color:"#fcd34d"}},
+      e("span",null,"⚠️ The ARV is "+fmt(c.arv)+", far below the "+fmt(+pp)+" purchase price, so these numbers are off."+(fixArv?" Did you mean "+fmt(fixArv)+"?":"")),
+      fixArv?e("button",{style:{...S.btn(),fontSize:12},disabled:loanBusy,onClick:()=>saveDeal({...dealDefaults(),...(deal||{}),arv:fixArv})},"Use "+fmt(fixArv))
+        :e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"Fix ARV"));
     const rows=[
       ["Purchase price",c.pp],
       [c.acqFromLoan?"Loan closing fees (from Kiavi)":"Closing & loan costs paid",c.acq],
@@ -3637,6 +3651,7 @@ function App() {
           e("div",{style:{fontSize:10,fontWeight:700,color:"#d4a017",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💰 Profit status · today"),
           e("div",{style:{fontSize:12,color:"#7a9cc5"}},"If it sold at "+(c.arvSource==="lender"?"Kiavi's estimated ARV":"your ARV")+" with what's been spent so far")),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openDealEdit},"Edit ARV")),
+      arvWarn,
       e("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10},className:"summary-grid"},
         statTile("ARV",fmt(c.arv),"#a78bfa",c.arvSource==="lender"?"Kiavi estimate":null),
         statTile("All-in cost today",fmt(c.costsToDate),"#f8f0d8","Purchase + spent + interest"),
@@ -3660,7 +3675,10 @@ function App() {
     return [
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},"ARV & selling costs"),
       e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
-        fld("ARV (after-repair value) *",moneyIn(d,set,"arv",loan&&+loan.lenderArv?"Kiavi estimate: "+fmt(+loan.lenderArv):"e.g. 685,000")),
+        fld("ARV (after-repair value) *",moneyIn(d,set,"arv",loan&&+loan.lenderArv?"Kiavi estimate: "+fmt(+loan.lenderArv):"e.g. 685,000 or 685k")),
+        arvTooLow(num(d.arv))&&e("div",{style:{fontSize:12,color:"#fcd34d",marginTop:-6,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
+          "⚠️ "+fmt(num(d.arv))+" is far below the purchase price. Type the full amount (e.g. 550,000 or 550k).",
+          arvGuess(num(d.arv))&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"3px 8px"},onClick:()=>set(o=>({...o,arv:arvGuess(num(o.arv))}))},"Use "+fmt(arvGuess(num(d.arv))))),
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
           fld("Realtor fee (% of ARV)",moneyIn(d,set,"realtorPct","5")),
           fld("Seller closing costs (%)",moneyIn(d,set,"sellerClosingPct","1"))),
@@ -3677,7 +3695,7 @@ function App() {
           e("span",{style:{color:"#7a9cc5"}},"At finish ",e("b",{style:{color:prev.profit<0?"#ef4444":"#10b981"}},fmt(prev.profit))))),
       e("div",{key:"a",style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:16}},
         e("button",{style:S.btn("ghost"),onClick:()=>setDealEdit(null)},"Cancel"),
-        e("button",{style:S.btn(),disabled:loanBusy||!(num(d.arv)>0),onClick:()=>{const o={...d};
+        e("button",{style:S.btn(),disabled:loanBusy||!(num(d.arv)>0)||arvTooLow(num(d.arv)),onClick:()=>{const o={...d};
           ["arv","realtorPct","sellerClosingPct","holdMonths","otherMonthly"].forEach(k=>{o[k]=String(o[k]==null?"":o[k]).trim()===""?"":num(o[k]);});
           saveDeal(o);}},loanBusy?"Saving…":"Save"))];
   })()));
