@@ -1799,7 +1799,7 @@ return {
 const { useState, useEffect, useRef } = React;
 const e = React.createElement;
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwNq-NN93TQaP0g59KLkNCrVcPAwIPEK0SPSFiUu5wqsvxB_636suleA-u3_HrtL_a0/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwrA8zBgrp5QE9RFd9H3L-0P6EAQBJIf1gEFliYCYDvC2lySf81gE9W7OQXUbrBJIeQ/exec";
 const PUSH_SERVER_URL = "https://npv-push-server.weblinallc.workers.dev";
 
 const ACQUISITION_CATEGORIES = ["Down Payment","Closing Costs","Loan Expenses"];
@@ -1824,6 +1824,17 @@ const QUOTE_STATUS_COLORS = {"Pending":"#f59e0b","Accepted":"#10b981","Rejected"
 
 const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
 // BuildFlow: profit projection. Realtor 5% / seller closing 1% / 6 months hold are defaults, editable per project.
+// Closing costs + down payment entered in the Loan section (from the settlement statement)
+const CLOSING_KEYS=["titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"];
+const loanClosing=loan=>{
+  if(!loan) return null;
+  const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, has=k=>loan[k]!=null&&String(loan[k]).trim()!=="";
+  const items=[["Lender fees (origination + service)",n(loan.originationFee)+n(loan.serviceFee)],["Pro-rated interest",n(loan.proratedInterest)],
+    ["Title & settlement",n(loan.titleFees)],["Recording & transfer taxes",n(loan.recordingTaxes)],["Hazard insurance",n(loan.hazardInsurance)],
+    ["Property tax proration",n(loan.taxProration)],["Other closing costs",n(loan.otherClosing)]].filter(x=>Math.abs(x[1])>0.004);
+  const total=items.reduce((s,x)=>s+x[1],0), dp=n(loan.downPayment), emd=n(loan.emd);
+  return {fromLoan:CLOSING_KEYS.some(has),items,total,dp,emd,cashCalc:dp-emd+total,cashStated:has("cashAtClosing")?n(loan.cashAtClosing):null};
+};
 const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
   deal=deal||{};
@@ -1833,10 +1844,21 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   const months=blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
   const isEMD=x=>/\bemd\b|earnest/i.test(String(x.description||""));
   const sum=xs=>xs.reduce((s,x)=>s+n(x.amount),0);
-  const acqAll=(expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Loan Expenses");
-  const acqLogged=sum(acqAll.filter(x=>!isEMD(x))), emdExcluded=sum(acqAll.filter(isEMD));
-  const loanFees=loan?n(loan.originationFee)+n(loan.serviceFee)+n(loan.proratedInterest):0;
-  const acqFromLoan=!(acqLogged>0)&&loanFees>0, acq=acqFromLoan?loanFees:acqLogged;   // nothing logged yet → use the lender's closing fees
+  const isInterestPay=x=>x.category==="Loan Expenses"&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));
+  const interestPaid=sum((expenses||[]).filter(isInterestPay));
+  const lc=loanClosing(loan), closingFromLoan=!!(lc&&lc.fromLoan);
+  let acq, acqFromLoan=false, emdExcluded=0, ignoredClosing=0;
+  if(closingFromLoan){
+    // Closing costs + down payment live in the Loan section → Closing Costs / Down Payment expenses are not counted
+    const le=(expenses||[]).filter(x=>x.category==="Loan Expenses"&&!/origination|service fee|pro-?rated|prepaid/i.test(String(x.description||"")));
+    acq=lc.total+sum(le);
+    ignoredClosing=sum((expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Down Payment"));
+  } else {
+    const acqAll=(expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Loan Expenses");
+    const acqLogged=sum(acqAll.filter(x=>!isEMD(x))); emdExcluded=sum(acqAll.filter(isEMD));
+    const loanFees=loan?n(loan.originationFee)+n(loan.serviceFee)+n(loan.proratedInterest):0;
+    acqFromLoan=!(acqLogged-interestPaid>0)&&loanFees>0; acq=acqFromLoan?loanFees+interestPaid:acqLogged;   // nothing logged yet → lender's fees
+  }
   const rehabSpent=sum((expenses||[]).filter(x=>REHAB_CATEGORIES.includes(x.category)));
   const rehab=Math.max(n(rb),rehabSpent);
   const adv=loan?(n(loan.initialAdvance)||Math.max(0,n(loan.loanAmount)-n(loan.holdback))):0;
@@ -1848,13 +1870,16 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
   const rate=loan?n(loan.rate):0, now=Date.now();
   const daysSince=d=>{ if(!d) return 0; const t=new Date(String(d).slice(0,10)+"T00:00:00").getTime(); return isNaN(t)?0:Math.max(0,(now-t)/864e5); };
-  const interestLogged=String(deal.interestLogged||"")==="yes";
+  // Kiavi payments you log under Loan Expenses are already in "acq". The app estimates what has accrued
+  // (actual/360, like Kiavi's per-diem) and only adds the part not yet covered by logged payments,
+  // so interest is never counted twice and there's nothing to tick.
   const canAccrue=!!(loan&&rate&&loan.closingDate);
-  const interestToDate=(interestLogged||!canAccrue)?0:adv*rate/100*daysSince(loan.closingDate)/365
-    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/365,0);
+  const interestAccrued=!canAccrue?0:adv*rate/100*daysSince(loan.closingDate)/360
+    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
+  const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
   const costsToDate=n(pp)+acq+rehabSpent+interestToDate, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
-  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
-    interestToDate,interestLogged,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
+  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
+    interestToDate,interestLogged,interestPaid,interestAccrued,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
@@ -2839,6 +2864,10 @@ function App() {
   const rehabRem  =rb-rehabSpent;
   const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
   const over      =rehabRem<0;
+  const loanAcq   =(()=>{const lc=loanClosing(loan); if(!lc||!lc.fromLoan) return null;
+    const le=expenses.filter(x=>x.category==="Loan Expenses"&&!/origination|service fee|pro-?rated|prepaid/i.test(String(x.description||"")));
+    const leSum=le.reduce((s,x)=>s+(parseFloat(x.amount)||0),0), ign=expenses.filter(x=>x.category==="Closing Costs"||x.category==="Down Payment");
+    return {...lc,leSum,leCount:le.length,ignoredCount:ign.length,grand:lc.dp+lc.total+leSum};})();
   const acqByCat  =ACQUISITION_CATEGORIES.map(c=>({name:c,total:acqExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
   const rehabByCat=REHAB_CATEGORIES.map(c=>({name:c,total:rehabExp.filter(ex=>ex.category===c).reduce((s,ex)=>s+parseFloat(ex.amount||0),0)})).filter(c=>c.total>0);
   const recent    =[...expenses].sort((a,b)=>pDate(b.date)-pDate(a.date)).slice(0,5);
@@ -3311,8 +3340,13 @@ function App() {
     !isGeneral&&e("div",{style:{...S.card,marginBottom:16}},
       e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}},
         e("div",{style:{fontSize:13,fontWeight:700,color:"#06b6d4"}},"🏦 Acquisition Costs"),
-        e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(acqSpent))
+        e("div",{style:{fontSize:15,fontWeight:800,color:"#f8f0d8"}},fmt(loanAcq?loanAcq.grand:acqSpent))
       ),
+      loanAcq?e("div",null,
+        ...[["Down payment"+(loanAcq.emd?" (incl. "+fmt(loanAcq.emd)+" EMD)":""),loanAcq.dp]].concat(loanAcq.items,loanAcq.leCount?[["Loan payments & fees ("+loanAcq.leCount+" in expenses)",loanAcq.leSum]]:[])
+          .map(([l,v])=>e("div",{key:l,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid #1e3a5f",fontSize:13,color:"#cbd5e1"}},
+            e("span",null,l),e("span",{style:{fontWeight:700,color:v<0?"#10b981":"#f8f0d8"}},fmt(v)))),
+        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:8}},"From Loan & Draws (settlement statement)."+(loanAcq.ignoredCount?" "+loanAcq.ignoredCount+" Closing Costs / Down Payment expense(s) aren't counted, so nothing is doubled.":""))):
       acqByCat.length===0
         ?e("div",{style:{fontSize:13,color:"#4a6fa5"}},"No acquisition expenses yet.")
         :acqByCat.map(c=>e("div",{key:c.name,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1e3a5f"}},
@@ -3322,7 +3356,7 @@ function App() {
             ),
             e("span",{style:{fontWeight:700,color:"#f8f0d8"}},fmt(c.total))
           )),
-      e("div",{style:{fontSize:11,color:"#2a4a7f",marginTop:8,fontStyle:"italic"}},"Excluded from rehab budget.")
+      !loanAcq&&e("div",{style:{fontSize:11,color:"#2a4a7f",marginTop:8,fontStyle:"italic"}},"Excluded from rehab budget.")
     ),
 
     // Recent
@@ -3439,7 +3473,12 @@ function App() {
         num(loan.originationFee)?e("span",null,"Origination ",e("b",{style:{color:"#c3cfe2"}},fmt(num(loan.originationFee))),num(loan.loanAmount)?" ("+(Math.round(num(loan.originationFee)/num(loan.loanAmount)*1000)/10)+"%)":""):null,
         num(loan.serviceFee)?e("span",null,"Service fee ",e("b",{style:{color:"#c3cfe2"}},fmt(num(loan.serviceFee)))):null,
         num(loan.proratedInterest)?e("span",null,"Pro-rated interest ",e("b",{style:{color:"#c3cfe2"}},fmt(num(loan.proratedInterest)))):null,
-        loan.prepaymentPenalty?e("span",null,"Pre-payment penalty ",e("b",{style:{color:"#c3cfe2"}},loan.prepaymentPenalty)):null)),
+        loan.prepaymentPenalty?e("span",null,"Pre-payment penalty ",e("b",{style:{color:"#c3cfe2"}},loan.prepaymentPenalty)):null),
+      (()=>{const lc=loanClosing(loan); if(!lc||!lc.fromLoan) return null; const ok=lc.cashStated==null||Math.abs(lc.cashStated-lc.cashCalc)<0.01;
+        return e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f",fontSize:12.5,color:"#7a9cc5",display:"flex",gap:18,flexWrap:"wrap"}},
+          e("span",null,"Closing costs ",e("b",{style:{color:"#f8f0d8"}},fmt(lc.total))),
+          e("span",null,"Down payment ",e("b",{style:{color:"#f8f0d8"}},fmt(lc.dp)),lc.emd?" (incl. "+fmt(lc.emd)+" EMD)":""),
+          e("span",{style:{color:ok?"#10b981":"#f59e0b"}},ok?"✓ Counted in profit from here — no expenses needed":"⚠ Doesn't match cash at closing ("+fmt(lc.cashStated)+" vs "+fmt(lc.cashCalc)+")"));})()),
     loan&&e("div",{style:{...S.card,marginBottom:16,padding:20}},
       e("div",{style:{fontSize:10,fontWeight:700,color:"#4a6fa5",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:10}},"Rehab holdback"),
       holdbackBar(),
@@ -3487,6 +3526,7 @@ function App() {
     e("div",{style:{...S.card,width:"100%",maxWidth:520,maxHeight:"calc(100vh - 32px)",overflowY:"auto"}},children));
   const fld=(label,input,flex)=>e("div",{style:{flex:flex||1,minWidth:140}},e("label",{style:S.label},label),input);
   const moneyIn=(obj,set,k,ph)=>e("input",{style:S.input,inputMode:"decimal",placeholder:ph||"0",value:obj[k]==null?"":obj[k],onChange:ev=>{const v=ev.target.value;set(o=>({...o,[k]:v}));}});
+  const moneyInPM=(obj,set,k,ph)=>e("input",{style:S.input,inputMode:"text",placeholder:ph||"0 (use − for a credit)",value:obj[k]==null?"":obj[k],onChange:ev=>{const v=ev.target.value.replace(/[–—]/g,"-");set(o=>({...o,[k]:v}));}});   // allows negatives (credits)
   const LoanModals=()=>[
     loanEdit&&e("div",{key:"loan-m"},overlay(()=>setLoanEdit(null),[
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},"Loan details"),
@@ -3503,14 +3543,30 @@ function App() {
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
           fld("Monthly payment (at closing)",moneyIn(loanEdit,setLoanEdit,"monthlyPayment",num(loanEdit.initialAdvance)&&num(loanEdit.rate)?(Math.round(num(loanEdit.initialAdvance)*num(loanEdit.rate)/12)/100).toFixed(2)+" (calc)":"")),
           fld("Loan-to-cost (%)",moneyIn(loanEdit,setLoanEdit,"ltcPct","e.g. 85"))),
-        e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginTop:4}},"Cash at closing"),
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginTop:4}},"Closing — from the settlement statement"),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:-6}},"Enter these here and you don't need Closing Costs or Down Payment expenses. Use − for credits (e.g. a seller tax credit)."),
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
-          fld("Down payment",moneyIn(loanEdit,setLoanEdit,"downPayment")),
-          fld("Origination fee",moneyIn(loanEdit,setLoanEdit,"originationFee"))),
+          fld("Down payment (incl. EMD)",moneyIn(loanEdit,setLoanEdit,"downPayment",num(loanEdit.initialAdvance)?"price − purchase loan":"")),
+          fld("EMD paid before closing",moneyIn(loanEdit,setLoanEdit,"emd"))),
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
-          fld("Service fee",moneyIn(loanEdit,setLoanEdit,"serviceFee")),
-          fld("Pro-rated interest",moneyIn(loanEdit,setLoanEdit,"proratedInterest"))),
-        fld("Cash required at closing",moneyIn(loanEdit,setLoanEdit,"cashAtClosing",(()=>{const t=["downPayment","originationFee","serviceFee","proratedInterest"].reduce((a,k)=>a+num(loanEdit[k]),0);return t?t.toFixed(2)+" (sum above)":"";})())),
+          fld("Origination fee",moneyIn(loanEdit,setLoanEdit,"originationFee")),
+          fld("Service fee",moneyIn(loanEdit,setLoanEdit,"serviceFee"))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Pro-rated interest",moneyInPM(loanEdit,setLoanEdit,"proratedInterest")),
+          fld("Title & settlement",moneyIn(loanEdit,setLoanEdit,"titleFees","1100 lines"))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Recording & transfer taxes",moneyIn(loanEdit,setLoanEdit,"recordingTaxes","1200 lines")),
+          fld("Hazard insurance",moneyIn(loanEdit,setLoanEdit,"hazardInsurance"))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Property tax proration",moneyInPM(loanEdit,setLoanEdit,"taxProration")),
+          fld("Other closing costs",moneyInPM(loanEdit,setLoanEdit,"otherClosing","admin fees etc."))),
+        (()=>{const lc=loanClosing(Object.fromEntries(Object.entries(loanEdit).map(([k,v])=>[k,["downPayment","emd","originationFee","serviceFee","proratedInterest","titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"].includes(k)&&String(v==null?"":v).trim()!==""?num(v):v]))); const calc=lc.cashCalc, stated=String(loanEdit.cashAtClosing==null?"":loanEdit.cashAtClosing).trim()===""?null:num(loanEdit.cashAtClosing);
+          const diff=stated==null?null:Math.round((stated-calc)*100)/100;
+          return e("div",null,
+            fld("Cash at closing (line 303)",moneyIn(loanEdit,setLoanEdit,"cashAtClosing",calc?calc.toFixed(2)+" (calc)":"")),
+            e("div",{style:{fontSize:12,marginTop:6,color:diff==null?"#7a9cc5":Math.abs(diff)<0.01?"#10b981":"#f59e0b"}},
+              "Closing costs "+fmt(lc.total)+" · down payment "+fmt(lc.dp)+(lc.emd?" − EMD "+fmt(lc.emd):"")+" = "+fmt(calc)+
+              (diff==null?"":Math.abs(diff)<0.01?"  ✓ matches the statement":"  ⚠ differs from the statement by "+fmt(diff))));})(),
         e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginTop:4}},"Terms & valuation"),
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
           fld("Closing date",e("input",{style:S.input,type:"date",value:loanEdit.closingDate||"",onChange:ev=>{const v=ev.target.value;setLoanEdit(o=>({...o,closingDate:v}));}})),
@@ -3526,7 +3582,7 @@ function App() {
       e("div",{key:"a",style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:16}},
         e("button",{style:S.btn("ghost"),onClick:()=>setLoanEdit(null)},"Cancel"),
         e("button",{style:S.btn(),disabled:loanBusy||!(num(loanEdit.loanAmount)>0),onClick:()=>{const l={...loanEdit};
-          ["loanAmount","initialAdvance","holdback","rate","monthlyPayment","ltcPct","downPayment","originationFee","serviceFee","proratedInterest","cashAtClosing","termMonths","asIsValue","lenderArv"].forEach(k=>{l[k]=String(l[k]==null?"":l[k]).trim()===""?"":num(l[k]);});
+          ["loanAmount","initialAdvance","holdback","rate","monthlyPayment","ltcPct","downPayment","originationFee","serviceFee","proratedInterest","cashAtClosing","termMonths","asIsValue","lenderArv","emd","titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"].forEach(k=>{l[k]=String(l[k]==null?"":l[k]).trim()===""?"":num(l[k]);});
           saveLoan(l);}},loanBusy?"Saving…":"Save loan"))])),
     drawForm&&e("div",{key:"draw-m"},overlay(()=>setDrawForm(null),(()=>{
       const d=drawForm, set=setDrawForm;
@@ -3587,7 +3643,6 @@ function App() {
   const saveDeal=async d=>{
     setLoanBusy(true);
     try{ const r=await api("loan.saveDeal",{deal:d},0); setDeals(m=>({...m,[String(d.projectId)]:r.deal}));
-      if(String(d.interestLogged||"")==="yes"&&r.deal&&!("interestLogged" in r.deal)){ showToast("ARV saved, but the interest checkbox wasn't — Apps Script is running an older Loans.gs. Paste in the new Loans.gs and deploy a new version.","error"); return; }
       setDealEdit(null); showToast("Deal numbers saved"); }
     catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
   };
@@ -3597,7 +3652,7 @@ function App() {
   const breakdown=c=>[
     ["ARV",c.arv,"#a78bfa",false],
     ["Purchase price",-c.pp,null,false],
-    [c.acqFromLoan?"Acquisition costs (Kiavi closing fees)":"Acquisition costs (closing + loan fees)",-c.acq,null,false],
+    [c.closingFromLoan?"Acquisition costs (Loan section + loan expenses)":c.acqFromLoan?"Acquisition costs (Kiavi closing fees)":"Acquisition costs (closing + loan fees)",-c.acq,null,false],
     [c.rehabFromBudget?"Rehab (budget)":"Rehab (spent, over budget)",-c.rehab,null,false],
     ["Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
     ["Realtor fee ("+pctTxt(c.rPct)+" of ARV)",-c.realtor,"#f59e0b",false],
@@ -3639,9 +3694,10 @@ function App() {
         :e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"Fix ARV"));
     const rows=[
       [loan&&+loan.downPayment>0?"Purchase price (incl. "+fmt(+loan.downPayment)+" down)":"Purchase price",c.pp],
-      [c.acqFromLoan?"Loan closing fees (from Kiavi)":"Closing & loan costs paid",c.acq],
+      [c.closingFromLoan?"Closing costs (Loan section)":c.acqFromLoan?"Loan closing fees (from Kiavi)":"Closing & loan costs paid",c.acq-c.interestPaid],
       ["Rehab spent so far",c.rehabSpent],
-      [c.interestLogged?"Kiavi interest (in your expenses)":c.interestNeedsClosing?"Kiavi interest (add closing date)":"Kiavi interest so far (est.)",c.interestToDate],
+      ...(c.interestPaid>0?[["Kiavi payments logged",c.interestPaid]]:[]),
+      [c.interestNeedsClosing?"Kiavi interest (add closing date)":c.interestPaid>0?"Interest accrued since last payment (est.)":"Kiavi interest so far (est.)",c.interestToDate],
     ];
     const line=(l,v,opt)=>e("div",{key:l,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"#7a9cc5",...(opt||{})}},
       e("span",null,l),e("span",{style:{color:"#c3cfe2",whiteSpace:"nowrap"}},fmt(v)));
@@ -3667,7 +3723,7 @@ function App() {
           e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid #1e3a5f",color:"#f8f0d8"}},
             e("span",null,"Profit if sold today"),e("span",{style:{color:good?"#10b981":"#ef4444"}},fmt(c.profitToday))),
           e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12.5,padding:"5px 0 0",color:"#7a9cc5"}},
-            e("span",null,"Projected at finish (remaining rehab + holding)"),e("span",{style:{color:c.profit<0?"#ef4444":"#10b981",fontWeight:700}},fmt(c.profit))))));
+            e("span",null,"Projected at finish (remaining rehab + "+c.months+" more mo holding)"),e("span",{style:{color:c.profit<0?"#ef4444":"#10b981",fontWeight:700}},fmt(c.profit))))));
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
@@ -3686,12 +3742,10 @@ function App() {
           fld("Realtor fee (% of ARV)",moneyIn(d,set,"realtorPct","5")),
           fld("Seller closing costs (%)",moneyIn(d,set,"sellerClosingPct","1"))),
         e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
-          fld("Months to hold",moneyIn(d,set,"holdMonths","6")),
+          fld("Months left until sale",moneyIn(d,set,"holdMonths","6")),
           fld("Other monthly costs ($)",moneyIn(d,set,"otherMonthly","taxes, insurance, utilities"))),
-        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},loan&&+loan.rate?"Interest is estimated on the current loan balance ("+fmt(prev?prev.balance:0)+" at "+(+loan.rate)+"%). If you log monthly interest payments as expenses, set months to 0.":"Add the loan on Loan & Draws to include interest in holding costs."),
-        e("label",{style:{display:"flex",gap:8,alignItems:"flex-start",fontSize:12.5,color:"#c3cfe2",cursor:"pointer"}},
-          e("input",{type:"checkbox",style:{marginTop:2},checked:String(d.interestLogged||"")==="yes",onChange:ev=>{const v=ev.target.checked;set(o=>({...o,interestLogged:v?"yes":""}));}}),
-          e("span",null,"I record Kiavi interest payments as expenses",e("br"),e("span",{style:{color:"#4a6fa5",fontSize:11.5}},"Then “Profit status · today” won't estimate interest separately, so it isn't counted twice."))),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},loan&&+loan.rate?"Interest is estimated on the current loan balance ("+fmt(prev?prev.balance:0)+" at "+(+loan.rate)+"%). Months to hold = months left until you sell, for future interest only.":"Add the loan on Loan & Draws to include interest in holding costs."),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},"Kiavi payments you log under Loan Expenses are counted automatically; the card only estimates interest built up since the last one."),
         prev&&e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",fontSize:13}},
           e("span",{style:{color:"#7a9cc5"}},"Realtor fee ",e("b",{style:{color:"#f59e0b"}},fmt(prev.realtor))),
           e("span",{style:{color:"#7a9cc5"}},"Today ",e("b",{style:{color:prev.profitToday<0?"#ef4444":"#10b981"}},fmt(prev.profitToday))),
