@@ -2349,7 +2349,7 @@ function App() {
   const [vendors,setVendors] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
-  const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null);
+  const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -3765,8 +3765,9 @@ function App() {
   const invPageDefault=()=>"https://nextphaseventures.co/"+invSlug(activeProject&&activeProject.name)+"/";
   const invLinkUrl=l=>{let u=String(l.pageUrl||"").trim()||invPageDefault(); if(!/\/$/.test(u)&&!/\.html?$/i.test(u)) u+="/"; return u+"#k="+l.token;};
   const openInvestors=async()=>{
-    setInvOpen(true); setInvForm({name:"",email:"",showProfit:false,sendEmail:true,message:"",pageUrl:invPageDefault()}); setInvLinks(null); setInvMail(null);
-    try{ const r=await api("inv.list",{projectId:String(activeId)},0); setInvLinks(r.links||[]); }
+    setInvOpen(true); setInvForm({name:"",email:"",showProfit:false,sendEmail:true,message:"",pageUrl:invPageDefault()}); setInvLinks(null); setInvMail(null); setInvAddr(null);
+    try{ const r=await api("inv.list",{projectId:String(activeId)},0); const ls=r.links||[]; setInvLinks(ls);
+      const used=ls.map(x=>String(x.pageUrl||"").trim()).filter(Boolean).pop(); if(used) setInvForm(f=>({...f,pageUrl:used})); }   // reuse the address that's already working
     catch(err){ setInvLinks([]); showToast(err.message+(/Unknown action/i.test(err.message)?" — add Investors.gs and the 2 lines in Code.gs, then deploy a new version.":""),"error"); }
   };
   const invCopy=async l=>{ const u=invLinkUrl(l);
@@ -3821,7 +3822,13 @@ function App() {
             e("button",{style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:11,padding:"5px 10px",cursor:"pointer"},disabled:invBusy,onClick:()=>invRemove(l)},"Delete"))),
         e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12,color:"#c3cfe2",marginTop:8,cursor:"pointer"}},
           e("input",{type:"checkbox",checked:l.showProfit==="yes",disabled:invBusy,onChange:ev=>invUpdate(l,{showProfit:ev.target.checked})}),"Show ARV & projected profit"),
-        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4,wordBreak:"break-all"}},invLinkUrl(l)),
+        invAddr&&invAddr.token===l.token
+          ?e("div",{style:{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}},
+              e("input",{style:{...S.input,flex:"1 1 220px",padding:"6px 10px",fontSize:12},value:invAddr.url,onChange:ev=>{const v=ev.target.value;setInvAddr(a=>({...a,url:v}));}}),
+              e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},disabled:invBusy||!/^https?:\/\//i.test(String(invAddr.url||"").trim()),onClick:async()=>{await invUpdate(l,{pageUrl:String(invAddr.url).trim()});setInvAddr(null);showToast("Address updated — re-send or copy the new link");}},"Save"),
+              e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>setInvAddr(null)},"Cancel"))
+          :e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4,wordBreak:"break-all"}},invLinkUrl(l)," ",
+              e("button",{style:{background:"none",border:"none",color:"#d4a017",cursor:"pointer",fontSize:11,padding:0},onClick:()=>setInvAddr({token:l.token,url:String(l.pageUrl||"").trim()||invPageDefault()})},"Edit address")),
         invMail&&invMail.token===l.token&&e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
           e("label",{style:S.label},"Send to"),
           e("input",{style:S.input,type:"email",value:invMail.to||"",placeholder:"investor@email.com",onChange:ev=>{const v=ev.target.value;setInvMail(m=>({...m,to:v}));}}),
