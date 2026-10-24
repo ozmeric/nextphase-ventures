@@ -2349,7 +2349,7 @@ function App() {
   const [vendors,setVendors] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
-  const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false);
+  const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -3765,7 +3765,7 @@ function App() {
   const invPageDefault=()=>"https://nextphaseventures.co/"+invSlug(activeProject&&activeProject.name)+"/";
   const invLinkUrl=l=>{let u=String(l.pageUrl||"").trim()||invPageDefault(); if(!/\/$/.test(u)&&!/\.html?$/i.test(u)) u+="/"; return u+"#k="+l.token;};
   const openInvestors=async()=>{
-    setInvOpen(true); setInvForm({name:"",email:"",showProfit:false,pageUrl:invPageDefault()}); setInvLinks(null);
+    setInvOpen(true); setInvForm({name:"",email:"",showProfit:false,sendEmail:true,message:"",pageUrl:invPageDefault()}); setInvLinks(null); setInvMail(null);
     try{ const r=await api("inv.list",{projectId:String(activeId)},0); setInvLinks(r.links||[]); }
     catch(err){ setInvLinks([]); showToast(err.message+(/Unknown action/i.test(err.message)?" — add Investors.gs and the 2 lines in Code.gs, then deploy a new version.":""),"error"); }
   };
@@ -3775,14 +3775,26 @@ function App() {
   const invCreate=async()=>{
     if(!String(invForm.name||"").trim()){ showToast("Add the investor's name.","error"); return; }
     setInvBusy(true);
-    try{ const r=await api("inv.create",{projectId:String(activeId),name:invForm.name,email:invForm.email,showProfit:!!invForm.showProfit,pageUrl:invForm.pageUrl},0);
-      setInvLinks(ls=>(ls||[]).concat([r.link])); setInvForm(f=>({...f,name:"",email:""})); invCopy(r.link); }
+    const send=!!invForm.sendEmail&&!!String(invForm.email||"").trim();
+    try{ const r=await api("inv.create",{projectId:String(activeId),name:invForm.name,email:invForm.email,showProfit:!!invForm.showProfit,pageUrl:invForm.pageUrl,sendEmail:send,message:invForm.message||""},0);
+      setInvLinks(ls=>(ls||[]).concat([r.link])); setInvForm(f=>({...f,name:"",email:"",message:""}));
+      if(send&&!r.emailError) showToast("Link created and emailed to "+r.link.email);
+      else { if(r.emailError) showToast("Link created, but the email didn't send: "+r.emailError+(/permission|authoriz/i.test(r.emailError)?" — run authorizeInvestorEmail once in Apps Script.":""),"error"); invCopy(r.link); } }
     catch(err){ showToast(err.message,"error"); } finally{ setInvBusy(false); }
   };
   const invUpdate=async(l,patch)=>{
     setInvBusy(true);
     try{ const r=await api("inv.update",{token:l.token,...patch},0); setInvLinks(ls=>ls.map(x=>x.token===l.token?r.link:x)); }
     catch(err){ showToast(err.message,"error"); } finally{ setInvBusy(false); }
+  };
+  const invSendMail=async()=>{
+    const m=invMail; if(!m) return;
+    if(!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(String(m.to||"").trim())){ showToast("Enter a valid email address.","error"); return; }
+    setInvBusy(true);
+    try{ const r=await api("inv.email",{token:m.token,to:String(m.to).trim(),message:m.message||""},0);
+      setInvLinks(ls=>ls.map(x=>x.token===m.token?r.link:x)); setInvMail(null); showToast("Emailed to "+r.link.emailedTo); }
+    catch(err){ showToast(err.message+(/permission|authoriz/i.test(err.message)?" — run authorizeInvestorEmail once in Apps Script.":""),"error"); }
+    finally{ setInvBusy(false); }
   };
   const invRemove=async l=>{
     if(!window.confirm("Delete "+l.name+"'s link? It stops working right away.")) return;
@@ -3801,27 +3813,39 @@ function App() {
         e("div",{style:{display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap",alignItems:"center"}},
           e("div",{style:{minWidth:0}},
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},l.name,l.enabled!=="yes"&&e("span",{style:{marginLeft:8,fontSize:10,fontWeight:700,color:"#ef4444"}},"OFF")),
-            e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[l.email,(+l.views||0)+" view"+((+l.views)===1?"":"s"),l.lastViewedAt?"last "+new Date(l.lastViewedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"not opened yet"].filter(Boolean).join(" · "))),
+            e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[l.email,l.emailedAt?"emailed "+new Date(l.emailedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"",(+l.views||0)+" view"+((+l.views)===1?"":"s"),l.lastViewedAt?"last "+new Date(l.lastViewedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"not opened yet"].filter(Boolean).join(" · "))),
           e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
             e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},disabled:l.enabled!=="yes",onClick:()=>invCopy(l)},"Copy link"),
+            e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},disabled:l.enabled!=="yes"||invBusy,onClick:()=>setInvMail(invMail&&invMail.token===l.token?null:{token:l.token,to:l.email||"",message:""})},"✉ Email"),
             e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},disabled:invBusy,onClick:()=>invUpdate(l,{enabled:l.enabled!=="yes"})},l.enabled==="yes"?"Turn off":"Turn on"),
             e("button",{style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:11,padding:"5px 10px",cursor:"pointer"},disabled:invBusy,onClick:()=>invRemove(l)},"Delete"))),
         e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12,color:"#c3cfe2",marginTop:8,cursor:"pointer"}},
           e("input",{type:"checkbox",checked:l.showProfit==="yes",disabled:invBusy,onChange:ev=>invUpdate(l,{showProfit:ev.target.checked})}),"Show ARV & projected profit"),
-        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4,wordBreak:"break-all"}},invLinkUrl(l))))),
+        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4,wordBreak:"break-all"}},invLinkUrl(l)),
+        invMail&&invMail.token===l.token&&e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f"}},
+          e("label",{style:S.label},"Send to"),
+          e("input",{style:S.input,type:"email",value:invMail.to||"",placeholder:"investor@email.com",onChange:ev=>{const v=ev.target.value;setInvMail(m=>({...m,to:v}));}}),
+          e("label",{style:{...S.label,marginTop:8}},"Personal note (optional)"),
+          e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:invMail.message||"",placeholder:"Leave blank for the standard note",onChange:ev=>{const v=ev.target.value;setInvMail(m=>({...m,message:v}));}}),
+          e("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:8}},
+            e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>setInvMail(null)},"Cancel"),
+            e("button",{style:{...S.btn(),fontSize:12},disabled:invBusy,onClick:invSendMail},invBusy?"Sending…":"Send email")))))),
     e("div",{key:"new",style:{marginTop:14,paddingTop:14,borderTop:"1px solid #1e3a5f"}},
       e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}},"New investor link"),
       e("div",{style:{display:"flex",gap:10,flexWrap:"wrap"}},
         e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"Investor name *"),e("input",{style:S.input,value:invForm.name||"",placeholder:"e.g. John Smith",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,name:v}));}})),
-        e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"Email (for your records)"),e("input",{style:S.input,value:invForm.email||"",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,email:v}));}}))),
+        e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"Email"),e("input",{style:S.input,value:invForm.email||"",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,email:v}));}}))),
       e("div",{style:{marginTop:10}},e("label",{style:S.label},"Investor page address"),
         e("input",{style:S.input,value:invForm.pageUrl||"",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,pageUrl:v}));}}),
         e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Where you uploaded the investor page (e.g. a folder named "+invSlug(activeProject&&activeProject.name)+" in GitHub).")),
       e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12.5,color:"#c3cfe2",marginTop:10,cursor:"pointer"}},
         e("input",{type:"checkbox",checked:!!invForm.showProfit,onChange:ev=>{const v=ev.target.checked;setInvForm(f=>({...f,showProfit:v}));}}),"Show ARV & projected profit to this investor"),
+      e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12.5,color:String(invForm.email||"").trim()?"#c3cfe2":"#4a6fa5",marginTop:8,cursor:"pointer"}},
+        e("input",{type:"checkbox",checked:!!invForm.sendEmail&&!!String(invForm.email||"").trim(),disabled:!String(invForm.email||"").trim(),onChange:ev=>{const v=ev.target.checked;setInvForm(f=>({...f,sendEmail:v}));}}),"Email the link to them now"),
+      invForm.sendEmail&&String(invForm.email||"").trim()&&e("textarea",{style:{...S.input,minHeight:56,resize:"vertical",marginTop:8},value:invForm.message||"",placeholder:"Personal note (optional)",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,message:v}));}}),
       e("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}},
         e("button",{style:S.btn("ghost"),onClick:()=>setInvOpen(false)},"Close"),
-        e("button",{style:S.btn(),disabled:invBusy,onClick:invCreate},invBusy?"Working…":"Create & copy link")))
+        e("button",{style:S.btn(),disabled:invBusy,onClick:invCreate},invBusy?"Working…":(invForm.sendEmail&&String(invForm.email||"").trim()?"Create & email link":"Create & copy link"))))
   ]));
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
