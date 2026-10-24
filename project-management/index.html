@@ -2349,6 +2349,7 @@ function App() {
   const [vendors,setVendors] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
+  const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -3264,6 +3265,7 @@ function App() {
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("expenses")},"Expenses"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("loan")},"Loan & Draws"),
+        !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openInvestors},"👥 Investors"),
         e("button",{style:{...S.btn("danger"),fontSize:12},onClick:()=>setDelConfirm({type:"project",id:activeId,name:activeProject?.name})},"Delete")
       )
     ),
@@ -3757,6 +3759,70 @@ function App() {
           ["arv","realtorPct","sellerClosingPct","holdMonths","otherMonthly"].forEach(k=>{o[k]=String(o[k]==null?"":o[k]).trim()===""?"":num(o[k]);});
           saveDeal(o);}},loanBusy?"Saving…":"Save"))];
   })()));
+
+  // ── BuildFlow: investor links (read-only, one project) ─────────────────────
+  const invSlug=name=>String(name||"").split(",")[0].toLowerCase().replace(/[^a-z0-9\s-]/g,"").trim().split(/\s+/).slice(0,2).join("-");
+  const invPageDefault=()=>"https://nextphaseventures.co/"+invSlug(activeProject&&activeProject.name)+"/";
+  const invLinkUrl=l=>{let u=String(l.pageUrl||"").trim()||invPageDefault(); if(!/\/$/.test(u)&&!/\.html?$/i.test(u)) u+="/"; return u+"#k="+l.token;};
+  const openInvestors=async()=>{
+    setInvOpen(true); setInvForm({name:"",email:"",showProfit:false,pageUrl:invPageDefault()}); setInvLinks(null);
+    try{ const r=await api("inv.list",{projectId:String(activeId)},0); setInvLinks(r.links||[]); }
+    catch(err){ setInvLinks([]); showToast(err.message+(/Unknown action/i.test(err.message)?" — add Investors.gs and the 2 lines in Code.gs, then deploy a new version.":""),"error"); }
+  };
+  const invCopy=async l=>{ const u=invLinkUrl(l);
+    try{ await navigator.clipboard.writeText(u); showToast("Link copied — send it to "+l.name); }
+    catch(_){ window.prompt("Copy this link:",u); } };
+  const invCreate=async()=>{
+    if(!String(invForm.name||"").trim()){ showToast("Add the investor's name.","error"); return; }
+    setInvBusy(true);
+    try{ const r=await api("inv.create",{projectId:String(activeId),name:invForm.name,email:invForm.email,showProfit:!!invForm.showProfit,pageUrl:invForm.pageUrl},0);
+      setInvLinks(ls=>(ls||[]).concat([r.link])); setInvForm(f=>({...f,name:"",email:""})); invCopy(r.link); }
+    catch(err){ showToast(err.message,"error"); } finally{ setInvBusy(false); }
+  };
+  const invUpdate=async(l,patch)=>{
+    setInvBusy(true);
+    try{ const r=await api("inv.update",{token:l.token,...patch},0); setInvLinks(ls=>ls.map(x=>x.token===l.token?r.link:x)); }
+    catch(err){ showToast(err.message,"error"); } finally{ setInvBusy(false); }
+  };
+  const invRemove=async l=>{
+    if(!window.confirm("Delete "+l.name+"'s link? It stops working right away.")) return;
+    setInvBusy(true);
+    try{ await api("inv.remove",{token:l.token},0); setInvLinks(ls=>ls.filter(x=>x.token!==l.token)); showToast("Link deleted"); }
+    catch(err){ showToast(err.message,"error"); } finally{ setInvBusy(false); }
+  };
+  const InvestorModal=()=>invOpen&&e("div",{key:"inv-m"},overlay(()=>setInvOpen(false),[
+    e("div",{key:"h",style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:6}},
+      e("div",null,e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8"}},"Investor view"),
+        e("div",{style:{fontSize:12,color:"#7a9cc5",marginTop:3}},(activeProject&&activeProject.name)+" · read-only: overview, milestones, expenses"))),
+    e("div",{key:"list",style:{marginTop:12}},
+      invLinks===null?e("div",{style:{fontSize:13,color:"#7a9cc5"}},"Loading…"):
+      invLinks.length===0?e("div",{style:{fontSize:13,color:"#4a6fa5"}},"No investor links yet."):
+      invLinks.map(l=>e("div",{key:l.token,style:{background:"#071020",border:"1px solid "+(l.enabled==="yes"?"#1e3a5f":"#ef444455"),borderRadius:10,padding:"10px 12px",marginBottom:8}},
+        e("div",{style:{display:"flex",justifyContent:"space-between",gap:8,flexWrap:"wrap",alignItems:"center"}},
+          e("div",{style:{minWidth:0}},
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},l.name,l.enabled!=="yes"&&e("span",{style:{marginLeft:8,fontSize:10,fontWeight:700,color:"#ef4444"}},"OFF")),
+            e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[l.email,(+l.views||0)+" view"+((+l.views)===1?"":"s"),l.lastViewedAt?"last "+new Date(l.lastViewedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"not opened yet"].filter(Boolean).join(" · "))),
+          e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+            e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},disabled:l.enabled!=="yes",onClick:()=>invCopy(l)},"Copy link"),
+            e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},disabled:invBusy,onClick:()=>invUpdate(l,{enabled:l.enabled!=="yes"})},l.enabled==="yes"?"Turn off":"Turn on"),
+            e("button",{style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:11,padding:"5px 10px",cursor:"pointer"},disabled:invBusy,onClick:()=>invRemove(l)},"Delete"))),
+        e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12,color:"#c3cfe2",marginTop:8,cursor:"pointer"}},
+          e("input",{type:"checkbox",checked:l.showProfit==="yes",disabled:invBusy,onChange:ev=>invUpdate(l,{showProfit:ev.target.checked})}),"Show ARV & projected profit"),
+        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4,wordBreak:"break-all"}},invLinkUrl(l))))),
+    e("div",{key:"new",style:{marginTop:14,paddingTop:14,borderTop:"1px solid #1e3a5f"}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}},"New investor link"),
+      e("div",{style:{display:"flex",gap:10,flexWrap:"wrap"}},
+        e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"Investor name *"),e("input",{style:S.input,value:invForm.name||"",placeholder:"e.g. John Smith",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,name:v}));}})),
+        e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"Email (for your records)"),e("input",{style:S.input,value:invForm.email||"",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,email:v}));}}))),
+      e("div",{style:{marginTop:10}},e("label",{style:S.label},"Investor page address"),
+        e("input",{style:S.input,value:invForm.pageUrl||"",onChange:ev=>{const v=ev.target.value;setInvForm(f=>({...f,pageUrl:v}));}}),
+        e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:4}},"Where you uploaded the investor page (e.g. a folder named "+invSlug(activeProject&&activeProject.name)+" in GitHub).")),
+      e("label",{style:{display:"flex",gap:7,alignItems:"center",fontSize:12.5,color:"#c3cfe2",marginTop:10,cursor:"pointer"}},
+        e("input",{type:"checkbox",checked:!!invForm.showProfit,onChange:ev=>{const v=ev.target.checked;setInvForm(f=>({...f,showProfit:v}));}}),"Show ARV & projected profit to this investor"),
+      e("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:14}},
+        e("button",{style:S.btn("ghost"),onClick:()=>setInvOpen(false)},"Close"),
+        e("button",{style:S.btn(),disabled:invBusy,onClick:invCreate},invBusy?"Working…":"Create & copy link")))
+  ]));
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
@@ -4656,6 +4722,7 @@ function App() {
 
     ...LoanModals(),
     DealModal(),
+    InvestorModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
