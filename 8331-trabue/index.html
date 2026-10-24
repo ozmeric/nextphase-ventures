@@ -1,1 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Investor View · NextPhase Ventures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a1628;--panel:#0d1f3c;--panel2:#071020;--line:#1e3a5f;--ink:#f8f0d8;--ink2:#c3cfe2;--muted:#7a9cc5;--dim:#4a6fa5;--gold:#d4a017;--green:#10b981;--amber:#f59e0b;--red:#ef4444;--violet:#a78bfa}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{margin:0;background:var(--bg);color:var(--ink2);font:14px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--gold)}button{font:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:0 16px}
+.top .in{max-width:1080px;margin:0 auto;height:56px;display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:30px;border-radius:8px;background:#1e3a5f;color:var(--gold);display:grid;place-items:center;font-weight:800}
+.brand{font-weight:800;color:var(--ink);font-size:15px;white-space:nowrap}
+.badge{font-size:10.5px;font-weight:700;color:var(--gold);border:1px solid #d4a01766;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.sp{flex:1}.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer}
+.ghost:hover{color:var(--ink);border-color:#2a4f7f}
+main{max-width:1080px;margin:0 auto;padding:22px 16px 60px}
+.hero h1{margin:0;color:var(--ink);font-size:clamp(22px,4vw,30px);font-weight:800;letter-spacing:-.01em}
+.hero .sub{color:var(--muted);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 18px;margin-top:16px}
+.h{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{background:var(--panel2);border-radius:10px;padding:12px 14px;min-width:0}
+.tile .l{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.tile .v{font-size:clamp(17px,2.4vw,21px);font-weight:800;color:var(--ink);margin-top:3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile .s{font-size:11.5px;color:var(--dim);margin-top:2px}
+.bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;border-radius:99px}
+.ms{display:grid;grid-template-columns:22px 1fr;gap:0 12px}
+.ms .rail{display:flex;flex-direction:column;align-items:center}
+.ms .dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--line);background:var(--bg);margin-top:4px;flex-shrink:0}
+.ms .ln{flex:1;width:2px;background:var(--line);margin:3px 0}
+.ms .body{padding-bottom:18px;min-width:0}
+.ms .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ms .name{color:var(--ink);font-weight:700}
+.ms .date{font-size:12px;color:var(--dim);white-space:nowrap}
+.ms .notes{font-size:12.5px;color:var(--muted);margin-top:4px;white-space:pre-line}
+.more{background:none;border:none;color:var(--gold);cursor:pointer;padding:0;font-size:12px}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 24px}
+.cat{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;font-size:13px;padding:6px 0;cursor:pointer;border-radius:6px}
+.cat .bar{grid-column:1/-1;height:5px}.cat b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cat.on span{color:var(--gold)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
+.inp{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0}
+.inp:focus{outline:2px solid #d4a01755;border-color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);text-align:left;font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid #12284a;vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .d{color:var(--ink)}td .m{font-size:11.5px;color:var(--dim)}
+tfoot td{font-weight:800;color:var(--ink);border-bottom:none;border-top:2px solid var(--line)}
+.chip{font-size:11px;font-weight:600;border-radius:99px;padding:1px 8px;background:#1e3a5f;color:var(--ink2);white-space:nowrap}
+.rows{display:none}
+.r{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px}
+.r .a{font-weight:800;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tot{display:flex;justify-content:space-between;font-weight:800;color:var(--ink);padding:10px 2px;border-top:2px solid var(--line);margin-top:4px}
+.gate{max-width:420px;margin:12vh auto 0;text-align:center}
+.gate .card{text-align:left}
+.btn{background:var(--gold);color:#0a1628;border:none;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer}
+.err{background:#3b0d0d;border:1px solid #ef444466;color:#fecaca;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px}
+.note{font-size:11.5px;color:var(--dim)}
+.fin .v.g{color:var(--green)}.fin .v.r{color:var(--red)}
+.skel{height:14px;background:linear-gradient(90deg,#0d1f3c,#16305a,#0d1f3c);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+footer{max-width:1080px;margin:0 auto;padding:0 16px 30px;color:var(--dim);font-size:11.5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+@media (max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}table{display:none}.rows{display:block}.badge{display:none}}
+@media print{.top,.filters,.ghost,footer button{display:none}body{background:#fff;color:#000}.card{border-color:#ccc;background:#fff}}
+</style>
+</head>
+<body>
+<div class="top"><div class="in"><div class="logo">N</div><div class="brand">NextPhase Ventures</div><span class="badge">Investor view · read-only</span><div class="sp"></div>
+  <button class="ghost" id="refresh" hidden>↻ Refresh</button><button class="ghost" id="signout" hidden>Sign out</button></div></div>
+<main id="app"><div class="skel" style="width:40%;height:26px"></div><div class="skel" style="width:25%"></div><div class="skel" style="height:90px;margin-top:20px"></div></main>
+<footer id="foot" hidden><span id="upd"></span><span>Shared privately with you by NextPhase Ventures. Please don't forward this link.</span></footer>
+<script>
+"use strict";
+const API_URL = "https://script.google.com/macros/s/AKfycbzfREah5RdaggF_Z-7txgvvrTbCMQrecOjSfF0rE5yZ3x8Zozy4bCYkpvJBYK8sszfC/exec";
+const REHAB_CATEGORIES = ["Labor","Demo/Cleanup","Materials","Permits","Utilities","Equipment","Professional Fees","Other"];
+const CLOSING_KEYS=["titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"];
+const loanClosing=loan=>{
+  if(!loan) return null;
+  const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, has=k=>loan[k]!=null&&String(loan[k]).trim()!=="";
+  const items=[["Lender fees (origination + service)",n(loan.originationFee)+n(loan.serviceFee)],["Pro-rated interest",n(loan.proratedInterest)],
+    ["Title & settlement",n(loan.titleFees)],["Recording & transfer taxes",n(loan.recordingTaxes)],["Hazard insurance",n(loan.hazardInsurance)],
+    ["Property tax proration",n(loan.taxProration)],["Other closing costs",n(loan.otherClosing)]].filter(x=>Math.abs(x[1])>0.004);
+  const total=items.reduce((s,x)=>s+x[1],0), dp=n(loan.downPayment), emd=n(loan.emd);
+  return {fromLoan:CLOSING_KEYS.some(has),items,total,dp,emd,cashCalc:dp-emd+total,cashStated:has("cashAtClosing")?n(loan.cashAtClosing):null};
+};
+const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
+  const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
+  deal=deal||{};
+  const ownArv=n(deal.arv), lenderArv=n(loan&&loan.lenderArv);
+  const arv=ownArv||lenderArv; if(!(arv>0)) return null;          // your ARV, or the lender's estimate until you set one
+  const rPct=blank(deal.realtorPct)?5:n(deal.realtorPct), cPct=blank(deal.sellerClosingPct)?1:n(deal.sellerClosingPct);
+  const months=blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
+  const isEMD=x=>/\bemd\b|earnest/i.test(String(x.description||""));
+  const sum=xs=>xs.reduce((s,x)=>s+n(x.amount),0);
+  const isInterestPay=x=>x.category==="Loan Expenses"&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));
+  const interestPaid=sum((expenses||[]).filter(isInterestPay));
+  const lc=loanClosing(loan), closingFromLoan=!!(lc&&lc.fromLoan);
+  let acq, acqFromLoan=false, emdExcluded=0, ignoredClosing=0;
+  if(closingFromLoan){
+    // Closing costs + down payment live in the Loan section → Closing Costs / Down Payment expenses are not counted
+    const le=(expenses||[]).filter(x=>x.category==="Loan Expenses"&&!/origination|service fee|pro-?rated|prepaid/i.test(String(x.description||"")));
+    acq=lc.total+sum(le);
+    ignoredClosing=sum((expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Down Payment"));
+  } else {
+    const acqAll=(expenses||[]).filter(x=>x.category==="Closing Costs"||x.category==="Loan Expenses");
+    const acqLogged=sum(acqAll.filter(x=>!isEMD(x))); emdExcluded=sum(acqAll.filter(isEMD));
+    const loanFees=loan?n(loan.originationFee)+n(loan.serviceFee)+n(loan.proratedInterest):0;
+    acqFromLoan=!(acqLogged-interestPaid>0)&&loanFees>0; acq=acqFromLoan?loanFees+interestPaid:acqLogged;   // nothing logged yet → lender's fees
+  }
+  const rehabSpent=sum((expenses||[]).filter(x=>REHAB_CATEGORIES.includes(x.category)));
+  const rehab=Math.max(n(rb),rehabSpent);
+  const adv=loan?(n(loan.initialAdvance)||Math.max(0,n(loan.loanAmount)-n(loan.holdback))):0;
+  const balance=loan?adv+n(drawn):0, interestMo=loan?balance*n(loan.rate)/100/12:0;
+  const monthly=interestMo+other, holding=monthly*months;
+  const realtor=arv*rPct/100, closing=arv*cPct/100;
+  const profit=arv-n(pp)-acq-rehab-holding-realtor-closing;
+  // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
+  // the purchase loan since closing, each draw since it funded) + selling costs at ARV
+  const rate=loan?n(loan.rate):0, now=Date.now();
+  const daysSince=d=>{ if(!d) return 0; const t=new Date(String(d).slice(0,10)+"T00:00:00").getTime(); return isNaN(t)?0:Math.max(0,(now-t)/864e5); };
+  // Kiavi payments you log under Loan Expenses are already in "acq". The app estimates what has accrued
+  // (actual/360, like Kiavi's per-diem) and only adds the part not yet covered by logged payments,
+  // so interest is never counted twice and there's nothing to tick.
+  const canAccrue=!!(loan&&rate&&loan.closingDate);
+  const interestAccrued=!canAccrue?0:adv*rate/100*daysSince(loan.closingDate)/360
+    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
+  const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
+  const costsToDate=n(pp)+acq+rehabSpent+interestToDate, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
+  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
+    interestToDate,interestLogged,interestPaid,interestAccrued,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
+};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=v=>(v<0?"−":"")+"$"+Math.abs(+v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=v=>(v<0?"−":"")+"$"+Math.round(Math.abs(+v||0)).toLocaleString("en-US");
+const pDay=s=>{const m=String(s||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):null;};
+const fDay=s=>{const d=pDay(s);return d?d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";};
+const KEY="npv-inv:"+location.pathname;
+const store={get(){try{return localStorage.getItem(KEY)||"";}catch(_){return "";}},set(v){try{localStorage.setItem(KEY,v);}catch(_){}},del(){try{localStorage.removeItem(KEY);}catch(_){}}};
+let token="", data=null, expFilter={cat:"",q:""};
 
+function tokenFromText(t){const m=String(t||"").match(/[#&?]k=([A-Za-z0-9]{24,})/)||String(t||"").trim().match(/^([A-Za-z0-9]{24,})$/);return m?m[1]:"";}
+async function load(){
+  $("#app").innerHTML='<div class="skel" style="width:40%;height:26px"></div><div class="skel" style="width:25%"></div><div class="skel" style="height:90px;margin-top:20px"></div>';
+  let res;
+  try{ const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"inv.view",token})}); res=JSON.parse(await r.text()); }
+  catch(_){ return gate("We couldn't reach the server. Check your connection and try again.",true); }
+  if(!res||res.error){ return gate(res&&res.error||"Something went wrong.",false); }
+  data=res; store.set(token); $("#refresh").hidden=false; $("#signout").hidden=false; render();
+}
+function gate(msg,keep){
+  if(!keep){ store.del(); }
+  $("#refresh").hidden=true; $("#signout").hidden=true; $("#foot").hidden=true;
+  $("#app").innerHTML=`<div class="gate"><div class="logo" style="margin:0 auto 12px;width:44px;height:44px;font-size:20px">N</div>
+    <h1 style="color:var(--ink);margin:0 0 4px;font-size:22px">Investor view</h1><div class="note" style="font-size:13px">NextPhase Ventures · private project access</div>
+    ${msg?`<div class="err">${esc(msg)}</div>`:""}
+    <div class="card"><label class="note" for="k" style="display:block;margin-bottom:6px">Paste the link or access key you were sent</label>
+      <input class="inp" id="k" style="width:100%" autocomplete="off" placeholder="https://…#k=…">
+      <button class="btn" id="go" style="width:100%;margin-top:10px">Open</button></div></div>`;
+  const go=()=>{const t=tokenFromText($("#k").value); if(!t){$("#k").focus();return;} token=t; load();};
+  $("#go").onclick=go; $("#k").onkeydown=e=>{if(e.key==="Enter")go();};
+}
+
+function render(){
+  const P=data.project, E=data.expenses||[], M=data.milestones||[], F=data.financials;
+  const lc=data.closing?loanClosing(data.closing):null, closingFromLoan=!!(lc&&lc.fromLoan);
+  // What the investor sees as expenses: no down payment / EMD (they're part of the price); closing from the statement if entered there
+  let rows=E.filter(x=>x.category!=="Down Payment"&&!/\bemd\b|earnest/i.test(x.description));
+  if(closingFromLoan){
+    rows=rows.filter(x=>x.category!=="Closing Costs"&&!(x.category==="Loan Expenses"&&/origination|service fee|pro-?rated|prepaid/i.test(x.description)));
+    lc.items.forEach(([l,v])=>rows.push({date:String(data.closing.closingDate||"").slice(0,10),description:l,category:"Closing Costs",vendor:"Settlement statement",amount:v}));
+  }
+  rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const sum=xs=>xs.reduce((s,x)=>s+(+x.amount||0),0);
+  const rehab=rows.filter(x=>REHAB_CATEGORIES.includes(x.category)), rehabSpent=sum(rehab), allCosts=sum(rows);
+  const pct=P.rehabBudget>0?Math.min(100,rehabSpent/P.rehabBudget*100):0, over=P.rehabBudget>0&&rehabSpent>P.rehabBudget;
+  const msDone=M.filter(m=>msState(m)==="done").length;
+
+  let fin="";
+  if(F){
+    const c=calcProfit({pp:P.purchasePrice,rb:P.rehabBudget,expenses:E,deal:F.deal||{},loan:F.loan,drawn:(F.funded||[]).reduce((s,f)=>s+(+f.amt||0),0),funded:F.funded||[]});
+    if(c) fin=`<div class="card fin"><div class="h">Projected returns</div><div class="grid">
+      ${tile("After-repair value",money0(c.arv),c.arvSource==="lender"?"Lender's estimate":"Estimated")}
+      ${tile("Projected total cost",money0(c.arv-c.profit),"Purchase, rehab, financing, selling")}
+      ${tile("Projected profit",money0(c.profit),(c.margin*100).toFixed(1)+"% of ARV",c.profit>=0?"g":"r")}
+      ${tile("Selling costs",money0(c.realtor+c.closing),c.rPct+"% agent + "+c.cPct+"% closing")}</div>
+      <div class="note" style="margin-top:10px">Estimates, not guarantees. Assumes the full rehab budget and ${c.months} more month${c.months==1?"":"s"} of holding costs.</div></div>`;
+  }
+
+  $("#app").innerHTML=`
+  <section class="hero"><h1>${esc(P.name)}</h1>
+    <div class="sub">${P.location?`<span>${esc(P.location)}</span>`:""}<span class="pill" style="background:${P.status==="Sold"?"#ef444422":"#10b98122"};color:${P.status==="Sold"?"var(--red)":"var(--green)"}">${P.status}</span>
+    ${data.investor&&data.investor.name?`<span class="note">Prepared for ${esc(data.investor.name)}</span>`:""}</div></section>
+
+  <div class="card"><div class="h">Overview</div><div class="grid">
+    ${tile("Purchase price",money0(P.purchasePrice))}
+    ${tile("Rehab budget",money0(P.rehabBudget))}
+    ${tile("Rehab spent",money0(rehabSpent),P.rehabBudget>0?(over?"Over budget by "+money0(rehabSpent-P.rehabBudget):Math.round(pct)+"% of budget"):"")}
+    ${tile("Milestones",M.length?msDone+" of "+M.length:"—",M.length?"complete":"")}</div>
+    ${P.rehabBudget>0?`<div style="margin-top:14px"><div class="bar"><i style="width:${pct}%;background:${over?"var(--red)":"var(--gold)"}"></i></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px"><span>Rehab budget used</span><span>${over?"Over by <b style='color:var(--red)'>"+money0(rehabSpent-P.rehabBudget)+"</b>":"Remaining <b style='color:var(--ink)'>"+money0(P.rehabBudget-rehabSpent)+"</b>"}</span></div></div>`:""}
+  </div>
+  ${fin}
+  <div class="card"><div class="h">Milestones</div>${M.length?M.map((m,i)=>msRow(m,i===M.length-1)).join(""):'<div class="note">The schedule will appear here once milestones are set.</div>'}</div>
+  <div class="card" id="exp"></div>`;
+  renderExpenses(rows);
+  $("#upd").textContent="Updated "+new Date(data.updatedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  $("#foot").hidden=false;
+  document.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{const n=b.previousElementSibling;n.textContent=n.dataset.full;b.remove();});
+}
+function tile(l,v,s,cls){return `<div class="tile"><div class="l">${esc(l)}</div><div class="v ${cls||""}">${esc(v)}</div>${s?`<div class="s">${esc(s)}</div>`:""}</div>`;}
+function msState(m){
+  const st=String(m.status||"");
+  if(st==="done"||(m.tasksTotal>0&&m.tasksDone===m.tasksTotal)) return "done";
+  if(st==="in-progress"||m.tasksDone>0) return "progress";
+  const d=pDay(m.date); return d&&d<new Date(new Date().toDateString())?"past":"upcoming";
+}
+function msRow(m,last){
+  const s=msState(m), C={done:["Complete","var(--green)"],progress:["In progress","var(--amber)"],upcoming:["Upcoming","var(--muted)"],past:["Scheduled","var(--muted)"]}[s];
+  const pct=m.tasksTotal?Math.round(m.tasksDone/m.tasksTotal*100):(s==="done"?100:0);
+  const notes=String(m.notes||""), short=notes.length>180?notes.slice(0,170).replace(/\s+\S*$/,"")+"…":notes;
+  return `<div class="ms"><div class="rail"><div class="dot" style="border-color:${C[1]};${s==="done"?"background:var(--green)":""}"></div>${last?"":'<div class="ln"></div>'}</div>
+    <div class="body"><div class="t"><span class="name">${esc(m.name)}</span><span class="date">${esc(fDay(m.date))}</span></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px"><span class="pill" style="background:#1e3a5f;color:${C[1]}">${C[0]}</span>
+        ${m.tasksTotal?`<div class="bar" style="flex:1;max-width:240px"><i style="width:${pct}%;background:${C[1]}"></i></div><span class="note">${m.tasksDone} of ${m.tasksTotal} done</span>`:""}</div>
+      ${notes?`<div class="notes" data-full="${esc(notes)}">${esc(short)}</div>${short!==notes?'<button class="more" data-more>Show more</button>':""}`:""}</div></div>`;
+}
+function renderExpenses(all){
+  const cats=[...new Set(all.map(x=>x.category))].map(c=>({c,t:all.filter(x=>x.category===c).reduce((s,x)=>s+(+x.amount||0),0)})).sort((a,b)=>b.t-a.t);
+  const max=Math.max(1,...cats.map(x=>Math.abs(x.t)));
+  const q=expFilter.q.toLowerCase();
+  const list=all.filter(x=>(!expFilter.cat||x.category===expFilter.cat)&&(!q||(x.description+" "+x.vendor).toLowerCase().includes(q)));
+  const total=list.reduce((s,x)=>s+(+x.amount||0),0);
+  const el=$("#exp");
+  el.innerHTML=`<div class="h">Expenses</div>
+    <div class="cats">${cats.map(x=>`<div class="cat ${expFilter.cat===x.c?"on":""}" data-cat="${esc(x.c)}"><span>${esc(x.c)}</span><b>${money(x.t)}</b><div class="bar"><i style="width:${Math.abs(x.t)/max*100}%;background:var(--gold)"></i></div></div>`).join("")||'<div class="note">No expenses yet.</div>'}</div>
+    <div class="filters"><select class="inp" id="fc"><option value="">All categories</option>${cats.map(x=>`<option ${expFilter.cat===x.c?"selected":""}>${esc(x.c)}</option>`).join("")}</select>
+      <input class="inp" id="fq" placeholder="Search description or vendor" value="${esc(expFilter.q)}" style="flex:1;min-width:160px"></div>
+    <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Vendor</th><th class="n">Amount</th></tr></thead>
+      <tbody>${list.map(x=>`<tr><td style="white-space:nowrap">${esc(fDay(x.date))}</td><td class="d">${esc(x.description)}</td><td><span class="chip">${esc(x.category)}</span></td><td>${esc(x.vendor)}</td><td class="n" style="color:var(--ink)">${money(x.amount)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="4">Total${expFilter.cat||q?" (filtered, "+list.length+")":" ("+list.length+")"}</td><td class="n">${money(total)}</td></tr></tfoot></table>
+    <div class="rows">${list.map(x=>`<div class="r"><div style="min-width:0"><div class="d" style="color:var(--ink)">${esc(x.description)}</div><div class="m note">${esc(fDay(x.date))} · ${esc(x.category)}${x.vendor?" · "+esc(x.vendor):""}</div></div><div class="a">${money(x.amount)}</div></div>`).join("")}
+      <div class="tot"><span>Total${expFilter.cat||q?" (filtered)":""}</span><span>${money(total)}</span></div></div>
+    <div class="note" style="margin-top:8px">The purchase price and down payment aren't listed here; they're shown in the overview.</div>`;
+  el.querySelectorAll("[data-cat]").forEach(d=>d.onclick=()=>{expFilter.cat=expFilter.cat===d.dataset.cat?"":d.dataset.cat;renderExpenses(all);});
+  $("#fc").onchange=e=>{expFilter.cat=e.target.value;renderExpenses(all);};
+  $("#fq").oninput=e=>{expFilter.q=e.target.value;const pos=e.target.selectionStart;renderExpenses(all);const f=$("#fq");f.focus();f.setSelectionRange(pos,pos);};
+}
+$("#refresh").onclick=()=>load();
+$("#signout").onclick=()=>{store.del();token="";data=null;gate("",true);};
+token=tokenFromText(location.hash)||store.get();
+if(location.hash&&tokenFromText(location.hash)){ store.set(token); try{history.replaceState(null,"",location.pathname+location.search);}catch(_){} }
+token?load():gate("",true);
+</script>
+</body>
+</html>
