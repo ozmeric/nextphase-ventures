@@ -4519,7 +4519,8 @@ function App() {
                       ?e("button",{style:{background:"#10b98122",border:"1px solid #10b98166",color:"#10b981",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11,fontWeight:700,whiteSpace:"nowrap"},
                           onClick:ev=>{ev.stopPropagation();setActiveId(ex.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},"Open project →")
                       :e("button",{style:{background:"#d4a01722",border:"1px solid #d4a01766",color:"#d4a017",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11,fontWeight:700,whiteSpace:"nowrap"},
-                          onClick:ev=>{ev.stopPropagation();setForm({name:ms.week,description:"Fix & Flip | Active",_fromPipeline:ms.id});navTo("add-project");}},"➕ Make active project");})(),
+                          onClick:ev=>{ev.stopPropagation();const nt=String(ms.notes||""), money=re=>{const m=nt.match(re);return m?String(Math.round(parseFloat(m[1].replace(/,/g,""))*(/k/i.test(m[2]||"")?1000:1))):"";};
+                            setForm({name:ms.week,description:"Fix & Flip | Active",_fromPipeline:ms.id,purchasePrice:money(/offer[^\d$]*\$?\s*([\d,.]+)\s*(k)?/i)||money(/(?:price|ask)[^\d$]*\$?\s*([\d,.]+)\s*(k)?/i)});navTo("add-project");}},"➕ Make active project");})(),
                   e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11},
                     onClick:ev=>{ev.stopPropagation();setEditMgmtMs(ms.id);}
                   },"Edit")
