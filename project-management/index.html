@@ -1442,7 +1442,7 @@ function ActionCard({msg,ctx,onDone}){
 }
 function Ask({ctx}){
   const [msgs,setMsgs] = useState([{r:"ai",t:[`Hi, I'm ${CONFIG.aiName}. I can see your flips, budgets, tasks, quotes, vendors, deal leads, seller leads and calendar. Ask me anything, or tell me what to change, like "add a $300 permit expense to ${((ctx.db.projects.find(p=>p.status==="Active"))||{name:"Lincoln"}).name}". I'll show you the change before I make it.`+(CAN_TALK?" Tap the microphone to talk to me.":"")]}]);
-  const [q,setQ] = useState(""), [busy,setBusy] = useState(false);
+  const [q,setQ] = useState(()=>{ try{ const v=sessionStorage.getItem("bf-ask-prefill")||""; sessionStorage.removeItem("bf-ask-prefill"); return v; }catch(_){ return ""; } }), [busy,setBusy] = useState(false);
   const [listening,setListening] = useState(false);
   const [voiceOut,setVoiceOut] = useState(()=>store.get("bf-voice")!=="off");
   const box = useRef(null), recRef = useRef(null), msgsRef = useRef(msgs), sendRef = useRef(null), voiceRef = useRef(voiceOut);
@@ -2372,6 +2372,8 @@ function App() {
   useEffect(()=>{ if(!authed) return;
     if(view==="home"&&!briefBusy&&(!brief||Date.now()-brief.at>120000)&&bfLate.current.loadBrief) bfLate.current.loadBrief();
     if(view==="briefing"&&!nl&&bfLate.current.loadSubs) bfLate.current.loadSubs(); },[view,authed,bfLate.current.ready]);
+  useEffect(()=>{ if(!authed) return; try{ const m=String(location.hash||"").match(/^#ask=(.+)$/); if(m){
+      sessionStorage.setItem("bf-ask-prefill",decodeURIComponent(m[1]).slice(0,500)); history.replaceState(null,"",location.pathname+location.search); setView("fm-ask"); } }catch(_){} },[authed]);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -4226,6 +4228,12 @@ function App() {
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"Morning email: ",e("span",{style:{color:s.on?"#10b981":"#ef4444"}},s.on?"ON · every day ~7:00 AM ET":"OFF")),
             e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},(activeCount+" subscriber"+(activeCount===1?"":"s"))+(s.last?" · last: "+s.last.replace(/T(\d\d:\d\d).*? ·/," $1 UTC ·"):""))),
           e("button",{style:{...S.btn(s.on?"ghost":undefined),fontSize:12},disabled:nlBusy,onClick:()=>nlCall("nl.setOn",{on:!s.on},s.on?"Morning email turned off":"Morning email is on — first one tomorrow ~7 AM")},s.on?"Turn off":"Turn on")),
+        e("div",{style:{...S.card,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}},
+          e("div",{style:{minWidth:0,flex:"1 1 260px"}},
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"💬 Email replies: ",e("span",{style:{color:s.repliesOn?"#10b981":"#ef4444"}},s.repliesOn?"ON · checked every 5 minutes":"OFF")),
+            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},"Subscribers can reply to the briefing (or email this account with \"Foreman\" in the subject) and Foreman answers in the thread. Changes come back as a link to confirm in the app."),
+            s.lastReply&&e("div",{style:{fontSize:11.5,color:"#7a9cc5",marginTop:4,wordBreak:"break-word"}},"Last: "+s.lastReply)),
+          e("button",{style:{...S.btn(s.repliesOn?"ghost":undefined),fontSize:12},disabled:nlBusy,onClick:()=>nlCall("nl.setReplies",{on:!s.repliesOn},s.repliesOn?"Email replies turned off":"Email replies are on")},s.repliesOn?"Turn off":"Turn on")),
         e("div",{style:{...S.card,marginBottom:16}},
           e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}},"Subscribers"),
           subsList.length===0&&e("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:10}},"No one subscribed yet."),
