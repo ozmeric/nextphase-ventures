@@ -2350,6 +2350,9 @@ function App() {
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
+  const [libItems,setLibItems] = useState([]); const [libOrders,setLibOrders] = useState([]); const [libLoaded,setLibLoaded] = useState(false); const [libErr,setLibErr] = useState("");
+  const [libList,setLibList] = useState(""); const [libSearch,setLibSearch] = useState(""); const [libEdit,setLibEdit] = useState(null); const [libPick,setLibPick] = useState(null); const [libBusy,setLibBusy] = useState(false);
+  useEffect(()=>{ if((view==="finishes"||view==="project-finishes")&&!libLoaded&&typeof loadLib==="function") loadLib(); },[view]);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -3089,6 +3092,7 @@ function App() {
       isMgmt&&e("div",{key:"mgmt-ms",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtMs(true)},"🏁 + Milestone"),
       isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
       e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
+      e("div",{key:"finishes",style:S.sideItem(view==="finishes"),onClick:()=>{setActiveId(null);navTo("finishes");}},"📦 Default Finishes"),
       e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
         e("span",null,"📬 Deal Leads"),
         leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
@@ -3107,6 +3111,7 @@ function App() {
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"quotes",style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"planning",style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
       !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"loan",style:S.sideItem(view==="loan"),onClick:()=>navTo("loan")},"🏦 Loan & Draws"),
+      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"pfin",style:S.sideItem(view==="project-finishes"),onClick:()=>navTo("project-finishes")},"🛒 Finishes"),
       e("div",{key:"projects-section",style:{marginTop:16}},
         e("div",{style:S.sideLabel},"Projects"),
         ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>{
@@ -3265,6 +3270,7 @@ function App() {
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("expenses")},"Expenses"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("loan")},"Loan & Draws"),
+        !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("project-finishes")},"🛒 Finishes"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openInvestors},"👥 Investors"),
         e("button",{style:{...S.btn("danger"),fontSize:12},onClick:()=>setDelConfirm({type:"project",id:activeId,name:activeProject?.name})},"Delete")
       )
@@ -3854,6 +3860,230 @@ function App() {
         e("button",{style:S.btn("ghost"),onClick:()=>setInvOpen(false)},"Close"),
         e("button",{style:S.btn(),disabled:invBusy,onClick:invCreate},invBusy?"Working…":(invForm.sendEmail&&String(invForm.email||"").trim()?"Create & email link":"Create & copy link"))))
   ]));
+
+  // ── BuildFlow: Default Finishes library + per-project finish orders ────────
+  const LIB_STATUSES=["To order","Ordered","Delivered","Installed","Skipped"];
+  const LIB_ST_CLR={"To order":"#f59e0b",Ordered:"#06b6d4",Delivered:"#a78bfa",Installed:"#10b981",Skipped:"#4a6fa5"};
+  const LIB_STORE_CLR={Amazon:"#f59e0b","Home Depot":"#f97316","Lowe's":"#3b82f6",Walmart:"#38bdf8",eBay:"#ef4444",Wayfair:"#a78bfa","Floor & Decor":"#10b981"};
+  const libStoreOf=link=>{const u=String(link||"").toLowerCase();
+    if(/amazon\.|\/\/a\.co\/|amzn\./.test(u))return "Amazon"; if(/homedepot\./.test(u))return "Home Depot"; if(/lowes\./.test(u))return "Lowe's";
+    if(/walmart\./.test(u))return "Walmart"; if(/ebay\./.test(u))return "eBay"; if(/wayfair\./.test(u))return "Wayfair"; if(/flooranddecor\./.test(u))return "Floor & Decor";
+    const m=u.match(/^https?:\/\/(?:www\.)?([^\/]+)/); return m?m[1]:"";};
+  const libNum=v=>{const n=parseFloat(String(v==null?"":v).replace(/[$,\s]/g,""));return isNaN(n)?0:n;};
+  const libHint=m=>/Unknown action/i.test(m)?" — add Library.gs and the lib.* line in Code.gs, then deploy a new version.":/Library is not defined/i.test(m)?" — Library.gs isn't in Apps Script yet.":"";
+  const loadLib=async()=>{
+    setLibErr("");
+    try{ const r=await api("lib.get",{},0); setLibItems(r.items||[]); setLibOrders(r.orders||[]); setLibLoaded(true); }
+    catch(err){ setLibErr(err.message+libHint(err.message)); setLibLoaded(true); }
+  };
+  const libLists=()=>{const seen=[];[...libItems].sort((a,b)=>(libNum(a.sort)||1e9)-(libNum(b.sort)||1e9)).forEach(i=>{if(!seen.includes(i.list))seen.push(i.list);});return seen;};
+  const libByRoom=items=>{const order=[],g={};[...items].sort((a,b)=>(libNum(a.sort)||1e9)-(libNum(b.sort)||1e9)).forEach(i=>{const k=i.room||"General";if(!g[k]){g[k]=[];order.push(k);}g[k].push(i);});return order.map(k=>({room:k,items:g[k]}));};
+  const storeBadge=s=>s?e("span",{style:{fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99,background:(LIB_STORE_CLR[s]||"#7a9cc5")+"22",color:LIB_STORE_CLR[s]||"#7a9cc5",whiteSpace:"nowrap"}},s):null;
+  const openLink=(href,label)=>href?e("a",{href,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11,fontWeight:700,color:"#d4a017",textDecoration:"none",whiteSpace:"nowrap",border:"1px solid #d4a01755",borderRadius:6,padding:"3px 8px"}},label||"Open ↗"):e("span",{style:{fontSize:11,color:"#4a6fa5"}},"no link");
+
+  const saveLibItem=async it=>{
+    setLibBusy(true);
+    try{ const r=await api("lib.saveItem",{item:it},0); setLibItems(ls=>ls.some(x=>x.id===r.item.id)?ls.map(x=>x.id===r.item.id?r.item:x):ls.concat([r.item]));
+      // one default pick per room: starring an option clears the star on the room's other options
+      if(r.item.preferred==="yes"&&r.item.option){
+        const sibs=libItems.filter(x=>x.id!==r.item.id&&x.list===r.item.list&&(x.room||"")===(r.item.room||"")&&x.option&&x.preferred==="yes");
+        for(const x of sibs){ const r2=await api("lib.saveItem",{item:{...x,preferred:""}},0); setLibItems(ls=>ls.map(y=>y.id===r2.item.id?r2.item:y)); }
+      }
+      setLibEdit(null); showToast("Saved"); }
+    catch(err){ showToast(err.message+libHint(err.message),"error"); } finally{ setLibBusy(false); }
+  };
+  const deleteLibItem=async it=>{
+    if(!window.confirm("Delete \""+it.item+"\" from your default finishes? Projects that already ordered it keep their copy.")) return;
+    setLibBusy(true);
+    try{ await api("lib.deleteItem",{id:it.id},0); setLibItems(ls=>ls.filter(x=>x.id!==it.id)); setLibEdit(null); showToast("Deleted"); }
+    catch(err){ showToast(err.message,"error"); } finally{ setLibBusy(false); }
+  };
+  const togglePreferred=it=>saveLibItem({...it,preferred:it.preferred==="yes"?"":"yes"});
+  const newLibItem=list=>setLibEdit({id:"lib-"+Date.now().toString(36),list:list||libList||"Lighting",room:"",item:"",qty:1,link:"",option:"",price:"",notes:"",preferred:"",sort:libItems.length+1});
+
+  // ── Management: the library ──
+  const FinishesView=()=>{
+    const lists=libLists(), cur=lists.includes(libList)?libList:(lists[0]||"");
+    const q=String(libSearch||"").toLowerCase();
+    const items=libItems.filter(i=>i.list===cur&&(!q||[i.room,i.item,i.notes,i.store,i.option].join(" ").toLowerCase().includes(q)));
+    const groups=libByRoom(items);
+    return e("div",null,
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:16},className:"page-header"},
+        e("div",null,e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8"}},"📦 Default Finishes"),
+          e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},"Your standard picks for every project · "+libItems.length+" item"+(libItems.length===1?"":"s")+" in "+lists.length+" list"+(lists.length===1?"":"s"))),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+          e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>newLibItem(cur)},"+ Item"),
+          e("button",{style:{...S.btn(),fontSize:12},disabled:!libItems.length,onClick:()=>openLibPick(null)},"🛒 Order for a project"))),
+      libErr&&e("div",{style:{...S.card,borderColor:"#ef444466",color:"#fecaca",marginBottom:16,fontSize:13}},"Couldn't load finishes: "+libErr),
+      !libLoaded?e("div",{style:{color:"#7a9cc5",fontSize:13}},"Loading…"):
+      e("div",null,
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",marginBottom:12}},
+          ...lists.map(l=>e("button",{key:l,onClick:()=>setLibList(l),style:{padding:"6px 12px",borderRadius:99,fontSize:12,fontWeight:700,cursor:"pointer",
+            border:"1px solid "+(l===cur?"#d4a017":"#1e3a5f"),background:l===cur?"#d4a01722":"transparent",color:l===cur?"#d4a017":"#7a9cc5"}},l+" ("+libItems.filter(i=>i.list===l).length+")")),
+          e("button",{style:{padding:"6px 12px",borderRadius:99,fontSize:12,cursor:"pointer",border:"1px dashed #2a4f7f",background:"transparent",color:"#7a9cc5"},
+            onClick:()=>{const n=String(window.prompt("Name the new list (e.g. Plumbing Fixtures, Hardware, Paint Colors, Appliances):")||"").trim(); if(n){setLibList(n);newLibItem(n);}}},"+ New list"),
+          e("input",{style:{...S.input,flex:"1 1 180px",maxWidth:280,marginLeft:"auto",padding:"7px 10px",fontSize:12},placeholder:"Search room, item, store…",value:libSearch||"",onChange:ev=>setLibSearch(ev.target.value)})),
+        !libItems.length&&e("div",{style:{...S.card,fontSize:13,color:"#7a9cc5"}},"No default finishes yet. Run seedDefaultLighting once in Apps Script to load the Lincoln lighting list, or add items with + Item."),
+        ...groups.map(g=>{
+          const hasOpts=g.items.some(i=>i.option);
+          return e("div",{key:g.room,style:{...S.card,marginBottom:12,padding:"14px 16px"}},
+            e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8,marginBottom:8}},
+              e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},g.room),
+              hasOpts&&e("div",{style:{fontSize:11,color:"#4a6fa5"}},"★ = default pick when ordering")),
+            ...g.items.map(i=>e("div",{key:i.id,className:"lib-row",style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid #12284a",flexWrap:"wrap"}},
+              i.option?e("button",{title:i.preferred==="yes"?"Default pick":"Make this the default pick",disabled:libBusy,onClick:()=>togglePreferred(i),
+                style:{background:"none",border:"none",cursor:"pointer",fontSize:15,color:i.preferred==="yes"?"#d4a017":"#2a4f7f",padding:0,width:18}},"★"):e("span",{style:{width:18}}),
+              e("div",{style:{flex:"1 1 220px",minWidth:0}},
+                e("div",{style:{color:"#f8f0d8",fontSize:13}},i.option&&e("span",{style:{fontSize:10,fontWeight:700,color:"#a78bfa",background:"#a78bfa22",borderRadius:99,padding:"1px 7px",marginRight:6}},i.option),i.item),
+                (i.notes||libNum(i.price))?e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[libNum(i.price)?fmt(libNum(i.price))+" each":"",i.notes].filter(Boolean).join(" · ")):null),
+              e("span",{style:{fontSize:12,color:"#c3cfe2",whiteSpace:"nowrap"}},"× "+(libNum(i.qty)||1)),
+              storeBadge(i.store||libStoreOf(i.link)),
+              openLink(i.link),
+              e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"3px 8px",borderRadius:6,fontSize:11},onClick:()=>setLibEdit({...i})},"Edit"))));
+        })));
+  };
+
+  const LibItemModal=()=>libEdit&&e("div",{key:"lib-item-m"},overlay(()=>setLibEdit(null),(()=>{
+    const d=libEdit, set=setLibEdit, isNew=!libItems.some(x=>x.id===d.id);
+    const inp=(k,ph,extra)=>e("input",{style:S.input,placeholder:ph||"",value:d[k]==null?"":d[k],onChange:ev=>{const v=ev.target.value;set(o=>({...o,[k]:v}));},...(extra||{})});
+    const f=(label,input,flex)=>e("div",{style:{flex:flex||"1 1 160px",minWidth:0}},e("label",{style:S.label},label),input);
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},isNew?"New default item":"Edit default item"),
+      e("datalist",{key:"dl1",id:"lib-lists"},...libLists().map(l=>e("option",{key:l,value:l}))),
+      e("datalist",{key:"dl2",id:"lib-rooms"},...[...new Set(libItems.map(i=>i.room).filter(Boolean))].map(r=>e("option",{key:r,value:r}))),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},f("List",inp("list","Lighting",{list:"lib-lists"})),f("Room / location",inp("room","e.g. Kitchen Island",{list:"lib-rooms"}))),
+        f("Item *",inp("item","e.g. Kitchen Island Pendant"),"1 1 100%"),
+        f("Link",inp("link","https://…",{inputMode:"url"}),"1 1 100%"),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          f("Qty (typical)",inp("qty","1",{inputMode:"decimal"}),"1 1 90px"),
+          f("Price each",inp("price","optional",{inputMode:"decimal"}),"1 1 110px"),
+          f("Option",inp("option","e.g. Option 1"),"1 1 120px")),
+        f("Notes",inp("notes","e.g. 1 for Living Room, 1 for Master BR"),"1 1 100%"),
+        d.option&&e("label",{style:{display:"flex",gap:8,alignItems:"center",fontSize:12.5,color:"#c3cfe2",cursor:"pointer"}},
+          e("input",{type:"checkbox",checked:d.preferred==="yes",onChange:ev=>{const v=ev.target.checked;set(o=>({...o,preferred:v?"yes":""}));}}),"★ Default pick for this room when ordering"),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},"Store: ",e("b",{style:{color:"#c3cfe2"}},libStoreOf(d.link)||"—")," (from the link)")),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16,flexWrap:"wrap"}},
+        !isNew&&e("button",{style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:12,padding:"8px 12px",cursor:"pointer"},disabled:libBusy,onClick:()=>deleteLibItem(d)},"Delete"),
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setLibEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:libBusy||!String(d.item||"").trim(),onClick:()=>{
+          const link=String(d.link||"").trim(); if(link&&!/^https?:\/\//i.test(link)){showToast("Links must start with https://","error");return;}
+          saveLibItem({...d,link,store:libStoreOf(link),qty:String(d.qty).trim()===""?"":libNum(d.qty),price:String(d.price==null?"":d.price).trim()===""?"":libNum(d.price)});}},libBusy?"Saving…":"Save"))];
+  })()));
+
+  // ── Picker: choose defaults for a project (one option per room, preferred first) ──
+  const openLibPick=pid=>{
+    const proj=pid||(activeProject&&!activeProject.description?.includes("No budget")&&!activeProject.description?.includes("Sold")?activeProject.id:"");
+    const lists=libLists(), list=lists.includes(libList)?libList:(lists[0]||"");
+    setLibPick({projectId:proj?String(proj):"",list,sel:libDefaultSel(list,proj),qty:{}});
+  };
+  const libDefaultSel=(list,pid)=>{
+    const have=new Set(libOrders.filter(o=>o.projectId===String(pid||"")).map(o=>o.itemId)), sel={};
+    libByRoom(libItems.filter(i=>i.list===list)).forEach(g=>{
+      const opts=g.items.filter(i=>i.option), plain=g.items.filter(i=>!i.option);
+      plain.forEach(i=>{ if(!have.has(i.id)) sel[i.id]=true; });
+      if(opts.length&&!opts.some(i=>have.has(i.id))){ const p=opts.find(i=>i.preferred==="yes")||opts[0]; sel[p.id]=true; }
+    });
+    return sel;
+  };
+  const LibPickModal=()=>libPick&&e("div",{key:"lib-pick-m"},overlay(()=>setLibPick(null),(()=>{
+    const P=libPick, set=setLibPick, lists=libLists();
+    const projs=projects.filter(p=>!p.description?.includes("No budget"));
+    const have=new Set(libOrders.filter(o=>o.projectId===P.projectId).map(o=>o.itemId));
+    const groups=libByRoom(libItems.filter(i=>i.list===P.list));
+    const chosen=libItems.filter(i=>P.sel[i.id]);
+    const qtyOf=i=>P.qty[i.id]!=null?P.qty[i.id]:(libNum(i.qty)||1);
+    const est=chosen.reduce((s,i)=>s+libNum(i.price)*libNum(qtyOf(i)),0);
+    const pickRow=(i,radioName)=>e("label",{key:i.id,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",cursor:"pointer",flexWrap:"wrap"}},
+      e("input",{type:radioName?"radio":"checkbox",name:radioName,checked:!!P.sel[i.id],onChange:()=>set(o=>{const sel={...o.sel};
+        if(radioName){ libItems.filter(x=>(x.room||"General")===(i.room||"General")&&x.list===i.list&&x.option).forEach(x=>{delete sel[x.id];}); sel[i.id]=true; }
+        else { if(sel[i.id]) delete sel[i.id]; else sel[i.id]=true; }
+        return {...o,sel};})}),
+      e("span",{style:{flex:"1 1 180px",fontSize:12.5,color:"#e2e8f0",minWidth:0}},i.option&&e("b",{style:{color:"#a78bfa",fontSize:11,marginRight:5}},i.option+(i.preferred==="yes"?" ★":"")),i.item,
+        have.has(i.id)&&e("span",{style:{fontSize:10,color:"#10b981",marginLeft:6}},"already on this project")),
+      storeBadge(i.store||libStoreOf(i.link)),
+      P.sel[i.id]&&e("input",{style:{...S.input,width:64,padding:"4px 8px",fontSize:12},inputMode:"decimal",value:qtyOf(i),onClick:ev=>ev.preventDefault(),onChange:ev=>{const v=ev.target.value;set(o=>({...o,qty:{...o.qty,[i.id]:v}}));}}));
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:4}},"🛒 Order default finishes"),
+      e("div",{key:"s",style:{fontSize:12,color:"#7a9cc5",marginBottom:12}},"Pick what this project gets. Rooms with options get one pick each (★ = your default)."),
+      e("div",{key:"p",style:{display:"flex",gap:10,flexWrap:"wrap",marginBottom:10}},
+        e("div",{style:{flex:"1 1 200px"}},e("label",{style:S.label},"Project *"),
+          e("select",{style:S.input,value:P.projectId,onChange:ev=>{const v=ev.target.value;set(o=>({...o,projectId:v,sel:libDefaultSel(o.list,v),qty:{}}));}},
+            e("option",{value:""},"— choose a project —"),...projs.map(p=>e("option",{key:p.id,value:String(p.id)},p.name+(p.description?.includes("Sold")?" (sold)":""))))),
+        e("div",{style:{flex:"1 1 160px"}},e("label",{style:S.label},"List"),
+          e("select",{style:S.input,value:P.list,onChange:ev=>{const v=ev.target.value;set(o=>({...o,list:v,sel:libDefaultSel(v,o.projectId),qty:{}}));}},...lists.map(l=>e("option",{key:l},l))))),
+      e("div",{key:"g",style:{maxHeight:"46vh",overflowY:"auto",border:"1px solid #1e3a5f",borderRadius:8,padding:"4px 12px"}},
+        ...groups.map(g=>{const opts=g.items.filter(i=>i.option), plain=g.items.filter(i=>!i.option);
+          return e("div",{key:g.room,style:{padding:"8px 0",borderBottom:"1px solid #12284a"}},
+            e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.06em"}},g.room),
+            ...plain.map(i=>pickRow(i,null)),
+            ...opts.map(i=>pickRow(i,"r-"+g.room)),
+            opts.length>0&&opts.some(i=>P.sel[i.id])&&e("button",{style:{background:"none",border:"none",color:"#4a6fa5",fontSize:11,cursor:"pointer",padding:0},onClick:()=>set(o=>{const sel={...o.sel};opts.forEach(x=>{delete sel[x.id];});return {...o,sel};})},"skip this room"));})),
+      e("div",{key:"a",style:{display:"flex",alignItems:"center",gap:8,marginTop:14,flexWrap:"wrap"}},
+        e("div",{style:{flex:1,fontSize:12.5,color:"#7a9cc5"}},chosen.length+" item"+(chosen.length===1?"":"s")+(est?" · est. "+fmt(est):"")),
+        e("button",{style:S.btn("ghost"),onClick:()=>setLibPick(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:libBusy||!P.projectId||!chosen.length,onClick:async()=>{
+          setLibBusy(true);
+          try{ const lines=chosen.map(i=>({itemId:i.id,list:i.list,room:i.room,item:i.item,qty:libNum(qtyOf(i))||1,link:i.link,store:i.store||libStoreOf(i.link),option:i.option,price:i.price,notes:i.notes}));
+            const r=await api("lib.addToProject",{projectId:P.projectId,lines},0);
+            setLibOrders(os=>os.filter(o=>o.projectId!==P.projectId).concat(r.orders||[]));
+            setLibPick(null); showToast(r.added+" item"+(r.added===1?"":"s")+" added to the order list");
+            setActiveId(P.projectId); navTo("project-finishes"); }
+          catch(err){ showToast(err.message+libHint(err.message),"error"); } finally{ setLibBusy(false); }}},libBusy?"Adding…":"Add to project"))];
+  })()));
+
+  // ── Project: what to order, grouped by store ──
+  const saveLibOrder=async(o,patch)=>{
+    const next={...o,...patch}; setLibOrders(os=>os.map(x=>x.id===o.id?next:x));
+    try{ const r=await api("lib.saveOrder",{order:{id:o.id,projectId:o.projectId,...patch}},0); setLibOrders(os=>os.map(x=>x.id===o.id?r.order:x)); }
+    catch(err){ setLibOrders(os=>os.map(x=>x.id===o.id?o:x)); showToast(err.message,"error"); }
+  };
+  const deleteLibOrder=async o=>{
+    if(!window.confirm("Remove \""+o.item+"\" from this project's list?")) return;
+    try{ await api("lib.deleteOrder",{id:o.id},0); setLibOrders(os=>os.filter(x=>x.id!==o.id)); }
+    catch(err){ showToast(err.message,"error"); }
+  };
+  const libCopyText=(rows,name)=>{
+    const by={}; rows.filter(o=>o.status!=="Skipped").forEach(o=>{const s=o.store||libStoreOf(o.link)||"Other";(by[s]=by[s]||[]).push(o);});
+    return name+" — finishes to order\n\n"+Object.keys(by).map(s=>s+"\n"+by[s].map(o=>"- "+(o.room?o.room+": ":"")+o.item+" ×"+(libNum(o.qty)||1)+(o.status!=="To order"?" ["+o.status+"]":"")+(o.link?"\n  "+o.link:"")).join("\n")).join("\n\n");
+  };
+  const ProjectFinishesView=()=>{
+    const pid=String(activeId||""), rows=libOrders.filter(o=>o.projectId===pid);
+    const name=activeProject?activeProject.name:"";
+    const byStore={}; rows.forEach(o=>{const s=o.store||libStoreOf(o.link)||"Other";(byStore[s]=byStore[s]||[]).push(o);});
+    const stores=Object.keys(byStore).sort((a,b)=>byStore[b].length-byStore[a].length);
+    const count=st=>rows.filter(o=>o.status===st).length;
+    const est=rows.filter(o=>o.status!=="Skipped").reduce((s,o)=>s+libNum(o.price)*(libNum(o.qty)||1),0);
+    return e("div",null,
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:16},className:"page-header"},
+        e("div",null,e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8"}},"🛒 Finishes"),e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},name)),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+          rows.length>0&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:async()=>{const t=libCopyText(rows,name);try{await navigator.clipboard.writeText(t);showToast("List copied");}catch(_){window.prompt("Copy this list:",t);}}},"Copy list"),
+          e("button",{style:{...S.btn(),fontSize:12},disabled:!libItems.length,onClick:()=>openLibPick(pid)},"+ Add from defaults"))),
+      libErr&&e("div",{style:{...S.card,borderColor:"#ef444466",color:"#fecaca",marginBottom:16,fontSize:13}},"Couldn't load finishes: "+libErr),
+      !libLoaded?e("div",{style:{color:"#7a9cc5",fontSize:13}},"Loading…"):
+      rows.length===0?e("div",{style:{...S.card,fontSize:13,color:"#7a9cc5"}},
+        "Nothing on this project's finishes list yet. ",e("button",{style:{background:"none",border:"none",color:"#d4a017",cursor:"pointer",fontWeight:700,padding:0},onClick:()=>openLibPick(pid)},"Add from your default finishes →")):
+      e("div",null,
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}},
+          ...LIB_STATUSES.filter(s=>count(s)).map(s=>e("span",{key:s,style:{fontSize:12,fontWeight:700,padding:"4px 10px",borderRadius:99,background:LIB_ST_CLR[s]+"22",color:LIB_ST_CLR[s]}},s+" "+count(s))),
+          est>0&&e("span",{style:{fontSize:12,color:"#7a9cc5",alignSelf:"center",marginLeft:"auto"}},"Est. "+fmt(est))),
+        ...stores.map(s=>{const list=byStore[s], todo=list.filter(o=>o.status==="To order"&&o.link);
+          return e("div",{key:s,style:{...S.card,marginBottom:12,padding:"14px 16px"}},
+            e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}},
+              e("div",{style:{display:"flex",gap:8,alignItems:"center"}},storeBadge(s),e("span",{style:{fontSize:12,color:"#7a9cc5"}},list.length+" item"+(list.length===1?"":"s")+(todo.length?" · "+todo.length+" to order":" · all ordered"))),
+              todo.length>1&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>{let blocked=false;todo.forEach(o=>{const w=window.open(o.link,"_blank");if(w){try{w.opener=null;}catch(_){}}else blocked=true;});if(blocked)showToast("Your browser blocked some tabs — allow pop-ups for this site, or use each Open button.","error");}},"Open all "+todo.length+" ↗")),
+            ...list.map(o=>e("div",{key:o.id,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid #12284a",flexWrap:"wrap",opacity:o.status==="Skipped"?0.55:1}},
+              e("div",{style:{flex:"1 1 220px",minWidth:0}},
+                e("div",{style:{color:"#f8f0d8",fontSize:13}},o.item),
+                e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[o.room,o.option,libNum(o.price)?fmt(libNum(o.price))+" each":"",o.orderedAt&&o.status!=="To order"?"ordered "+new Date(o.orderedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):""].filter(Boolean).join(" · "))),
+              e("input",{style:{...S.input,width:58,padding:"4px 8px",fontSize:12},inputMode:"decimal",defaultValue:libNum(o.qty)||1,onBlur:ev=>{const v=libNum(ev.target.value)||1;if(v!==(libNum(o.qty)||1))saveLibOrder(o,{qty:v});}}),
+              openLink(o.link),
+              e("select",{value:o.status||"To order",onChange:ev=>saveLibOrder(o,{status:ev.target.value}),style:{...S.input,width:"auto",padding:"4px 8px",fontSize:12,fontWeight:700,color:LIB_ST_CLR[o.status]||"#f59e0b"}},...LIB_STATUSES.map(st=>e("option",{key:st},st))),
+              e("button",{title:"Remove from this project",style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",fontSize:14},onClick:()=>deleteLibOrder(o)},"×"))));
+        })));
+  };
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
@@ -4679,6 +4909,15 @@ function App() {
           ))
       ),
 
+      // Default finishes link
+      e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(null);navTo("finishes");}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+          e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+            e("div",{style:{fontSize:20}},"📦"),
+            e("div",null,e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},"Default Finishes"),
+              e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"Standard lighting & finishes · order for any project"))),
+          e("span",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open →"))),
+
       // General Expenses link
       genProj&&e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(genProj.id);setExpenses([]);setReloadTick(t=>t+1);navTo("expenses");}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
@@ -4734,6 +4973,8 @@ function App() {
         view==="home"      ?HomeView():
         view==="management"?ManagementView():
         view==="vendors"   ?VendorsView():
+        view==="finishes"  ?FinishesView():
+        view==="project-finishes"?ProjectFinishesView():
         view==="dashboard" ?DashboardView():
         view==="expenses"  ?ExpensesView():
         view==="loan"      ?LoanView():
@@ -4754,6 +4995,8 @@ function App() {
     ...LoanModals(),
     DealModal(),
     InvestorModal(),
+    LibItemModal(),
+    LibPickModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
