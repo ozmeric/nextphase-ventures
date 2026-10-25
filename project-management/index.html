@@ -1764,18 +1764,31 @@ function useForeman(o){
 
 /* ═══════════════════════ Home: daily brief card ═══════════════════════ */
 function Brief({ctx}){
-  const {db,go} = ctx;
-  const items = brief(db);
+  const {db,go} = ctx, X = ctx.extra || {};
+  const [all,setAll] = React.useState(false);
+  const base = brief(db);
+  // Project follow-ups from the server (finishes, milestones, draws, loan dates, tasks due soon); overdue tasks are already above
+  const extra = (X.items||[]).filter(f=>!(f.kind==="task"&&/overdue/i.test(f.text)));
+  const tone = {high:"bad",med:"gold",info:"ok"};
+  const merged = base.map(b=>({...b,_b:1})).concat(extra.map(f=>({tone:tone[f.level]||"gold",text:"<b>"+esc(f.project)+"</b> · "+esc(f.text),cta:"Open",_f:f})));
+  merged.sort((a,b)=>({bad:0,gold:1,ok:2}[a.tone]-{bad:0,gold:1,ok:2}[b.tone]));
+  const items = all ? merged : merged.slice(0,8);
   const hr = new Date().getHours();
   const hello = hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";
   const links = [["Seller leads","leads","inbox"],["Social","social","mega"],["Calendar","calendar","cal"],["Ask Foreman","ask","spark"],["Vendors","vendors","users"]];
   return e("div",{className:"aibox",style:{marginBottom:20}},
     e("div",{className:"ai-tag"},Icon("spark",13),CONFIG.aiName+" · Daily brief"),
-    e("h2",{className:"t"},hello+". "+(items.length?"Here's what needs you today.":"Nothing urgent right now.")),
+    e("h2",{className:"t"},hello+". "+(merged.length?"Here's what needs you today.":"Nothing urgent right now.")),
     db.liveError ? e("div",{className:"note",style:{color:"#F0B4B4",marginTop:8,position:"relative",zIndex:1}},"Foreman isn't connected yet: "+db.liveError) : null,
+    X.err ? e("div",{className:"note",style:{color:"#F0B4B4",marginTop:8,position:"relative",zIndex:1}},"Project follow-ups unavailable: "+X.err) : null,
     items.length ? e("ul",null, items.map((b,i)=>e("li",{key:i}, e("span",{className:"mk "+(b.tone==="bad"?"bad":b.tone==="ok"?"ok":"")}),
-      e("span",null, e("span",{dangerouslySetInnerHTML:richHTML(b.text)}), e("button",{className:"lnk",onClick:()=>go(...b.go)},b.cta+" →"))))) : null,
-    e("div",{className:"row",style:{marginTop:16,position:"relative",zIndex:1}}, links.map(([l,v,ic])=>e("button",{key:v,className:"btn ghost sm",onClick:()=>go(v)},Icon(ic,14),l))));
+      e("span",null, e("span",{dangerouslySetInnerHTML:richHTML(b.text)}),
+        e("button",{className:"lnk",onClick:()=>b._f?X.onGo(b._f):go(...b.go)},b.cta+" →"))))) : null,
+    merged.length>8 ? e("button",{className:"lnk",style:{position:"relative",zIndex:1,marginTop:6},onClick:()=>setAll(v=>!v)},all?"Show less":"Show all "+merged.length) : null,
+    e("div",{className:"row",style:{marginTop:16,position:"relative",zIndex:1}},
+      links.map(([l,v,ic])=>e("button",{key:v,className:"btn ghost sm",onClick:()=>go(v)},Icon(ic,14),l)),
+      X.onBriefing ? e("button",{className:"btn ghost sm",onClick:X.onBriefing},"📰 Daily email") : null,
+      X.refresh ? e("button",{className:"btn ghost sm",disabled:X.busy,onClick:X.refresh},X.busy?"Checking…":"↻ Refresh") : null));
 }
 
 /* Wrap a Foreman screen in the scoped BuildFlow styles */
@@ -2351,8 +2364,14 @@ function App() {
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
   const [libItems,setLibItems] = useState([]); const [libOrders,setLibOrders] = useState([]); const [libLoaded,setLibLoaded] = useState(false); const [libErr,setLibErr] = useState("");
-  const [libList,setLibList] = useState(""); const [libSearch,setLibSearch] = useState(""); const [libEdit,setLibEdit] = useState(null); const [libPick,setLibPick] = useState(null); const [libBusy,setLibBusy] = useState(false);
-  useEffect(()=>{ if((view==="finishes"||view==="project-finishes")&&!libLoaded&&typeof loadLib==="function") loadLib(); },[view]);
+  const [libList,setLibList] = useState(""); const [libSearch,setLibSearch] = useState(""); const [libEdit,setLibEdit] = useState(null); const [libPick,setLibPick] = useState(null); const [libBusy,setLibBusy] = useState(false); const [libOrderEdit,setLibOrderEdit] = useState(null);
+  const bfLate = useRef({});   // functions defined further down; effects call them through here (safe on early-return renders)
+  useEffect(()=>{ if((view==="finishes"||view==="project-finishes")&&!libLoaded&&bfLate.current.loadLib) bfLate.current.loadLib(); },[view]);
+  const [brief,setBrief] = useState(null); const [briefErr,setBriefErr] = useState(""); const [briefBusy,setBriefBusy] = useState(false); const [briefAll,setBriefAll] = useState(false);
+  const [nl,setNl] = useState(null); const [nlErr,setNlErr] = useState(""); const [nlBusy,setNlBusy] = useState(false); const [nlForm,setNlForm] = useState({}); const [nlPreview,setNlPreview] = useState(null);
+  useEffect(()=>{ if(!authed) return;
+    if(view==="home"&&!briefBusy&&(!brief||Date.now()-brief.at>120000)&&bfLate.current.loadBrief) bfLate.current.loadBrief();
+    if(view==="briefing"&&!nl&&bfLate.current.loadSubs) bfLate.current.loadSubs(); },[view,authed,bfLate.current.ready]);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -3093,6 +3112,7 @@ function App() {
       isMgmt&&e("div",{key:"mgmt-task",style:{...S.sideItem(false),paddingLeft:32,fontSize:11,color:"#4a6fa5",cursor:"pointer"},onClick:()=>setShowAddMgmtTask(true)},"✅ + Task"),
       e("div",{key:"vendors",style:S.sideItem(view==="vendors"),onClick:()=>{setActiveId(null);navTo("vendors");}},"📇 Vendors"),
       e("div",{key:"finishes",style:S.sideItem(view==="finishes"),onClick:()=>{setActiveId(null);navTo("finishes");}},"📦 Default Finishes"),
+      e("div",{key:"briefing",style:S.sideItem(view==="briefing"),onClick:()=>{setActiveId(null);navTo("briefing");}},"📰 Daily Briefing"),
       e("div",{key:"leads",style:{...S.sideItem(view==="leads"),justifyContent:"space-between"},onClick:()=>{setActiveId(null);navTo("leads");}},
         e("span",null,"📬 Deal Leads"),
         leads.filter(l=>l.status==="New").length>0&&e("span",{style:{background:"#06b6d4",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:99}},leads.filter(l=>l.status==="New").length)
@@ -3170,7 +3190,7 @@ function App() {
   };
 
   const HomeView=()=>e("div",null,
-    e(BF.Brief,{ctx:fm}),
+    e(BF.Brief,{ctx:{...fm,extra:{items:brief?brief.followUps:[],err:briefErr,busy:briefBusy,refresh:loadBrief,onGo:goFollow,onBriefing:()=>{setActiveId(null);navTo("briefing");}}}}),
     e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20},className:"page-header"},
       e("div",null,
         e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8",letterSpacing:"-0.5px"}},"Projects"),
@@ -4034,11 +4054,58 @@ function App() {
   })()));
 
   // ── Project: what to order, grouped by store ──
-  const saveLibOrder=async(o,patch)=>{
+  const saveLibOrder=async(o,patch,flags)=>{
     const next={...o,...patch}; setLibOrders(os=>os.map(x=>x.id===o.id?next:x));
-    try{ const r=await api("lib.saveOrder",{order:{id:o.id,projectId:o.projectId,...patch}},0); setLibOrders(os=>os.map(x=>x.id===o.id?r.order:x)); }
-    catch(err){ setLibOrders(os=>os.map(x=>x.id===o.id?o:x)); showToast(err.message,"error"); }
+    try{ const r=await api("lib.saveOrder",{order:{id:o.id,projectId:o.projectId,...patch},...(flags||{})},0); setLibOrders(os=>os.map(x=>x.id===o.id?r.order:x));
+      if(r.expense){ if(String(activeId)===String(o.projectId)) setReloadTick(t=>t+1);
+        showToast(r.expense==="removed"?"Expense removed":r.expense==="not found"?"Saved (the expense was already gone)":"Saved and added to expenses"); }
+      return true; }
+    catch(err){ setLibOrders(os=>os.map(x=>x.id===o.id?o:x)); showToast(err.message,"error"); return false; }
   };
+  // Status change: Ordered asks for amount + dates (and logs the expense); going back offers to remove the expense
+  const changeLibStatus=(o,st)=>{
+    if(st==="Ordered"&&(o.status==="To order"||o.status==="Skipped"||!o.status)) return openLibOrderEdit(o,"Ordered");
+    if((st==="To order"||st==="Skipped")&&o.expenseId){
+      const rm=window.confirm("Also remove the "+(libNum(o.amountPaid)?fmt(libNum(o.amountPaid))+" ":"")+"expense that was added when this was ordered?");
+      return saveLibOrder(o,{status:st},rm?{removeExpense:true}:null);
+    }
+    return saveLibOrder(o,{status:st});
+  };
+  const openLibOrderEdit=(o,status)=>{
+    const st=status||o.status||"To order", isOrder=st!=="To order"&&st!=="Skipped";
+    setLibOrderEdit({o,status:st,amountPaid:o.amountPaid!=null&&o.amountPaid!==""?o.amountPaid:(libNum(o.price)?(libNum(o.price)*(libNum(o.qty)||1)).toFixed(2):""),
+      logExpense:isOrder&&!o.expenseId, deliveryDate:String(o.deliveryDate||""), installBy:String(o.installBy||""), date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10)});
+  };
+  const LibOrderModal=()=>libOrderEdit&&e("div",{key:"lib-ord-m"},overlay(()=>setLibOrderEdit(null),(()=>{
+    const d=libOrderEdit, set=setLibOrderEdit, o=d.o, isOrder=d.status!=="To order"&&d.status!=="Skipped";
+    const f=(label,input)=>e("div",{style:{flex:"1 1 150px",minWidth:0}},e("label",{style:S.label},label),input);
+    const msList=(milestones||[]).filter(m=>m&&m.date).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:4}},d.status==="Ordered"&&o.status!=="Ordered"?"Mark as ordered":"Order & schedule"),
+      e("div",{key:"s",style:{fontSize:12.5,color:"#7a9cc5",marginBottom:14}},o.item+(o.room?" · "+o.room:"")+" · ×"+(libNum(o.qty)||1)+(o.store?" · "+o.store:"")),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        isOrder&&e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          f("Amount paid (total)",e("input",{style:S.input,inputMode:"decimal",placeholder:"e.g. 189.98",value:d.amountPaid==null?"":d.amountPaid,onChange:ev=>{const v=ev.target.value;set(x=>({...x,amountPaid:v}));}})),
+          f("Order date",e("input",{style:S.input,type:"date",value:d.date,onChange:ev=>{const v=ev.target.value;set(x=>({...x,date:v}));}}))),
+        isOrder&&e("label",{style:{display:"flex",gap:8,alignItems:"center",fontSize:12.5,color:"#c3cfe2",cursor:"pointer"}},
+          e("input",{type:"checkbox",checked:!!d.logExpense,onChange:ev=>{const v=ev.target.checked;set(x=>({...x,logExpense:v}));}}),
+          o.expenseId?"Update the expense with this amount":"Add to this project's expenses (Materials · "+(o.store||"store")+")"),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          f("Expected delivery",e("input",{style:S.input,type:"date",value:d.deliveryDate,onChange:ev=>{const v=ev.target.value;set(x=>({...x,deliveryDate:v}));}})),
+          f("Install by",e("input",{style:S.input,type:"date",value:d.installBy,onChange:ev=>{const v=ev.target.value;set(x=>({...x,installBy:v}));}}))),
+        msList.length>0&&e("div",null,e("label",{style:S.label},"…or install with a milestone"),
+          e("select",{style:S.input,value:"",onChange:ev=>{const m=msList.find(x=>String(x.id)===ev.target.value);if(m)set(x=>({...x,installBy:String(m.date).slice(0,10)}));}},
+            e("option",{value:""},"— pick a milestone —"),...msList.map(m=>e("option",{key:m.id,value:String(m.id)},String(m.date).slice(0,10)+" · "+(m.week||m.name||"")))) ),
+        e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},"Foreman follows up on these dates on the main screen and in the morning briefing.")),
+      e("div",{key:"a",style:{display:"flex",justifyContent:"flex-end",gap:8,marginTop:16}},
+        e("button",{style:S.btn("ghost"),onClick:()=>setLibOrderEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:libBusy,onClick:async()=>{
+          const amt=String(d.amountPaid==null?"":d.amountPaid).trim();
+          if(isOrder&&d.logExpense&&!(libNum(amt)>0)){showToast("Enter the amount paid, or untick 'Add to expenses'.","error");return;}
+          setLibBusy(true);
+          const ok=await saveLibOrder(o,{status:d.status,amountPaid:amt===""?"":libNum(amt),deliveryDate:d.deliveryDate,installBy:d.installBy},isOrder&&d.logExpense?{logExpense:true,expenseDate:d.date}:null);
+          setLibBusy(false); if(ok) setLibOrderEdit(null);}},libBusy?"Saving…":"Save"))];
+  })()));
   const deleteLibOrder=async o=>{
     if(!window.confirm("Remove \""+o.item+"\" from this project's list?")) return;
     try{ await api("lib.deleteOrder",{id:o.id},0); setLibOrders(os=>os.filter(x=>x.id!==o.id)); }
@@ -4047,6 +4114,15 @@ function App() {
   const libCopyText=(rows,name)=>{
     const by={}; rows.filter(o=>o.status!=="Skipped").forEach(o=>{const s=o.store||libStoreOf(o.link)||"Other";(by[s]=by[s]||[]).push(o);});
     return name+" — finishes to order\n\n"+Object.keys(by).map(s=>s+"\n"+by[s].map(o=>"- "+(o.room?o.room+": ":"")+o.item+" ×"+(libNum(o.qty)||1)+(o.status!=="To order"?" ["+o.status+"]":"")+(o.link?"\n  "+o.link:"")).join("\n")).join("\n\n");
+  };
+  const libToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const libDay=v=>{const m=String(v||"").match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";};
+  const libSched=o=>{
+    const t=libToday(), bits=[];
+    if(o.deliveryDate&&(o.status==="Ordered")) bits.push({t:"Delivery "+libDay(o.deliveryDate),late:o.deliveryDate<t});
+    if(o.installBy&&o.status!=="Installed"&&o.status!=="Skipped") bits.push({t:"Install by "+libDay(o.installBy),late:o.installBy<t,soon:o.status==="To order"&&o.installBy<=new Date(Date.now()+14*864e5).toISOString().slice(0,10)});
+    return bits.length?e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}},...bits.map(b=>e("span",{key:b.t,style:{fontSize:10.5,fontWeight:700,padding:"1px 7px",borderRadius:99,
+      background:b.late?"#ef444422":b.soon?"#f59e0b22":"#1e3a5f",color:b.late?"#ef4444":b.soon?"#f59e0b":"#7a9cc5"}},b.t+(b.late?" · late":"")))):null;
   };
   const ProjectFinishesView=()=>{
     const pid=String(activeId||""), rows=libOrders.filter(o=>o.projectId===pid);
@@ -4077,13 +4153,103 @@ function App() {
             ...list.map(o=>e("div",{key:o.id,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid #12284a",flexWrap:"wrap",opacity:o.status==="Skipped"?0.55:1}},
               e("div",{style:{flex:"1 1 220px",minWidth:0}},
                 e("div",{style:{color:"#f8f0d8",fontSize:13}},o.item),
-                e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[o.room,o.option,libNum(o.price)?fmt(libNum(o.price))+" each":"",o.orderedAt&&o.status!=="To order"?"ordered "+new Date(o.orderedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):""].filter(Boolean).join(" · "))),
+                e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[o.room,o.option,libNum(o.amountPaid)?fmt(libNum(o.amountPaid))+" paid"+(o.expenseId?" · in expenses":""):libNum(o.price)?fmt(libNum(o.price))+" each":"",o.orderedAt&&o.status!=="To order"?"ordered "+new Date(o.orderedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):""].filter(Boolean).join(" · ")),
+                libSched(o)),
               e("input",{style:{...S.input,width:58,padding:"4px 8px",fontSize:12},inputMode:"decimal",defaultValue:libNum(o.qty)||1,onBlur:ev=>{const v=libNum(ev.target.value)||1;if(v!==(libNum(o.qty)||1))saveLibOrder(o,{qty:v});}}),
               openLink(o.link),
-              e("select",{value:o.status||"To order",onChange:ev=>saveLibOrder(o,{status:ev.target.value}),style:{...S.input,width:"auto",padding:"4px 8px",fontSize:12,fontWeight:700,color:LIB_ST_CLR[o.status]||"#f59e0b"}},...LIB_STATUSES.map(st=>e("option",{key:st},st))),
+              e("button",{title:"Amount & schedule",style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:12},onClick:()=>openLibOrderEdit(o)},"📅"),
+              e("select",{value:o.status||"To order",onChange:ev=>changeLibStatus(o,ev.target.value),style:{...S.input,width:"auto",padding:"4px 8px",fontSize:12,fontWeight:700,color:LIB_ST_CLR[o.status]||"#f59e0b"}},...LIB_STATUSES.map(st=>e("option",{key:st},st))),
               e("button",{title:"Remove from this project",style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",fontSize:14},onClick:()=>deleteLibOrder(o)},"×"))));
         })));
   };
+  bfLate.current.loadLib=loadLib;
+
+  // ── BuildFlow: Foreman follow-ups (main screen) + Daily Briefing subscriptions ──
+  const BRIEF_LVL={high:"#ef4444",med:"#f59e0b",info:"#7a9cc5"};
+  const briefHint=m=>/Unknown action/i.test(m)?" — add Briefing.gs and the nl.* line in Code.gs, then deploy a new version.":/Briefing is not defined/i.test(m)?" — Briefing.gs isn't in Apps Script yet.":"";
+  const loadBrief=async()=>{
+    setBriefBusy(true); setBriefErr("");
+    try{ const r=await api("nl.brief",{},0); setBrief({...r,at:Date.now()}); }
+    catch(err){ setBriefErr(err.message+briefHint(err.message)); }
+    finally{ setBriefBusy(false); }
+  };
+  const goFollow=f=>{
+    if(!f.projectId) return;
+    setActiveId(f.projectId); setTaskFilter(""); setTaskWorkFilter(""); setReloadTick(t=>t+1);
+    navTo(f.kind==="finish"?"project-finishes":f.kind==="task"?"tasks":f.kind==="milestone"?"planning":f.kind==="draw"||f.kind==="loan"?"loan":"dashboard");
+  };
+  const ForemanFollowCard=()=>{
+    const b=brief, list=b?b.followUps||[]:[], top=list.slice(0,briefAll?60:7);
+    const counts={high:list.filter(f=>f.level==="high").length,med:list.filter(f=>f.level==="med").length};
+    const today=b?(b.calendar||[]).filter(c=>c.day===b.date):[];
+    return e("div",{style:{...S.card,marginBottom:20,border:"1px solid #d4a01755",background:"linear-gradient(135deg,#0f2548,#0a1a33)"}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:10}},
+        e("div",null,
+          e("div",{style:{fontSize:10,fontWeight:700,color:"#d4a017",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"✨ Foreman · follow-ups"),
+          e("div",{style:{fontSize:12.5,color:"#7a9cc5"}},!b?(briefErr?"":"Checking your projects…"):list.length?(counts.high?counts.high+" need attention":"")+(counts.high&&counts.med?" · ":"")+(counts.med?counts.med+" coming up":"")+(!counts.high&&!counts.med?"Only FYIs today":""):"All clear — nothing needs you right now 👍")),
+        e("div",{style:{display:"flex",gap:6}},
+          e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},disabled:briefBusy,onClick:loadBrief},briefBusy?"…":"↻ Refresh"),
+          e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>{setActiveId(null);navTo("briefing");}},"📰 Daily email"))),
+      briefErr&&e("div",{style:{fontSize:12.5,color:"#fecaca"}},"Couldn't check: "+briefErr),
+      ...top.map((f,i)=>e("div",{key:i,onClick:()=>goFollow(f),style:{display:"flex",gap:10,alignItems:"flex-start",padding:"7px 0",borderTop:"1px solid #1e3a5f",cursor:f.projectId?"pointer":"default"}},
+        e("span",{style:{width:8,height:8,borderRadius:"50%",background:BRIEF_LVL[f.level]||"#7a9cc5",marginTop:6,flexShrink:0}}),
+        e("div",{style:{flex:1,minWidth:0,fontSize:13,color:"#e2e8f0"}},e("span",{style:{color:"#7a9cc5",fontWeight:600}},f.project+" · "),f.text),
+        f.projectId&&e("span",{style:{fontSize:11,color:"#d4a017",whiteSpace:"nowrap"}},"Open →"))),
+      list.length>7&&e("button",{style:{background:"none",border:"none",color:"#d4a017",cursor:"pointer",fontSize:12,padding:"6px 0 0"},onClick:()=>setBriefAll(v=>!v)},briefAll?"Show less":"Show all "+list.length),
+      today.length>0&&e("div",{style:{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3a5f",fontSize:12.5,color:"#c3cfe2",display:"flex",gap:8,flexWrap:"wrap"}},
+        e("span",{style:{color:"#7a9cc5",fontWeight:700}},"📅 Today:"),...today.map((c,i)=>e("span",{key:i},c.time+" "+c.title+(i<today.length-1?" ·":"")))));
+  };
+
+  // ── Daily Briefing page ──
+  const loadSubs=async()=>{
+    setNlErr("");
+    try{ const r=await api("nl.list",{},0); setNl(r); }
+    catch(err){ setNlErr(err.message+briefHint(err.message)); setNl({subscribers:[],on:false,last:""}); }
+  };
+  const nlCall=async(action,extra,okMsg)=>{
+    setNlBusy(true);
+    try{ const r=await api(action,extra||{},0); if(r&&r.subscribers) setNl(r); if(okMsg) showToast(okMsg); return r; }
+    catch(err){ showToast(err.message+briefHint(err.message),"error"); return null; }
+    finally{ setNlBusy(false); }
+  };
+  const BriefingView=()=>{
+    const s=nl, subsList=s?s.subscribers||[]:[], activeCount=subsList.filter(x=>x.active!=="no").length;
+    return e("div",null,
+      e("div",{style:{marginBottom:16},className:"page-header"},
+        e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8"}},"📰 Daily Briefing"),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},"Foreman emails a morning update around 7:00 AM Eastern: what needs attention, calendar, and every active project's milestones, tasks and finishes.")),
+      nlErr&&e("div",{style:{...S.card,borderColor:"#ef444466",color:"#fecaca",marginBottom:16,fontSize:13}},"Couldn't load: "+nlErr),
+      !s?e("div",{style:{color:"#7a9cc5",fontSize:13}},"Loading…"):
+      e("div",null,
+        e("div",{style:{...S.card,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}},
+          e("div",null,
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"Morning email: ",e("span",{style:{color:s.on?"#10b981":"#ef4444"}},s.on?"ON · every day ~7:00 AM ET":"OFF")),
+            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},(activeCount+" subscriber"+(activeCount===1?"":"s"))+(s.last?" · last: "+s.last.replace(/T(\d\d:\d\d).*? ·/," $1 UTC ·"):""))),
+          e("button",{style:{...S.btn(s.on?"ghost":undefined),fontSize:12},disabled:nlBusy,onClick:()=>nlCall("nl.setOn",{on:!s.on},s.on?"Morning email turned off":"Morning email is on — first one tomorrow ~7 AM")},s.on?"Turn off":"Turn on")),
+        e("div",{style:{...S.card,marginBottom:16}},
+          e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}},"Subscribers"),
+          subsList.length===0&&e("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:10}},"No one subscribed yet."),
+          ...subsList.map(x=>e("div",{key:x.email,style:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid #12284a",flexWrap:"wrap",opacity:x.active==="no"?0.55:1}},
+            e("div",{style:{flex:"1 1 200px",minWidth:0}},e("div",{style:{color:"#f8f0d8",fontSize:13}},x.name||x.email),
+              e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},(x.name?x.email+" · ":"")+(x.active==="no"?"paused":x.lastSentAt?"last sent "+new Date(x.lastSentAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"not sent yet"))),
+            e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"4px 10px"},disabled:nlBusy,onClick:()=>nlCall("nl.toggle",{email:x.email,active:x.active==="no"})},x.active==="no"?"Resume":"Pause"),
+            e("button",{style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:11,padding:"4px 10px",cursor:"pointer"},disabled:nlBusy,onClick:()=>{if(window.confirm("Unsubscribe "+x.email+"?"))nlCall("nl.remove",{email:x.email},"Unsubscribed");}},"Remove"))),
+          e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginTop:12,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+            e("input",{style:{...S.input,flex:"2 1 220px"},type:"email",placeholder:"email@example.com",value:nlForm.email||"",onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,email:v}));},onKeyDown:ev=>{if(ev.key==="Enter")document.getElementById("nl-sub")&&document.getElementById("nl-sub").click();}}),
+            e("input",{style:{...S.input,flex:"1 1 140px"},placeholder:"Name (optional)",value:nlForm.name||"",onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,name:v}));}}),
+            e("button",{id:"nl-sub",style:{...S.btn(),fontSize:12},disabled:nlBusy||!String(nlForm.email||"").trim(),onClick:async()=>{const r=await nlCall("nl.add",{email:nlForm.email,name:nlForm.name},"Subscribed "+String(nlForm.email).trim());if(r)setNlForm({});}},"Subscribe"))),
+        e("div",{style:{...S.card,marginBottom:16}},
+          e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:10}},"Preview & test"),
+          e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+            e("button",{style:{...S.btn("ghost"),fontSize:12},disabled:nlBusy,onClick:async()=>{const r=await nlCall("nl.preview",{ai:false});if(r)setNlPreview(r);}},"Preview today's email"),
+            e("input",{style:{...S.input,flex:"1 1 200px"},type:"email",placeholder:"Send a test to…",value:nlForm.test!=null?nlForm.test:((subsList[0]&&subsList[0].email)||""),onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,test:v}));}}),
+            e("button",{style:{...S.btn(),fontSize:12},disabled:nlBusy,onClick:()=>{const to=String(nlForm.test!=null?nlForm.test:((subsList[0]&&subsList[0].email)||"")).trim();nlCall("nl.sendTest",{to},"Test sent to "+to);}},nlBusy?"Working…":"Send test")),
+          e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:8}},"The test includes Foreman's AI note; the preview skips it to save time."),
+          nlPreview&&e("div",{style:{marginTop:12}},
+            e("div",{style:{fontSize:12,color:"#c3cfe2",marginBottom:6}},"Subject: ",e("b",null,nlPreview.subject)),
+            e("iframe",{title:"Email preview",sandbox:"",srcDoc:nlPreview.html,style:{width:"100%",height:640,border:"1px solid #1e3a5f",borderRadius:8,background:"#fff"}})))));
+  };
+  bfLate.current.loadBrief=loadBrief; bfLate.current.loadSubs=loadSubs; bfLate.current.ready=true;
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
@@ -4909,6 +5075,15 @@ function App() {
           ))
       ),
 
+      // Daily briefing link
+      e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(null);navTo("briefing");}},
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
+          e("div",{style:{display:"flex",alignItems:"center",gap:10}},
+            e("div",{style:{fontSize:20}},"📰"),
+            e("div",null,e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:13}},"Daily Briefing"),
+              e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},"Foreman's 7 AM email · subscribers"))),
+          e("span",{style:{fontSize:12,color:"#d4a017",fontWeight:600}},"Open →"))),
+
       // Default finishes link
       e("div",{style:{...S.card,marginBottom:16,cursor:"pointer"},onClick:()=>{setActiveId(null);navTo("finishes");}},
         e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
@@ -4974,6 +5149,7 @@ function App() {
         view==="management"?ManagementView():
         view==="vendors"   ?VendorsView():
         view==="finishes"  ?FinishesView():
+        view==="briefing"  ?BriefingView():
         view==="project-finishes"?ProjectFinishesView():
         view==="dashboard" ?DashboardView():
         view==="expenses"  ?ExpensesView():
@@ -4997,6 +5173,7 @@ function App() {
     InvestorModal(),
     LibItemModal(),
     LibPickModal(),
+    LibOrderModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
