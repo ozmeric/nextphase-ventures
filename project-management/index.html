@@ -4231,7 +4231,7 @@ function App() {
         e("div",{style:{...S.card,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}},
           e("div",{style:{minWidth:0,flex:"1 1 260px"}},
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"💬 Email replies: ",e("span",{style:{color:s.repliesOn?"#10b981":"#ef4444"}},s.repliesOn?"ON · checked every 5 minutes":"OFF")),
-            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},"Subscribers can reply to the briefing (or email this account with \"Foreman\" in the subject) and Foreman answers in the thread. Changes come back as a link to confirm in the app."),
+            e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},"Subscribers can reply to the briefing (or email this account with \"Foreman\" in the subject). Foreman answers in the thread and can add expenses & tasks and update task dates, milestones, calendar and finishes. It never deletes anything, only acts on verified senders, and logs every change (Foreman Email Log tab)."),
             s.lastReply&&e("div",{style:{fontSize:11.5,color:"#7a9cc5",marginTop:4,wordBreak:"break-word"}},"Last: "+s.lastReply)),
           e("button",{style:{...S.btn(s.repliesOn?"ghost":undefined),fontSize:12},disabled:nlBusy,onClick:()=>nlCall("nl.setReplies",{on:!s.repliesOn},s.repliesOn?"Email replies turned off":"Email replies are on")},s.repliesOn?"Turn off":"Turn on")),
         e("div",{style:{...S.card,marginBottom:16}},
@@ -4507,8 +4507,8 @@ function App() {
   const PlanningView=()=>{
     const today=new Date();
     const getStatus=ms=>{
-      if(msStatus[ms.id]==="done") return "done";
-      if(msStatus[ms.id]==="in-progress") return "in-progress";
+      if(msStatus[ms.id]==="done"||(!msStatus[ms.id]&&ms.status==="done")) return "done";
+      if(msStatus[ms.id]==="in-progress"||(!msStatus[ms.id]&&ms.status==="in-progress")) return "in-progress";
       return !(pDate(ms.date).getTime()>=today.getTime())?"overdue":"upcoming";
     };
     const sCol={done:"#10b981","in-progress":"#f59e0b",overdue:"#ef4444",upcoming:"#4a6fa5"};
