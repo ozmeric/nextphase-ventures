@@ -2640,8 +2640,11 @@ function App() {
 
   const saveExpense=async()=>{
     if(!form.description||!form.amount||!form.date){showToast("Fill in all required fields.","error");return;}
-    const amount=parseFloat(form.amount);
-    if(isNaN(amount)||amount<=0){showToast("Enter a valid amount.","error");return;}
+    let amount=parseFloat(String(form.amount).replace(/[$,\s]/g,""));
+    if(isNaN(amount)||amount===0){showToast("Enter a valid amount.","error");return;}
+    const isReturn=!!form._return||amount<0;            // BuildFlow: returns/refunds are credits (negative amounts)
+    if(isReturn){ amount=-Math.abs(amount);
+      let nt=String(form.notes||"").replace(/\s*\[ret:[^\]]*\]/g,"").trim(); if(form._returnOf) nt=(nt?nt+" ":"")+"[ret:"+form._returnOf+"]"; form.notes=nt; }
     setSaving(true);
     try{
       if(form.id){
@@ -2652,7 +2655,7 @@ function App() {
         const newExp={...form,id:genId(),amount};
         await api("addExpense",{projectId:activeId,expense:newExp});
         setExpenses(prev=>[...prev,newExp]);
-        showToast("Expense added.");
+        showToast(amount<0?"Return recorded — "+fmt(Math.abs(amount))+" credited.":"Expense added.");
       }
       setView("expenses");
     }catch(e){showToast("Save failed: "+e.message,"error");}
@@ -2802,9 +2805,21 @@ function App() {
   };
 
   const openAddExpense=(expense=null)=>{
-    setForm(expense?{...expense}:{date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),category:CATEGORIES[0]});
+    setForm(expense?(parseFloat(expense.amount)<0?{...expense,amount:String(Math.abs(parseFloat(expense.amount))),notes:cleanNotes(expense.notes),_return:true,_returnOf:retTag(expense)}:{...expense}):{date:new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),category:CATEGORIES[0]});
     setView("add-expense");
   };
+  // BuildFlow: returns
+  const retTag=ex=>((String(ex&&ex.notes||"").match(/\[ret:([^\]]+)\]/)||[])[1]||"");
+  const cleanNotes=n=>String(n||"").replace(/\s*\[ret:[^\]]*\]/g,"").trim();
+  const returnedFor=id=>expenses.filter(x=>parseFloat(x.amount)<0&&retTag(x)===String(id)).reduce((s,x)=>s+Math.abs(parseFloat(x.amount)||0),0);
+  const todayLocal=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const openReturn=ex=>{ const left=Math.max(0,(parseFloat(ex.amount)||0)-returnedFor(ex.id));
+    setForm({date:todayLocal(),category:ex.category,vendor:ex.vendor||"",description:"Return: "+String(ex.description||"").replace(/^Return:\s*/,""),amount:left?String(Math.round(left*100)/100):"",notes:"",_return:true,_returnOf:String(ex.id)});
+    setView("add-expense"); };
+  const expMeta=ex=>{ const amt=parseFloat(ex.amount)||0, back=amt>0?returnedFor(ex.id):0, orig=amt<0?expenses.find(x=>String(x.id)===retTag(ex)):null, nt=cleanNotes(ex.notes);
+    return [amt<0&&e("div",{key:"r",style:{fontSize:11,color:"#10b981",marginTop:2,fontWeight:700}},"↩ Return"+(orig?" of "+orig.description+" ("+fmtDate(orig.date)+")":"")),
+      back>0&&e("div",{key:"b",style:{fontSize:11,color:"#10b981",marginTop:2}},"↩ "+fmt(back)+" returned · net "+fmt(amt-back)),
+      nt&&e("div",{key:"n",style:{fontSize:11,color:"#4a6fa5",marginTop:2}},nt)]; };
 
   const openAddTask=(task=null)=>{
     setForm(task?{...task}:{status:"To Do",assignee:ASSIGNEES[0],dueDate:"",notes:"",category:TASK_CATEGORIES[0],priority:"Med"});
@@ -2918,9 +2933,19 @@ function App() {
       e("div",{style:{maxWidth:560,margin:"0 auto",padding:"24px 16px"}},
         e("div",{style:{...S.card,display:"flex",flexDirection:"column",gap:16}},
           isExpense?[
+            e("div",{key:"kind",style:{display:"flex",gap:6}},
+              ...[["Expense",false],["↩ Return / refund",true]].map(([l,v])=>e("button",{key:l,type:"button",onClick:()=>setForm(f=>({...f,_return:v,...(v?{}:{_returnOf:""})})),
+                style:{flex:1,padding:"9px 10px",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:700,border:"1px solid "+((!!form._return)===v?(v?"#10b981":"#d4a017"):"#1e3a5f"),
+                  background:(!!form._return)===v?(v?"#10b98122":"#d4a01722"):"transparent",color:(!!form._return)===v?(v?"#10b981":"#d4a017"):"#7a9cc5"}},l))),
+            form._return&&e("div",{key:"retof"},e("label",{style:S.label},"Returned purchase"),
+              e("select",{style:S.input,value:form._returnOf||"",onChange:ev=>{const id=ev.target.value, o=expenses.find(x=>String(x.id)===id);
+                  setForm(f=>({...f,_returnOf:id,...(o?{category:o.category,vendor:o.vendor||f.vendor||"",description:"Return: "+o.description,amount:String(Math.max(0,Math.round(((parseFloat(o.amount)||0)-returnedFor(o.id))*100)/100))}:{})}));}},
+                e("option",{value:""},"— not linked to a purchase —"),
+                ...expenses.filter(x=>parseFloat(x.amount)>0).sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>e("option",{key:x.id,value:String(x.id)},fmtDate(x.date)+" · "+x.description+" · "+fmt(parseFloat(x.amount))+(x.vendor?" · "+x.vendor:"")))),
+              e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:6}},"Enter the amount you got back. It's saved as a credit, so totals, budget and profit show the net.")),
             e("div",{key:"desc"},e("label",{style:S.label},"Description *"),e("input",{style:S.input,placeholder:"e.g. Drywall materials",value:form.description||"",onChange:ev=>setForm({...form,description:ev.target.value})})),
             e("div",{key:"amtdate",style:{display:"flex",gap:12},className:"form-row"},
-              e("div",{style:{flex:1}},e("label",{style:S.label},"Amount ($) *"),e("input",{style:S.input,type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})})),
+              e("div",{style:{flex:1}},e("label",{style:S.label},form._return?"Refund amount ($) *":"Amount ($) *"),e("input",{style:{...S.input,...(form._return?{borderColor:"#10b98166"}:{})},type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})})),
               e("div",{style:{flex:1}},e("label",{style:S.label},"Date *"),e("input",{style:S.input,type:"date",value:form.date||"",onChange:ev=>setForm({...form,date:ev.target.value})}))
             ),
             e("div",{key:"catven",style:{display:"flex",gap:12},className:"form-row"},
@@ -3398,7 +3423,7 @@ function App() {
           e("div",{style:{fontSize:13,color:"#e2e8f0"}},ex.description),
           e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.category+" · "+fmtDateShort(ex.date))
         ),
-        e("span",{style:{fontWeight:700,fontSize:14,color:"#f8f0d8",whiteSpace:"nowrap",marginLeft:8}},fmt(ex.amount))
+        e("span",{style:{fontWeight:700,fontSize:14,color:parseFloat(ex.amount)<0?"#10b981":"#f8f0d8",whiteSpace:"nowrap",marginLeft:8}},fmt(ex.amount))
       ))
     )
   );
@@ -4324,12 +4349,13 @@ function App() {
                   e("td",{style:S.td},e("span",{style:{fontSize:12,color:"#4a6fa5",whiteSpace:"nowrap"}},fmtDate(ex.date))),
                   e("td",{style:S.td},
                     e("div",null,ex.description),
-                    ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                    ...expMeta(ex)
                   ),
                   e("td",{style:S.td},e("span",{style:S.badge(ex.category)},ex.category)),
                   e("td",{style:{...S.td,color:"#4a6fa5"}},ex.vendor||"—"),
-                  e("td",{style:{...S.td,textAlign:"right",fontWeight:700,color:"#f8f0d8",whiteSpace:"nowrap"}},fmt(ex.amount)),
+                  e("td",{style:{...S.td,textAlign:"right",fontWeight:700,color:parseFloat(ex.amount)<0?"#10b981":"#f8f0d8",whiteSpace:"nowrap"}},fmt(ex.amount)),
                   e("td",{style:{...S.td,whiteSpace:"nowrap"}},
+                    parseFloat(ex.amount)>0&&e("button",{title:"Record a return / refund",style:{background:"none",border:"none",color:"#10b981",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>openReturn(ex)},"↩"),
                     e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>openAddExpense(ex)},"✏️"),
                     e("button",{style:{background:"none",border:"none",color:"#4a6fa5",cursor:"pointer",padding:"2px 6px",fontSize:13},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"🗑️")
                   )
@@ -4349,9 +4375,9 @@ function App() {
               e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}},
                 e("div",{style:{flex:1}},
                   e("div",{style:{fontWeight:600,color:"#f8f0d8",fontSize:14}},ex.description),
-                  ex.notes&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:2}},ex.notes)
+                  ...expMeta(ex)
                 ),
-                e("div",{style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginLeft:8,whiteSpace:"nowrap"}},fmt(ex.amount))
+                e("div",{style:{fontWeight:800,fontSize:16,color:parseFloat(ex.amount)<0?"#10b981":"#f8f0d8",marginLeft:8,whiteSpace:"nowrap"}},fmt(ex.amount))
               ),
               e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}},
                 e("div",{style:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}},
@@ -4360,6 +4386,7 @@ function App() {
                   ex.vendor&&e("span",{style:{fontSize:12,color:"#4a6fa5"}},ex.vendor)
                 ),
                 e("div",{style:{display:"flex",gap:4}},
+                  parseFloat(ex.amount)>0&&e("button",{style:{background:"#10b98118",border:"none",color:"#10b981",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openReturn(ex)},"↩ Return"),
                   e("button",{style:{background:"#1e3a5f",border:"none",color:"#7a9cc5",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>openAddExpense(ex)},"Edit"),
                   e("button",{style:{background:"#ef444415",border:"none",color:"#ef4444",cursor:"pointer",padding:"5px 10px",borderRadius:6,fontSize:12},onClick:()=>setDelConfirm({type:"expense",id:ex.id,name:ex.description})},"Delete")
                 )
