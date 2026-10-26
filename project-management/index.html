@@ -2374,6 +2374,7 @@ function App() {
     if(view==="briefing"&&!nl&&bfLate.current.loadSubs) bfLate.current.loadSubs(); },[view,authed,bfLate.current.ready]);
   useEffect(()=>{ if(!authed) return; try{ const m=String(location.hash||"").match(/^#ask=(.+)$/); if(m){
       sessionStorage.setItem("bf-ask-prefill",decodeURIComponent(m[1]).slice(0,500)); history.replaceState(null,"",location.pathname+location.search); setView("fm-ask"); } }catch(_){} },[authed]);
+  const [drawBudget,setDrawBudget] = useState([]); const [lineEdit,setLineEdit] = useState(null);
   const [loanErr,setLoanErr] = useState(""); const [loanEdit,setLoanEdit] = useState(null); const [drawForm,setDrawForm] = useState(null); const [loanBusy,setLoanBusy] = useState(false);
   const [vendorCat,setVendorCat] = useState("All");
   const [showNewVendorCat,setShowNewVendorCat] = useState(false);
@@ -2564,7 +2565,7 @@ function App() {
     }).catch(()=>{ setLoadWarn(w=>w.concat(["management"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     // BuildFlow: loans & Kiavi draws (Loans.gs)
-    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setLoansLoaded(true); setLoanErr(""); })
+    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
   },[authed]);
 
@@ -3468,8 +3469,8 @@ function App() {
     catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
   };
   const openLoanEdit=()=>setLoanEdit({projectId:String(activeId),lender:"Kiavi",loanNumber:"",loanAmount:"",initialAdvance:"",holdback:"",rate:"",closingDate:"",maturityDate:"",notes:"",...(loan||{})});
-  const openDrawForm=d=>setDrawForm(d?{...d,_new:false}:{id:"draw-"+Date.now().toString(36),projectId:String(activeId),drawNumber:(pDraws.reduce((m,x)=>Math.max(m,+x.drawNumber||0),0)+1),
-    requestedDate:todayIso(),amountRequested:"",amountFunded:"",fundedDate:"",fee:"",status:"Requested",notes:"",_new:true,_addFee:true,_confirmDel:false});
+  const openDrawForm=d=>setDrawForm(d?{...d,_new:false,_lines:Object.fromEntries(Object.entries(drawSplit(d)).map(([k,v])=>[k,String(v)]))}:{id:"draw-"+Date.now().toString(36),projectId:String(activeId),drawNumber:(pDraws.reduce((m,x)=>Math.max(m,+x.drawNumber||0),0)+1),
+    requestedDate:todayIso(),amountRequested:"",amountFunded:"",fundedDate:"",fee:"",status:"Requested",notes:"",_new:true,_addFee:true,_confirmDel:false,_lines:{}});
 
   const statTile=(label,value,color,hint)=>e("div",{key:label,style:{background:"#071020",borderRadius:8,padding:"12px 14px"}},
     e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}},label),
@@ -3545,6 +3546,7 @@ function App() {
         statTile("Pending",fmt(drawPending),"#f59e0b",pDraws.filter(d=>["Requested","Inspection","Approved"].includes(d.status)).length+" in progress"),
         statTile("Holdback left",fmt(holdbackLeft),holdbackLeft<0?"#ef4444":"#f8f0d8",holdback>0?Math.round(Math.max(0,holdbackLeft)/holdback*100)+"% of holdback":null),
         statTile("Spent, not yet drawn",fmt(spentNotDrawn),"#d4a017","Rehab spent "+fmt(rehabSpent)))),
+    loansLoaded&&DrawBudgetCard(),
     loansLoaded&&e("div",{style:{...S.card,padding:0,overflow:"hidden"}},
       e("div",{style:{padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}},
         e("div",{style:{fontWeight:700,color:"#f8f0d8"}},"Draws"),e("span",{style:{fontSize:12,color:"#4a6fa5"}},pDraws.length+" total"+(drawFees>0?" · fees "+fmt(drawFees):""))),
@@ -3555,7 +3557,7 @@ function App() {
           e("tbody",null,...pDraws.map(d=>e("tr",{key:d.id,style:{cursor:"pointer"},onClick:()=>openDrawForm(d),onMouseEnter:ev=>ev.currentTarget.style.background="#0f2548",onMouseLeave:ev=>ev.currentTarget.style.background=""},
             e("td",{style:{...S.td,fontWeight:700,color:"#f8f0d8"}},"#"+d.drawNumber),
             e("td",{style:{...S.td,color:"#7a9cc5",whiteSpace:"nowrap"}},fmtDate(d.requestedDate)),
-            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap"}},fmt(d.amountRequested)),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap"}},fmt(d.amountRequested),Object.keys(drawSplit(d)).length>0&&e("div",{style:{fontSize:10.5,color:"#4a6fa5"}},Object.keys(drawSplit(d)).length+" lines")),
             e("td",{style:{...S.td,textAlign:"right",fontWeight:700,color:d.status==="Funded"?"#10b981":"#4a6fa5",whiteSpace:"nowrap"}},d.status==="Funded"?fmt(num(d.amountFunded)||num(d.amountRequested)):"—"),
             e("td",{style:{...S.td,color:"#7a9cc5",whiteSpace:"nowrap"}},d.fundedDate?fmtDate(d.fundedDate):"—"),
             e("td",{style:{...S.td,textAlign:"right",color:"#7a9cc5"}},num(d.fee)?fmt(d.fee):"—"),
@@ -3572,7 +3574,7 @@ function App() {
           e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
             e("div",{style:{fontWeight:700,color:"#f8f0d8"}},"Draw #"+d.drawNumber),drawPill(d.status)),
           e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13}},
-            e("span",{style:{color:"#7a9cc5"}},"Requested "+fmtDateShort(d.requestedDate)),e("b",{style:{color:"#f8f0d8"}},fmt(d.amountRequested))),
+            e("span",{style:{color:"#7a9cc5"}},"Requested "+fmtDateShort(d.requestedDate)+(Object.keys(drawSplit(d)).length?" · "+Object.keys(drawSplit(d)).length+" lines":"")),e("b",{style:{color:"#f8f0d8"}},fmt(d.amountRequested))),
           d.status==="Funded"&&e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,marginTop:2}},
             e("span",{style:{color:"#7a9cc5"}},"Funded "+(d.fundedDate?fmtDateShort(d.fundedDate):"")),e("b",{style:{color:"#10b981"}},fmt(num(d.amountFunded)||num(d.amountRequested)))))))))
   );
@@ -3640,6 +3642,7 @@ function App() {
         e("button",{style:S.btn(),disabled:loanBusy||!(num(loanEdit.loanAmount)>0),onClick:()=>{const l={...loanEdit};
           ["loanAmount","initialAdvance","holdback","rate","monthlyPayment","ltcPct","downPayment","originationFee","serviceFee","proratedInterest","cashAtClosing","termMonths","asIsValue","lenderArv","emd","titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"].forEach(k=>{l[k]=String(l[k]==null?"":l[k]).trim()===""?"":num(l[k]);});
           saveLoan(l);}},loanBusy?"Saving…":"Save loan"))])),
+    LineModal(),
     drawForm&&e("div",{key:"draw-m"},overlay(()=>setDrawForm(null),(()=>{
       const d=drawForm, set=setDrawForm;
       const otherPending=pDraws.filter(x=>x.id!==d.id&&x.status!=="Denied").reduce((s,x)=>s+(x.status==="Funded"?(num(x.amountFunded)||num(x.amountRequested)):num(x.amountRequested)),0);
@@ -3648,9 +3651,10 @@ function App() {
         e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},(d._new?"Request draw #":"Draw #")+d.drawNumber),
         e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
           e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
-            fld("Amount requested *",moneyIn(d,set,"amountRequested")),
+            fld("Amount requested *",Object.keys(d._lines||{}).length?e("input",{style:{...S.input,opacity:.8},readOnly:true,value:fmt(Object.values(d._lines).reduce((s,v)=>s+num(v),0))}):moneyIn(d,set,"amountRequested")),
             fld("Date requested",e("input",{style:S.input,type:"date",value:d.requestedDate||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,requestedDate:v}));}}))),
           over&&e("div",{style:{fontSize:12,color:"#f59e0b"}},"⚠️ More than the "+fmt(Math.max(0,holdback-otherPending))+" left in the holdback."),
+          DrawSplitSection(d,set),
           fld("Status",e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},DRAW_STATUSES.map(s=>e("button",{key:s,type:"button",onClick:()=>set(o=>({...o,status:s,
               fundedDate:s==="Funded"&&!o.fundedDate?todayIso():o.fundedDate,amountFunded:s==="Funded"&&String(o.amountFunded||"")===""?o.amountRequested:o.amountFunded})),
             style:{padding:"6px 12px",borderRadius:99,fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid "+(d.status===s?DRAW_CLR[s]:"#1e3a5f"),background:d.status===s?DRAW_CLR[s]+"22":"transparent",color:d.status===s?DRAW_CLR[s]:"#7a9cc5"}},s)))),
@@ -3666,10 +3670,15 @@ function App() {
           d._new?e("span"):d._confirmDel?e("div",{style:{display:"flex",gap:6,alignItems:"center"}},e("span",{style:{fontSize:12,color:"#fca5a5"}},"Delete this draw?"),
               e("button",{style:S.btn("danger"),disabled:loanBusy,onClick:()=>deleteDraw(d)},"Delete"),e("button",{style:S.btn("ghost"),onClick:()=>set(o=>({...o,_confirmDel:false}))},"Keep"))
             :e("button",{style:{...S.btn("ghost"),color:"#ef4444"},onClick:()=>set(o=>({...o,_confirmDel:true}))},"Delete"),
-          e("div",{style:{display:"flex",gap:8}},
+          e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+            !d._new&&Object.keys(d._lines||{}).length>0&&e("button",{style:S.btn("ghost"),onClick:()=>copyForLender({...d,lines:d._lines})},"Copy for lender"),
             e("button",{style:S.btn("ghost"),onClick:()=>setDrawForm(null)},"Cancel"),
-            e("button",{style:S.btn(),disabled:loanBusy||!(num(d.amountRequested)>0),onClick:()=>{
-              const out={id:d.id,projectId:d.projectId,drawNumber:d.drawNumber,requestedDate:d.requestedDate,amountRequested:num(d.amountRequested),
+            e("button",{style:S.btn(),disabled:loanBusy||!(num(d.amountRequested)>0||Object.values(d._lines||{}).some(v=>num(v)>0)),onClick:()=>{
+              const lineOver=pBudget.length?lineStats(d._new?null:d.id).find(l=>num((d._lines||{})[l.id])>l.remaining+0.005):null;
+              if(lineOver&&d.status!=="Denied"){ showToast(lineOver.line+": only "+fmt(lineOver.remaining)+" left on that line.","error"); return; }
+              const split=Object.fromEntries(Object.entries(d._lines||{}).filter(([k,v])=>num(v)>0).map(([k,v])=>[k,num(v)]));
+              const out={id:d.id,projectId:d.projectId,drawNumber:d.drawNumber,requestedDate:d.requestedDate,amountRequested:Object.keys(split).length?Object.values(split).reduce((s,v)=>s+v,0):num(d.amountRequested),
+                ...(pBudget.length?{lines:split}:{}),
                 amountFunded:d.status==="Funded"?(String(d.amountFunded||"").trim()===""?num(d.amountRequested):num(d.amountFunded)):"",
                 fundedDate:d.status==="Funded"?(d.fundedDate||todayIso()):"",fee:String(d.fee||"").trim()===""?"":num(d.fee),status:d.status,notes:d.notes||""};
               saveDraw(out,d._new&&d._addFee);}},loanBusy?"Saving…":"Save draw")))];
@@ -4283,6 +4292,133 @@ function App() {
             e("iframe",{title:"Email preview",sandbox:"",srcDoc:nlPreview.html,style:{width:"100%",height:640,border:"1px solid #1e3a5f",borderRadius:8,background:"#fff"}})))));
   };
   bfLate.current.loadBrief=loadBrief; bfLate.current.loadSubs=loadSubs; bfLate.current.ready=true;
+
+  // ── BuildFlow: draw budget (lender's scope of work) — drawn / in request / remaining / ready to draw per line ──
+  const pBudget=drawBudget.filter(l=>String(l.projectId)===String(activeId)).sort((a,b)=>(+a.sort||0)-(+b.sort||0)||String(a.line).localeCompare(String(b.line)));
+  const drawSplit=d=>{ if(!d||!d.lines) return {}; if(typeof d.lines==="object") return d.lines; try{ return JSON.parse(d.lines)||{}; }catch(_){ return {}; } };
+  const PENDING_ST=["Requested","Inspection","Approved"];
+  const lineStats=(skipDrawId)=>pBudget.map(l=>{
+    let drawn=0, pending=0;
+    pDraws.forEach(d=>{ if(d.id===skipDrawId||d.status==="Denied") return; const a=num(drawSplit(d)[l.id]); if(d.status==="Funded") drawn+=a; else if(PENDING_ST.includes(d.status)) pending+=a; });
+    const budget=num(l.budget), pct=Math.min(100,Math.max(0,num(l.pctComplete))), earned=budget*pct/100;
+    const r=Math.round((earned-drawn-pending)*100)/100;
+    return {...l,budget,pct,drawn,pending,remaining:budget-drawn-pending,earned,ready:r>=1?r:0};
+  });
+  const saveLine=async l=>{
+    setLoanBusy(true);
+    try{ const r=await api("loan.saveLine",{line:l},0); setDrawBudget(b=>b.some(x=>x.id===r.line.id)?b.map(x=>x.id===r.line.id?r.line:x):b.concat([r.line])); setLineEdit(null); return true; }
+    catch(err){ showToast(err.message+loanHint(err.message),"error"); return false; } finally{ setLoanBusy(false); }
+  };
+  const deleteLine=async l=>{
+    if(!window.confirm("Delete the budget line \""+l.line+"\"?")) return;
+    setLoanBusy(true);
+    try{ await api("loan.deleteLine",{id:l.id},0); setDrawBudget(b=>b.filter(x=>x.id!==l.id)); setLineEdit(null); showToast("Line deleted"); }
+    catch(err){ showToast(err.message,"error"); } finally{ setLoanBusy(false); }
+  };
+  const newDrawFromReady=()=>{ const st=lineStats(null), lines={}; st.forEach(l=>{ if(l.ready>0) lines[l.id]=String(l.ready); });
+    if(!Object.keys(lines).length){ showToast("Nothing is ready to draw yet — update % complete on the lines first.","error"); return; }
+    openDrawForm(null); setDrawForm(f=>({...f,_lines:lines,amountRequested:String(Object.values(lines).reduce((s,v)=>s+num(v),0).toFixed(2))})); };
+  const copyForLender=async(onlyDraw)=>{
+    const st=lineStats(null), d=onlyDraw, split=d?drawSplit(d):null;
+    const rows=st.filter(l=>!split||num(split[l.id])>0);
+    const t=(activeProject?activeProject.name:"")+" — "+(d?"Draw #"+d.drawNumber+" request":"Draw budget")+"\n\n"+
+      rows.map(l=>l.line+(l.description&&l.description!==l.line?" — "+l.description:"")+"\n  Budget "+fmt(l.budget)+" · Drawn "+fmt(l.drawn)+(split?" · This draw "+fmt(num(split[l.id])):(l.pending?" · In request "+fmt(l.pending):""))+" · Remaining "+fmt(l.remaining)+" · "+Math.round(l.pct)+"% complete").join("\n")+
+      "\n\nTotal"+(split?" this draw: "+fmt(Object.values(split).reduce((s,v)=>s+num(v),0)):": budget "+fmt(st.reduce((s,l)=>s+l.budget,0))+" · drawn "+fmt(st.reduce((s,l)=>s+l.drawn,0))+" · remaining "+fmt(st.reduce((s,l)=>s+l.remaining,0)));
+    try{ await navigator.clipboard.writeText(t); showToast("Copied — paste it into the lender's draw request"); }catch(_){ window.prompt("Copy this:",t); }
+  };
+
+  const DrawBudgetCard=()=>{
+    if(!loan) return null;
+    const st=lineStats(null), T=k=>st.reduce((s,l)=>s+l[k],0);
+    const tot={budget:T("budget"),drawn:T("drawn"),pending:T("pending"),remaining:T("remaining"),ready:T("ready")};
+    const off=holdback>0&&pBudget.length&&Math.abs(tot.budget-holdback)>0.5;
+    const fundedShort=pDraws.filter(d=>d.status==="Funded"&&d.lines).map(d=>({d,diff:Object.values(drawSplit(d)).reduce((s,v)=>s+num(v),0)-(num(d.amountFunded)||num(d.amountRequested))})).filter(x=>Math.abs(x.diff)>0.5);
+    const bar=l=>{ const b=l.budget||1; return e("div",{style:{height:5,background:"#071020",borderRadius:99,overflow:"hidden",display:"flex",marginTop:4,position:"relative"}},
+      e("div",{style:{width:Math.min(100,l.drawn/b*100)+"%",background:"#10b981"}}),e("div",{style:{width:Math.min(100,l.pending/b*100)+"%",background:"#f59e0b"}}),
+      e("div",{style:{width:Math.min(100,l.ready/b*100)+"%",background:"#d4a017",opacity:.55}})); };
+    const lineFields=l=>({id:l.id,projectId:l.projectId,line:l.line,description:l.description||"",budget:l.budget,pctComplete:l.pctComplete,sort:l.sort,notes:l.notes||""});
+    const shown=v=>Math.round(v*10)/10;
+    const pctIn=l=>e("input",{key:"p"+l.id+l.pct,style:{...S.input,width:62,padding:"4px 6px",fontSize:12,textAlign:"right"},inputMode:"decimal",defaultValue:shown(l.pct),title:"% of this line's work that's done",
+      onClick:ev=>ev.stopPropagation(),onKeyDown:ev=>{if(ev.key==="Enter")ev.currentTarget.blur();},
+      onBlur:ev=>{const v=Math.min(100,Math.max(0,num(ev.target.value))); if(v!==shown(l.pct)) saveLine({...lineFields(l),pctComplete:v});}});
+    return e("div",{style:{...S.card,marginBottom:16,padding:0,overflow:"hidden"}},
+      e("div",{style:{padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}},
+        e("div",null,e("div",{style:{fontWeight:700,color:"#f8f0d8"}},"📋 Draw budget · scope of work"),
+          e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:2}},pBudget.length?"Set % complete as work gets done — \"Ready to draw\" is finished work you haven't requested yet.":"Add the lender's line items (budget per division) to track draws by line.")),
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+          pBudget.length>0&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>copyForLender(null)},"Copy for lender"),
+          e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>setLineEdit({id:"line-"+Date.now().toString(36),projectId:String(activeId),line:"",description:"",budget:"",pctComplete:0,sort:pBudget.length+1,notes:""})},"+ Line"),
+          tot.ready>0&&e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},onClick:newDrawFromReady},"Request "+fmt(tot.ready)+" ready"))),
+      pBudget.length>0&&e("div",{style:{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,padding:"0 16px 12px"},className:"summary-grid"},
+        statTile("Budget",fmt(tot.budget),"#f8f0d8",off?"Holdback is "+fmt(holdback):null),
+        statTile("Drawn",fmt(tot.drawn),"#10b981",tot.budget?Math.round(tot.drawn/tot.budget*100)+"%":null),
+        statTile("In request",fmt(tot.pending),"#f59e0b"),
+        statTile("Remaining",fmt(tot.remaining),"#f8f0d8"),
+        statTile("Ready to draw",fmt(tot.ready),"#d4a017","Done, not drawn")),
+      fundedShort.length>0&&e("div",{style:{fontSize:11.5,color:"#7a9cc5",padding:"0 16px 10px"}},fundedShort.map(x=>"Draw #"+x.d.drawNumber+" was funded "+fmt(Math.abs(x.diff))+(x.diff>0?" less":" more")+" than its line split (lender fee/adjustment).").join(" ")),
+      pBudget.length>0&&e("div",null,
+        e("div",{className:"desktop-table"},e("table",null,
+          e("thead",null,e("tr",null,...["Line item","Budget","Drawn","In request","Remaining","% done","Ready to draw"].map((h,i)=>e("th",{key:i,style:{...S.th,textAlign:i?"right":"left"}},h)))),
+          e("tbody",null,...st.map(l=>e("tr",{key:l.id,style:{cursor:"pointer"},onClick:()=>setLineEdit({...l}),onMouseEnter:ev=>ev.currentTarget.style.background="#0f2548",onMouseLeave:ev=>ev.currentTarget.style.background=""},
+            e("td",{style:{...S.td,minWidth:220}},e("div",{style:{color:"#f8f0d8",fontSize:13}},l.line),l.description&&l.description!==l.line&&e("div",{style:{fontSize:11,color:"#4a6fa5",marginTop:1,maxWidth:420,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},l.description),bar(l)),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap"}},fmt(l.budget)),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap",color:l.drawn?"#10b981":"#4a6fa5"}},l.drawn?fmt(l.drawn):"—"),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap",color:l.pending?"#f59e0b":"#4a6fa5"}},l.pending?fmt(l.pending):"—"),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap",fontWeight:700,color:l.remaining<0?"#ef4444":l.remaining?"#f8f0d8":"#4a6fa5"}},l.remaining?fmt(l.remaining):"—"),
+            e("td",{style:{...S.td,textAlign:"right"}},pctIn(l)),
+            e("td",{style:{...S.td,textAlign:"right",whiteSpace:"nowrap",fontWeight:800,color:l.ready?"#d4a017":"#4a6fa5"}},l.ready?fmt(l.ready):"—")))),
+          e("tfoot",null,e("tr",{style:{background:"#0a1a33"}},...[["Total",null],[tot.budget],[tot.drawn,"#10b981"],[tot.pending,"#f59e0b"],[tot.remaining],["",null],[tot.ready,"#d4a017"]].map(([v,c],i)=>
+            e("td",{key:i,style:{...S.td,borderTop:"2px solid #d4a01755",fontWeight:800,textAlign:i?"right":"left",color:c||"#f8f0d8",whiteSpace:"nowrap"}},typeof v==="number"?fmt(v):v)))))),
+        e("div",{className:"mobile-cards",style:{padding:"0 10px 10px"}},...st.map(l=>e("div",{key:l.id,onClick:()=>setLineEdit({...l}),style:{...S.card,marginBottom:8,cursor:"pointer",padding:"12px 14px"}},
+          e("div",{style:{display:"flex",justifyContent:"space-between",gap:8}},e("div",{style:{color:"#f8f0d8",fontSize:13,fontWeight:600}},l.line),e("b",{style:{color:"#f8f0d8",whiteSpace:"nowrap"}},fmt(l.budget))),
+          bar(l),
+          e("div",{style:{display:"flex",gap:10,flexWrap:"wrap",fontSize:12,marginTop:6,color:"#7a9cc5",alignItems:"center"}},
+            e("span",null,"Drawn ",e("b",{style:{color:"#10b981"}},fmt(l.drawn))),l.pending>0&&e("span",null,"Request ",e("b",{style:{color:"#f59e0b"}},fmt(l.pending))),
+            e("span",null,"Left ",e("b",{style:{color:"#f8f0d8"}},fmt(l.remaining))),
+            e("span",{style:{display:"flex",alignItems:"center",gap:4}},pctIn(l),"%"),
+            l.ready>0&&e("span",null,"Ready ",e("b",{style:{color:"#d4a017"}},fmt(l.ready)))))))));
+  };
+
+  const LineModal=()=>lineEdit&&e("div",{key:"line-m"},overlay(()=>setLineEdit(null),(()=>{
+    const d=lineEdit, set=setLineEdit, isNew=!pBudget.some(x=>x.id===d.id), s=lineStats(null).find(x=>x.id===d.id);
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},isNew?"New budget line":"Budget line"),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        fld("Line item *",e("input",{style:S.input,placeholder:"e.g. Division 12: Flooring",value:d.line||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,line:v}));}})),
+        fld("Description",e("textarea",{style:{...S.input,minHeight:54,resize:"vertical"},value:d.description||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,description:v}));}})),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Budget",moneyIn(d,set,"budget")),
+          fld("% complete",moneyIn(d,set,"pctComplete","0–100"))),
+        s&&e("div",{style:{fontSize:12.5,color:"#7a9cc5",display:"flex",gap:14,flexWrap:"wrap"}},
+          e("span",null,"Drawn ",e("b",{style:{color:"#10b981"}},fmt(s.drawn))),e("span",null,"In request ",e("b",{style:{color:"#f59e0b"}},fmt(s.pending))),
+          e("span",null,"Remaining ",e("b",{style:{color:"#f8f0d8"}},fmt(s.remaining))),e("span",null,"Ready ",e("b",{style:{color:"#d4a017"}},fmt(s.ready)))),
+        fld("Notes",e("input",{style:S.input,placeholder:"e.g. waiting on inspection photos",value:d.notes||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,notes:v}));}}))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16,flexWrap:"wrap"}},
+        !isNew&&e("button",{style:{...S.btn("ghost"),color:"#ef4444"},disabled:loanBusy||(s&&(s.drawn+s.pending)>0),title:s&&(s.drawn+s.pending)>0?"This line has money in draws":"",onClick:()=>deleteLine(d)},"Delete"),
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setLineEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:loanBusy||!String(d.line||"").trim(),onClick:()=>saveLine({id:d.id,projectId:d.projectId,line:d.line,description:d.description||"",budget:num(d.budget),pctComplete:num(d.pctComplete),sort:d.sort,notes:d.notes||""})},loanBusy?"Saving…":"Save"))];
+  })()));
+
+  // Inside the draw form: split the request across the budget lines
+  const DrawSplitSection=(d,set)=>{
+    if(!pBudget.length) return null;
+    const st=lineStats(d._new?null:d.id), L=d._lines||{}, has=Object.keys(L).length>0;
+    const total=Object.values(L).reduce((s,v)=>s+num(v),0);
+    const setAmt=(id,v)=>set(o=>{ const nl={...(o._lines||{})}; if(String(v).trim()===""||num(v)===0) delete nl[id]; else nl[id]=v; const t=Object.values(nl).reduce((s,x)=>s+num(x),0); return {...o,_lines:nl,amountRequested:t?t.toFixed(2):o.amountRequested}; });
+    return e("div",{style:{border:"1px solid #1e3a5f",borderRadius:8,padding:"10px 12px"}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}},
+        e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase"}},"Split by line"+(has?" · "+fmt(total):"")),
+        e("div",{style:{display:"flex",gap:6}},
+          e("button",{type:"button",style:{...S.btn("ghost"),fontSize:11,padding:"4px 8px"},onClick:()=>{ const nl={}; st.forEach(l=>{ if(l.ready>0) nl[l.id]=String(l.ready); }); const t=Object.values(nl).reduce((s,x)=>s+num(x),0); set(o=>({...o,_lines:nl,amountRequested:t?t.toFixed(2):o.amountRequested})); }},"Fill ready amounts"),
+          has&&e("button",{type:"button",style:{...S.btn("ghost"),fontSize:11,padding:"4px 8px"},onClick:()=>set(o=>({...o,_lines:{}}))},"Clear"))),
+      e("div",{style:{maxHeight:"34vh",overflowY:"auto"}},...st.filter(l=>l.remaining>0.004||num(L[l.id])>0).map(l=>{ const v=L[l.id]==null?"":L[l.id], over=num(v)>l.remaining+0.005;
+        return e("div",{key:l.id,style:{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderTop:"1px solid #12284a"}},
+          e("div",{style:{flex:1,minWidth:0}},e("div",{style:{fontSize:12.5,color:"#e2e8f0",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},l.line),
+            e("div",{style:{fontSize:11,color:over?"#ef4444":"#4a6fa5"}},"Left "+fmt(l.remaining)+(l.ready?" · ready "+fmt(l.ready):"")+" · "+Math.round(l.pct*10)/10+"% done")),
+          e("input",{style:{...S.input,width:96,padding:"5px 8px",fontSize:12,textAlign:"right",...(over?{borderColor:"#ef4444"}:{})},inputMode:"decimal",placeholder:"0",value:v,onChange:ev=>setAmt(l.id,ev.target.value)})); })),
+      e("div",{style:{fontSize:11.5,color:"#7a9cc5",marginTop:6}},(has?"The amount requested is the total of the lines. ":"")+(st.filter(l=>l.remaining<=0.004&&!num(L[l.id])).length?st.filter(l=>l.remaining<=0.004&&!num(L[l.id])).length+" fully drawn line(s) hidden.":"")));
+  };
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
