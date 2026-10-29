@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>/* app URL lives in /api-config.js (one file to change) */document.write('<script src="/api-config.js?v='+Date.now()+'"><\/script>');</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sell Your House · NextPhase Ventures</title>
@@ -91,7 +93,7 @@ button:disabled{opacity:.6;cursor:default}
 var FORM_CONFIG = {
   companyName: "NextPhase Ventures",
   logoText:    "N",
-  apiUrl:      "https://script.google.com/macros/s/AKfycbxjN9OQn8TQBAx5Db541z6LPtiC4nfDt3v_omKAH0azmESMH0FnoSSHFxmNHztgf13y/exec",   // same Cloudflare Worker as the app
+  apiUrl:      window.NPV_API_URL || "https://script.google.com/macros/s/AKfycbzEHrST2rv7r6vFJyzrZQ32z27vWufjLlRRwJJpy2rHxu_dAux1hSrvtsX6Yyj7-MC-/exec",   // same Cloudflare Worker as the app
   services:    ["Inherited / probate","Behind on payments","Needs major repairs","Tired landlord","Relocating or downsizing","Divorce or life change","Just exploring options"],
   budgets:     [[0,"As soon as possible"],[0,"Within 30 days"],[0,"1 to 3 months"],[0,"3+ months"],[0,"Just exploring"]],  // [unused, label] — shown as Timeline
   primaryColor: "#0a1628",
