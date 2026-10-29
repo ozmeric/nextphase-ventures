@@ -761,6 +761,12 @@ function describeAction(db,a){
       if(!E) return bad("Cancel an event: event not found");
       return {ok:true,icon:"x",text:`Cancel "${E.title}" · ${fmtEventTime(E.start,E.end)}${(E.guests||[]).length?" · guests notified":""}`,go:["calendar"]};
     }
+    case "addBriefingNote": {
+      if(!String(a.text||"").trim()) return bad("Add to a briefing: the note is empty");
+      if(!validDate(a.date)) return bad("Add to a briefing: which day?");
+      if(a.date<iso(T0)) return bad("Add to a briefing: the "+fmtD(a.date)+" email already went out");
+      return {ok:true,icon:"spark",text:`Add to the ${fmtD(a.date)} Daily Briefing: ${P?P.name+" — ":""}${String(a.text).trim()}`,go:["briefing"]};
+    }
     default: return bad("Unsupported change: "+a.type);
   }
 }
@@ -1684,6 +1690,11 @@ async function applyNpvAction(ctx,a){
       n.setVendors(prev=>({...prev,[V.category]:(prev[V.category]||[]).map(v=>v.id===V.id?{...v,...ch}:v)}));
       break;
     }
+    case "addBriefingNote": {
+      const P = projById(db,a.projectId);
+      await rawApi("nl.addNote",{date:a.date,text:String(a.text||"").trim().slice(0,300),project:P?P.name:"",by:"Ask Foreman"});
+      break;
+    }
     default: throw new Error("Unsupported change: "+a.type);
   }
 }
@@ -2371,7 +2382,7 @@ function App() {
   const [nl,setNl] = useState(null); const [nlErr,setNlErr] = useState(""); const [nlBusy,setNlBusy] = useState(false); const [nlForm,setNlForm] = useState({}); const [nlPreview,setNlPreview] = useState(null);
   useEffect(()=>{ if(!authed) return;
     if(view==="home"&&!briefBusy&&(!brief||Date.now()-brief.at>120000)&&bfLate.current.loadBrief) bfLate.current.loadBrief();
-    if(view==="briefing"&&!nl&&bfLate.current.loadSubs) bfLate.current.loadSubs(); },[view,authed,bfLate.current.ready]);
+    if(view==="briefing"&&bfLate.current.loadSubs) bfLate.current.loadSubs(); },[view,authed,bfLate.current.ready]);
   useEffect(()=>{ if(!authed) return; try{ const m=String(location.hash||"").match(/^#ask=(.+)$/); if(m){
       sessionStorage.setItem("bf-ask-prefill",decodeURIComponent(m[1]).slice(0,500)); history.replaceState(null,"",location.pathname+location.search); setView("fm-ask"); } }catch(_){} },[authed]);
   const [drawBudget,setDrawBudget] = useState([]); const [lineEdit,setLineEdit] = useState(null);
@@ -4248,12 +4259,42 @@ function App() {
     catch(err){ showToast(err.message+briefHint(err.message),"error"); return null; }
     finally{ setNlBusy(false); }
   };
+  // Agenda items for a given morning's email ("add these to tomorrow's newsletter")
+  const nlTomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+  const nlDayLabel=(d,today)=>{ if(d===today) return "Today"; const t=new Date(today+"T12:00:00"); t.setDate(t.getDate()+1);
+    const tm=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+    return (d===tm?"Tomorrow · ":"")+new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}); };
+  const AgendaCard=s=>{
+    const notes=s.notes||[], today=s.today||"", date=nlForm.noteDate||nlTomorrow(), groups={};
+    notes.forEach(n=>{(groups[n.date]=groups[n.date]||[]).push(n);});
+    const projs=projects.filter(p=>!/sold|no budget/i.test(String(p.description||"")));
+    const addIt=async()=>{ const text=String(nlForm.noteText||"").trim(); if(!text) return;
+      const lines=text.split(/\n+/).map(x=>x.replace(/^\s*[-•*]\s*/,"").trim()).filter(Boolean);   // one item per line
+      const r=await nlCall("nl.addNote",{notes:lines.map(t=>({date,text:t,project:nlForm.noteProject||""}))},(lines.length>1?lines.length+" items added to the ":"Added to the ")+new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" briefing");
+      if(r) setNlForm(f=>({...f,noteText:""})); };
+    return e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{fontSize:11,fontWeight:700,color:"#d4a017",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:4}},"Agenda for upcoming briefings"),
+      e("div",{style:{fontSize:12,color:"#4a6fa5",marginBottom:10}},"Items show at the top of that morning's email under \"Today's agenda\". You can also ask Foreman: \"add … to tomorrow's newsletter\"."),
+      notes.length===0&&e("div",{style:{fontSize:13,color:"#4a6fa5",marginBottom:10}},"Nothing queued."),
+      ...Object.keys(groups).sort().map(d=>e("div",{key:d,style:{marginBottom:8}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"#c3cfe2",margin:"6px 0 2px"}},nlDayLabel(d,today)),
+        ...groups[d].map(n=>e("div",{key:n.id,style:{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderTop:"1px solid #12284a"}},
+          e("div",{style:{flex:1,minWidth:0,fontSize:13,color:"#f8f0d8",wordBreak:"break-word"}},n.project&&e("b",{style:{color:"#d4a017"}},n.project+": "),n.text,
+            n.addedBy&&n.addedBy!=="app"&&e("span",{style:{fontSize:11,color:"#4a6fa5"}}," · "+n.addedBy)),
+          e("button",{"aria-label":"Remove",title:"Remove",style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:8,fontSize:11,padding:"3px 9px",cursor:"pointer"},disabled:nlBusy,onClick:()=>nlCall("nl.removeNote",{id:n.id},"Removed")},"✕"))))),
+      e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginTop:10,paddingTop:12,borderTop:"1px solid #1e3a5f"}},
+        e("input",{type:"date",style:{...S.input,flex:"0 1 160px"},value:date,min:today||undefined,onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,noteDate:v}));}}),
+        e("select",{style:{...S.input,flex:"1 1 160px"},value:nlForm.noteProject||"",onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,noteProject:v}));}},
+          e("option",{value:""},"No project"),...projs.map(p=>e("option",{key:p.id,value:p.name},p.name))),
+        e("textarea",{id:"nl-note",rows:2,style:{...S.input,flex:"1 1 100%",resize:"vertical"},placeholder:"e.g. 12:30 meeting at Hailsham with Anthony (one item per line)",value:nlForm.noteText||"",onChange:ev=>{const v=ev.target.value;setNlForm(f=>({...f,noteText:v}));}}),
+        e("button",{style:{...S.btn(),fontSize:12},disabled:nlBusy||!String(nlForm.noteText||"").trim(),onClick:addIt},"Add to briefing")));
+  };
   const BriefingView=()=>{
     const s=nl, subsList=s?s.subscribers||[]:[], activeCount=subsList.filter(x=>x.active!=="no").length;
     return e("div",null,
       e("div",{style:{marginBottom:16},className:"page-header"},
         e("h1",{style:{fontWeight:800,fontSize:22,color:"#f8f0d8"}},"📰 Daily Briefing"),
-        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},"Foreman emails a morning update around 7:00 AM Eastern: what needs attention, calendar, and every active project's milestones, tasks and finishes.")),
+        e("p",{style:{color:"#4a6fa5",fontSize:13,marginTop:3}},"Foreman emails a morning update around 7:00 AM Eastern: your agenda items, what needs attention, calendar, and every active project's milestones, tasks and finishes.")),
       nlErr&&e("div",{style:{...S.card,borderColor:"#ef444466",color:"#fecaca",marginBottom:16,fontSize:13}},"Couldn't load: "+nlErr),
       !s?e("div",{style:{color:"#7a9cc5",fontSize:13}},"Loading…"):
       e("div",null,
@@ -4262,6 +4303,7 @@ function App() {
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"Morning email: ",e("span",{style:{color:s.on?"#10b981":"#ef4444"}},s.on?"ON · every day ~7:00 AM ET":"OFF")),
             e("div",{style:{fontSize:12,color:"#4a6fa5",marginTop:3}},(activeCount+" subscriber"+(activeCount===1?"":"s"))+(s.last?" · last: "+s.last.replace(/T(\d\d:\d\d).*? ·/," $1 UTC ·"):""))),
           e("button",{style:{...S.btn(s.on?"ghost":undefined),fontSize:12},disabled:nlBusy,onClick:()=>nlCall("nl.setOn",{on:!s.on},s.on?"Morning email turned off":"Morning email is on — first one tomorrow ~7 AM")},s.on?"Turn off":"Turn on")),
+        AgendaCard(s),
         e("div",{style:{...S.card,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}},
           e("div",{style:{minWidth:0,flex:"1 1 260px"}},
             e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},"💬 Email replies: ",e("span",{style:{color:s.repliesOn?"#10b981":"#ef4444"}},s.repliesOn?"ON · checked every 5 minutes":"OFF")),
