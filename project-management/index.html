@@ -769,7 +769,21 @@ function describeAction(db,a){
       if(a.date<iso(T0)) return bad("Add to a briefing: the "+fmtD(a.date)+" email already went out");
       return {ok:true,icon:"spark",text:`Add to the ${fmtD(a.date)} Daily Briefing: ${P?P.name+" — ":""}${String(a.text).trim()}`,go:["briefing"]};
     }
-    default: return bad("Unsupported change: "+a.type);
+    case "addPipelineDeal":
+      if(!String(a.name||"").trim()) return bad("Add to the pipeline: name/address missing");
+      return {ok:true,icon:"flag",text:`Add "${String(a.name).trim()}" to the deal pipeline${validDate(a.date)?" · "+fmtD(a.date):""}${a.notes?" · "+a.notes:""}`,go:["management"]};
+    case "addGeneralTask":
+      if(!String(a.task||"").trim()) return bad("Add a company task: text missing");
+      return {ok:true,icon:"check",text:`Add company task "${String(a.task).trim()}"${a.assignee?", for "+a.assignee:""}`,go:["management"]};
+    case "updateGeneralTask": {
+      const G=(db.generalTasks||[]).find(t=>t.id===a.taskId);
+      if(!G) return bad("Update a company task: task not found");
+      if(!a.status||a.status===G.status) return bad(`"${G.task}": nothing to change`);
+      return {ok:true,icon:"check",text:`Company task "${G.task}": ${G.status||"To Do"} → ${a.status}`,go:["management"]};
+    }
+    default:
+      if(a._server && a._desc) return a._desc.ok ? {ok:true,icon:"spark",text:a._desc.text,go:a._desc.go} : bad(a._desc.text);   // checked on the server (Assistant.gs)
+      return bad("Unsupported change: "+a.type);
   }
 }
 /* Calendar changes go through calOps (Google Calendar in live mode) and may take a moment */
@@ -1586,14 +1600,14 @@ function snapshot(db){
         rehabRemaining:p.rehabBudget-spentRehab(db,p.id),spendByCategory:cats,tasksDone:ts.filter(t=>t.status==="Done").length,
         openTasks:ts.filter(t=>t.status!=="Done").slice(0,40).map(t=>({id:t.id,task:t.task,status:t.status,priority:t.priority,due:t.due,assignee:t.assignee,category:t.category,overdue:!!isOverdue(t)})),
         milestones:db.milestones.filter(m=>m.projectId===p.id).map(m=>({id:m.id,title:m.title,date:m.date,done:m.done})),
-        quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
-        recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8).map(x=>({date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,description:x.description}))}; }),
+        quotes:db.quotes.filter(q=>q.projectId===p.id).map(q=>({id:q.id,item:q.item,vendor:q.vendor,amount:q.amount,status:q.status})),
+        recentExpenses:db.expenses.filter(x=>x.projectId===p.id).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,15).map(x=>({id:x.id,date:x.date,amount:x.amount,category:x.category,vendor:x.vendor,description:x.description}))}; }),
     vendors: db.vendors.map(v=>({id:v.id,name:v.name,trade:v.category,phone:v.phone,email:v.email,notes:v.notes})),
     events: (db.events||[]).filter(x=>new Date(x.end)>=new Date(T0.getTime()-DAY) && new Date(x.start)<=new Date(T0.getTime()+60*DAY)).map(x=>({id:x.id,title:x.title,start:localStamp(new Date(x.start)),end:localStamp(new Date(x.end)),location:x.location,projectId:x.projectId,guests:(x.guests||[]).map(g=>({email:g.email,name:nameFor(db,g.email),status:g.status}))})),
-    sellerLeads: db.leads.map(l=>({name:l.name,email:l.email,phone:l.phone,property:l.address,situation:l.service,source:l.source,stage:l.stage,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
-    dealLeads: (db.deals||[]).slice(0,30).map(d=>({address:d.address,recommendation:d.recommendation,status:d.status,askPrice:num(d.askPrice),suggestedOffer:num(d.suggestedOffer),arv:num(d.arvEstimate),rehab:num(d.rehabEstimate),projectedProfit:num(d.projectedProfit),received:d.receivedAt,notes:(d.notes||"").slice(0,200)})),
-    pipeline: (db.pipeline||[]).map(m=>({name:m.week,date:m.date,notes:m.notes,status:db.pipelineStatus[m.id]||"upcoming"})),
-    generalTasks: (db.generalTasks||[]).map(t=>({task:t.task,status:t.status,assignee:t.assignee})),
+    sellerLeads: db.leads.map(l=>({id:l.id,name:l.name,email:l.email,phone:l.phone,property:l.address,situation:l.service,source:l.source,stage:l.stage,received:new Date(l.received).toISOString(),message:(l.message||"").slice(0,300),replyStatus:l.reply?l.reply.status:"none"})),
+    dealLeads: (db.deals||[]).slice(0,30).map(d=>({id:d.id,address:d.address,recommendation:d.recommendation,status:d.status,askPrice:num(d.askPrice),suggestedOffer:num(d.suggestedOffer),arv:num(d.arvEstimate),rehab:num(d.rehabEstimate),projectedProfit:num(d.projectedProfit),received:d.receivedAt,notes:(d.notes||"").slice(0,200)})),
+    pipeline: (db.pipeline||[]).map(m=>({id:m.id,name:m.week,date:m.date,notes:m.notes,status:db.pipelineStatus[m.id]||"upcoming"})),
+    generalTasks: (db.generalTasks||[]).map(t=>({id:t.id,task:t.task,status:t.status,assignee:t.assignee})),
     socialPosts: db.posts.slice(0,20).map(p=>({platform:p.platform,type:p.style,date:p.date,status:p.status})),
     autopilot: db.autopilot,
   };
@@ -1697,7 +1711,24 @@ async function applyNpvAction(ctx,a){
       await rawApi("nl.addNote",{date:a.date,text:String(a.text||"").trim().slice(0,300),project:P?P.name:"",by:"Ask Foreman"});
       break;
     }
-    default: throw new Error("Unsupported change: "+a.type);
+    case "addPipelineDeal": {
+      if(!n.mgmtReady || !n.setMgmtMilestones) throw new Error("Management hasn't loaded yet. Reload the app and try again.");
+      n.setMgmtMilestones(prev=>[...prev,{id:"mgmt-"+Date.now(),date:validDate(a.date)?a.date:"",week:String(a.name).trim().slice(0,120),notes:String(a.notes||"").slice(0,300)}]);
+      break;
+    }
+    case "addGeneralTask": {
+      if(!n.mgmtReady || !n.setMgmtTasks) throw new Error("Management hasn't loaded yet. Reload the app and try again.");
+      n.setMgmtTasks(prev=>[...prev,{id:"mt-"+Date.now(),task:String(a.task).trim().slice(0,300),status:"To Do",assignee:a.assignee||"",notes:a.notes||"Added by Foreman AI"}]);
+      break;
+    }
+    case "updateGeneralTask": {
+      if(!n.mgmtReady || !n.setMgmtTasks) throw new Error("Management hasn't loaded yet. Reload the app and try again.");
+      n.setMgmtTasks(prev=>prev.map(t=>t.id===a.taskId?{...t,status:a.status}:t));
+      break;
+    }
+    default:
+      if(a._server){ const {_server,_desc,...clean}=a; await rawApi("fm.applyAction",{change:clean}); break; }   // Assistant.gs: merges, never deletes
+      throw new Error("Unsupported change: "+a.type);
   }
 }
 
@@ -2864,8 +2895,8 @@ function App() {
       projects, activeId, current:{expenses,tasks,quotes},
       allMilestones, setAllMilestones, allMsStatus, setAllMsStatus, milestonesReady: milestonesLoaded,
       vendors, setVendors, vendorsReady: vendorsLoaded,
-      dealLeads: leads, mgmtMilestones, mgmtMsStatus, mgmtTasks,
-      reload: ()=>setReloadTick(t=>t+1),
+      dealLeads: leads, mgmtMilestones, mgmtMsStatus, mgmtTasks, setMgmtMilestones, setMgmtTasks, mgmtReady: mgmtLoaded,
+      reload: ()=>{ setReloadTick(t=>t+1); if(bfLate.current.refreshAll) bfLate.current.refreshAll(); },
       lists: {expenseCategories:CATEGORIES, taskCategories:TASK_CATEGORIES, taskPriorities:PRIORITIES, taskStatuses:TASK_STATUSES, vendorCategories:VENDOR_CATEGORIES, assignees:ASSIGNEES},
     },
   });
@@ -4463,6 +4494,17 @@ function App() {
           e("input",{style:{...S.input,width:96,padding:"5px 8px",fontSize:12,textAlign:"right",...(over?{borderColor:"#ef4444"}:{})},inputMode:"decimal",placeholder:"0",value:v,onChange:ev=>setAmt(l.id,ev.target.value)})); })),
       e("div",{style:{fontSize:11.5,color:"#7a9cc5",marginTop:6}},(has?"The amount requested is the total of the lines. ":"")+(st.filter(l=>l.remaining<=0.004&&!num(L[l.id])).length?st.filter(l=>l.remaining<=0.004&&!num(L[l.id])).length+" fully drawn line(s) hidden.":"")));
   };
+
+  // Ask Foreman can change loans, draws, finishes, leads and projects on the server (Assistant.gs) —
+  // after it applies a change, pull those fresh so every screen shows it right away.
+  const bfRefreshAll=()=>{
+    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]);
+      const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setLoansLoaded(true); }).catch(()=>{});
+    api("getLeads").then(d=>{ if(d&&d.leads) setLeads(d.leads); }).catch(()=>{});
+    api("getProjects").then(d=>{ if(d&&d.projects&&d.projects.length) setProjects(d.projects); }).catch(()=>{});
+    if(libLoaded&&bfLate.current.loadLib) bfLate.current.loadLib();
+  };
+  bfLate.current.refreshAll=bfRefreshAll;
 
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
