@@ -1892,7 +1892,7 @@ const loanClosing=loan=>{
   const total=items.reduce((s,x)=>s+x[1],0), dp=n(loan.downPayment), emd=n(loan.emd);
   return {fromLoan:CLOSING_KEYS.some(has),items,total,dp,emd,cashCalc:dp-emd+total,cashStated:has("cashAtClosing")?n(loan.cashAtClosing):null};
 };
-const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
+const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest})=>{
   const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
   deal=deal||{};
   const ownArv=n(deal.arv), lenderArv=n(loan&&loan.lenderArv);
@@ -1901,7 +1901,7 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   const months=blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
   const isEMD=x=>/\bemd\b|earnest/i.test(String(x.description||""));
   const sum=xs=>xs.reduce((s,x)=>s+n(x.amount),0);
-  const isInterestPay=x=>x.category==="Loan Expenses"&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));
+  const isInterestPay=x=>x.category==="Loan Expenses"&&!/\[cl:/.test(String(x.notes||""))&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));   // [cl:…] = company-loan interest, not Kiavi
   const interestPaid=sum((expenses||[]).filter(isInterestPay));
   const lc=loanClosing(loan), closingFromLoan=!!(lc&&lc.fromLoan);
   let acq, acqFromLoan=false, emdExcluded=0, ignoredClosing=0;
@@ -1922,7 +1922,8 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   const balance=loan?adv+n(drawn):0, interestMo=loan?balance*n(loan.rate)/100/12:0;
   const monthly=interestMo+other, holding=monthly*months;
   const realtor=arv*rPct/100, closing=arv*cPct/100;
-  const profit=arv-n(pp)-acq-rehab-holding-realtor-closing;
+  const coInt=n(otherInterest);   // company loans that funded this project: interest accrued, not paid yet
+  const profit=arv-n(pp)-acq-rehab-holding-realtor-closing-coInt;
   // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
   const rate=loan?n(loan.rate):0, now=Date.now();
@@ -1934,9 +1935,9 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded})=>{
   const interestAccrued=!canAccrue?0:adv*rate/100*daysSince(loan.closingDate)/360
     +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
   const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
-  const costsToDate=n(pp)+acq+rehabSpent+interestToDate, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
+  const costsToDate=n(pp)+acq+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
   return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
-    interestToDate,interestLogged,interestPaid,interestAccrued,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
+    interestToDate,interestLogged,interestPaid,interestAccrued,coInt,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
@@ -2404,6 +2405,8 @@ function App() {
   const [vendorCategories,setVendorCategories] = useState(DEFAULT_VENDOR_CATEGORIES);
   const VENDOR_CATEGORIES = vendorCategories;
   const [vendors,setVendors] = useState({});
+  const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
+  const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
@@ -2609,7 +2612,7 @@ function App() {
     }).catch(()=>{ setLoadWarn(w=>w.concat(["management"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     // BuildFlow: loans & Kiavi draws (Loans.gs)
-    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setLoansLoaded(true); setLoanErr(""); })
+    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
   },[authed]);
 
@@ -2943,9 +2946,161 @@ function App() {
   const curInterestMo=loan?curBalance*nz(loan.rate)/100/12:0;
   const maturityDays=loan&&loan.maturityDate?Math.round((pDate(String(loan.maturityDate).slice(0,10))-new Date(new Date().toDateString()))/864e5):null;
   const loanAmt   =(loan&&nz(loan.loanAmount))||Math.max(0,pp-dpAmt);
+  // ══ Management → Company Loans: private/partner loans, term loans, lines of credit (Loans.gs) ══
+  // Interest accrues daily on the principal balance (simple interest, /365 or /360). Payments go to interest first.
+  // Interest paid lands in Loan Expenses of the project the loan funded (or General Expenses) — done by the server.
+  // (its state lives with the other loan state, before any early return — see assemble.py)
+  const CL_TYPES=["Private/partner loan","Term loan","Line of credit"];
+  const coDay=d=>{const t=new Date(String(d||"").slice(0,10)+"T12:00:00Z").getTime();return isNaN(t)?null:t;};
+  const coToday=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+  const coNice=d=>d?new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+  const coMoney=v=>{const n=Math.round((+v||0)*100)/100;return (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});};
+  // same math as the server (Loans.gs clState), so numbers are live to today
+  const coState=(L,asOf,skipId)=>{
+    const dc=+L.dayCount===360?360:365, rate=+L.rate||0, start=coDay(L.startDate), ev=[];
+    if(L.type!=="Line of credit"&&+L.principal>0&&start!==null) ev.push({t:start,kind:"Draw",amt:+L.principal,o:-1});
+    coTxns.filter(x=>x.loanId===L.id&&x.id!==skipId&&coDay(x.date)!==null).forEach((x,i)=>ev.push({t:coDay(x.date),kind:x.type,amt:+x.amount||0,p:+x.principalPart||0,it:+x.interestPart||0,o:i}));
+    ev.sort((a,b)=>a.t-b.t||a.o-b.o);
+    const end=coDay(asOf)||coDay(coToday()); let bal=0,acc=0,last=start,intPaid=0,prinPaid=0,drawn=0;
+    const accrue=t=>{ if(last===null) last=t; if(t>last){ acc+=bal*rate/100*((t-last)/864e5)/dc; last=t; } };
+    ev.forEach(x=>{ if(x.t>end) return; accrue(x.t); if(x.kind==="Draw"){bal+=x.amt;drawn+=x.amt;} else {acc-=x.it;bal-=x.p;intPaid+=x.it;prinPaid+=x.p;} });
+    accrue(end);
+    const r2=n=>Math.round(n*100)/100;
+    return {balance:r2(bal),accrued:r2(Math.max(0,acc)),owed:r2(bal+Math.max(0,acc)),interestPaid:r2(intPaid),principalPaid:r2(prinPaid),drawn:r2(drawn),daily:bal*rate/100/dc};
+  };
+  const coPaidOff=L=>L.status==="Paid off";
+  // accrued (unpaid) interest on company loans that funded a project → counted in that project's profit
+  const coInterestFor=pid=>coLoans.filter(L=>String(L.projectId||"")===String(pid)&&!coPaidOff(L)).reduce((s,L)=>s+coState(L).accrued,0);
+  const coApply=r=>{ if(r&&r.companyLoans){ setCoLoans(r.companyLoans); setCoTxns(r.companyTxns||[]); } };
+  const coCall=async(action,body,okMsg)=>{
+    setCoBusy(true);
+    try{ const r=await api(action,body,0); coApply(r); if(okMsg) showToast(typeof okMsg==="function"?okMsg(r):okMsg); return r; }
+    catch(err){ showToast(err.message,"error"); return null; }
+    finally{ setCoBusy(false); }
+  };
+  const coProjName=pid=>{ const p=projects.find(x=>String(x.id)===String(pid)); return p?p.name:""; };
+  const coGenName=()=>{ const g=projects.find(p=>/no budget/i.test(String(p.description||""))); return g?g.name:"General Expenses"; };
+
+  const CompanyLoansCard=()=>{
+    const active=coLoans.filter(L=>!coPaidOff(L)), done=coLoans.filter(coPaidOff);
+    const st=active.map(L=>({L,s:coState(L)}));
+    const tot=k=>st.reduce((a,x)=>a+x.s[k],0), perMonth=st.reduce((a,x)=>a+x.s.daily*30.42,0);
+    const tile=(label,val,color,sub)=>e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px",minWidth:0}},
+      e("div",{style:{fontSize:10,color:"#4a6fa5",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
+      e("div",{style:{fontSize:16,fontWeight:800,color}},val),sub&&e("div",{style:{fontSize:10.5,color:"#4a6fa5",marginTop:2}},sub));
+    const row=({L,s})=>{
+      const open=!!coOpen[L.id], acts=coTxns.filter(t=>t.loanId===L.id).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      const md=L.maturityDate?Math.round((coDay(L.maturityDate)-coDay(coToday()))/864e5):null, paid=coPaidOff(L);
+      return e("div",{key:L.id,style:{borderTop:"1px solid #12284a",padding:"12px 0",opacity:paid?0.6:1}},
+        e("div",{style:{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"flex-start"}},
+          e("div",{style:{minWidth:0,flex:"1 1 240px"}},
+            e("div",{style:{fontWeight:700,color:"#f8f0d8",fontSize:14}},L.lender,paid&&e("span",{style:{fontSize:10,fontWeight:700,marginLeft:8,padding:"2px 8px",borderRadius:99,background:"#10b98122",color:"#10b981"}},"Paid off")),
+            e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:2}},[L.type,(+L.rate||0)+"%"+(+L.dayCount===360?" (360)":""),"since "+coNice(L.startDate),
+              L.projectId?"→ "+(coProjName(L.projectId)||"project"):"→ "+coGenName()].join(" · ")),
+            md!==null&&!paid&&e("div",{style:{fontSize:11.5,marginTop:2,color:md<0?"#ef4444":md<=30?"#f59e0b":"#4a6fa5"}},md<0?"Past due since "+coNice(L.maturityDate):"Due "+coNice(L.maturityDate)+" · "+md+" days")),
+          e("div",{style:{textAlign:"right"}},
+            e("div",{style:{fontSize:17,fontWeight:800,color:"#f8f0d8"}},coMoney(s.owed)),
+            e("div",{style:{fontSize:11.5,color:"#7a9cc5"}},"principal "+coMoney(s.balance)+" + interest "+coMoney(s.accrued)),
+            !paid&&s.balance>0&&e("div",{style:{fontSize:11,color:"#4a6fa5"}},"accruing "+coMoney(s.daily)+"/day"))),
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}},
+          !paid&&e("button",{style:{...S.btn(),fontSize:11,padding:"5px 11px"},onClick:()=>setCoPay({loanId:L.id,type:"Payment",date:coToday(),amount:"",notes:""})},"+ Payment"),
+          !paid&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 11px"},onClick:()=>setCoPay({loanId:L.id,type:"Draw",date:coToday(),amount:"",notes:""})},L.type==="Line of credit"?"+ Draw":"+ More borrowed"),
+          !paid&&s.owed>0&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 11px"},onClick:()=>setCoPay({loanId:L.id,type:"Payment",date:coToday(),amount:s.owed.toFixed(2),notes:"Payoff",_payoff:true})},"Pay off"),
+          e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 11px"},onClick:()=>setCoOpen(o=>({...o,[L.id]:!open}))},(open?"Hide":"History")+" ("+acts.length+")"),
+          e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 11px"},onClick:()=>setCoEdit({...L})},"Edit")),
+        open&&e("div",{style:{marginTop:8,background:"#071020",borderRadius:8,padding:"6px 12px"}},
+          L.type!=="Line of credit"&&e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",color:"#7a9cc5",borderBottom:"1px solid #12284a"}},
+            e("span",null,coNice(L.startDate)+" · Loan funded"),e("span",{style:{color:"#c3cfe2"}},coMoney(L.principal))),
+          acts.length===0&&e("div",{style:{fontSize:12,color:"#4a6fa5",padding:"6px 0"}},"No payments or draws yet."),
+          ...acts.map(t=>e("div",{key:t.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,fontSize:12,padding:"6px 0",borderBottom:"1px solid #12284a",color:"#7a9cc5"}},
+            e("span",{style:{minWidth:0}},coNice(t.date)+" · "+t.type+(t.type!=="Draw"?" — interest "+coMoney(t.interestPart)+", principal "+coMoney(t.principalPart):"")+(t.notes?" · "+t.notes:"")),
+            e("span",{style:{display:"flex",alignItems:"center",gap:8}},e("span",{style:{color:t.type==="Draw"?"#f59e0b":"#10b981",fontWeight:700}},(t.type==="Draw"?"+":"−")+coMoney(t.amount)),
+              e("button",{"aria-label":"Remove",title:"Remove",style:{background:"transparent",border:"1px solid #ef444466",color:"#ef4444",borderRadius:6,fontSize:10,padding:"2px 7px",cursor:"pointer"},disabled:coBusy,
+                onClick:()=>{ if(window.confirm("Remove this "+t.type.toLowerCase()+" of "+coMoney(t.amount)+"?"+(+t.interestPart>0?" Its interest expense is removed too.":""))) coCall("loan.deleteCompanyTxn",{id:t.id},"Removed"); }},"✕"))))));
+    };
+    return e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"#d4a017",textTransform:"uppercase",letterSpacing:"0.06em"}},"🏦 Company Loans"),
+        e("button",{style:{...S.btn(),fontSize:12},onClick:()=>setCoEdit({_new:true,type:"Private/partner loan",dayCount:365,startDate:coToday(),status:"Active",projectId:""})},"+ Add loan")),
+      coLoans.length===0?e("div",{style:{fontSize:13,color:"#4a6fa5"}},"Track private/partner loans, term loans and lines of credit here. Interest is calculated every day; log payments when you make them."):
+      e("div",null,
+        active.length>0&&e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:6}},
+          tile("Principal owed",coMoney(tot("balance")),"#f8f0d8"),
+          tile("Interest accrued",coMoney(tot("accrued")),"#f59e0b","not paid yet"),
+          tile("Total owed today",coMoney(tot("owed")),"#ef4444"),
+          tile("Interest / month",coMoney(perMonth),"#a78bfa","at today's balances")),
+        ...st.map(row),
+        done.length>0&&e("div",{style:{fontSize:11,fontWeight:700,color:"#4a6fa5",textTransform:"uppercase",letterSpacing:"0.06em",margin:"14px 0 0"}},"Paid off"),
+        ...done.map(L=>row({L,s:coState(L)}))));
+  };
+
+  const CompanyLoanModal=()=>coEdit&&e("div",{key:"co-m"},overlay(()=>setCoEdit(null),(()=>{
+    const d=coEdit, set=setCoEdit, isNew=!!d._new, hasActs=coTxns.some(t=>t.loanId===d.id), loc=d.type==="Line of credit";
+    const projs=projects.filter(p=>!/no budget/i.test(String(p.description||"")));
+    const save=async()=>{ const body={...d}; delete body._new; delete body.state;
+      const r=await coCall("loan.saveCompanyLoan",{loan:body},isNew?"Loan added":"Loan saved"); if(r) setCoEdit(null); };
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},isNew?"New company loan":"Edit loan"),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Lender *",e("input",{style:S.input,placeholder:"e.g. John Smith, Truist",value:d.lender||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,lender:v}));}}),2),
+          fld("Type",e("select",{style:S.input,value:d.type||"Private/partner loan",onChange:ev=>{const v=ev.target.value;set(o=>({...o,type:v}));}},...CL_TYPES.map(t=>e("option",{key:t,value:t},t))))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          loc?fld("Credit limit",moneyIn(d,set,"creditLimit")):fld("Loan amount *",moneyIn(d,set,"principal")),
+          fld("Interest rate % *",moneyIn(d,set,"rate","e.g. 12")),
+          fld("Day count",e("select",{style:S.input,value:String(d.dayCount||365),onChange:ev=>{const v=+ev.target.value;set(o=>({...o,dayCount:v}));}},e("option",{value:"365"},"Actual/365"),e("option",{value:"360"},"Actual/360")))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld(loc?"Opened on *":"Funded on *",e("input",{type:"date",style:S.input,value:d.startDate||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,startDate:v}));}})),
+          fld("Due / maturity",e("input",{type:"date",style:S.input,value:d.maturityDate||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,maturityDate:v}));}})),
+          d.type==="Term loan"&&fld("Monthly payment",moneyIn(d,set,"monthlyPayment"))),
+        fld("Funded which project? (interest is counted there)",e("select",{style:S.input,value:d.projectId||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,projectId:v}));}},
+          e("option",{value:""},"Not linked → "+coGenName()),...projs.map(p=>e("option",{key:p.id,value:p.id},p.name)))),
+        loc&&e("div",{style:{fontSize:11.5,color:"#4a6fa5"}},"For a line of credit, log each draw with \"+ Draw\" after saving."),
+        !isNew&&fld("Status",e("select",{style:S.input,value:d.status||"Active",onChange:ev=>{const v=ev.target.value;set(o=>({...o,status:v}));}},e("option",{value:"Active"},"Active"),e("option",{value:"Paid off"},"Paid off"))),
+        fld("Notes",e("input",{style:S.input,placeholder:"e.g. interest due at payoff, personal guarantee",value:d.notes||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,notes:v}));}}))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16,flexWrap:"wrap"}},
+        !isNew&&e("button",{style:{...S.btn("ghost"),color:"#ef4444"},disabled:coBusy||hasActs,title:hasActs?"Has payments or draws: mark it Paid off instead":"",
+          onClick:async()=>{ if(window.confirm("Delete the loan from "+d.lender+"?")){ const r=await coCall("loan.deleteCompanyLoan",{id:d.id},"Loan deleted"); if(r) setCoEdit(null);} }},"Delete"),
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setCoEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:coBusy||!String(d.lender||"").trim(),onClick:save},coBusy?"Saving…":"Save"))];
+  })()));
+
+  const CompanyTxnModal=()=>coPay&&e("div",{key:"co-p"},overlay(()=>setCoPay(null),(()=>{
+    const d=coPay, set=setCoPay, L=coLoans.find(x=>x.id===d.loanId)||{}, s=coState(L,d.date), amt=num(d.amount), isPay=d.type!=="Draw";
+    const autoInt=d.type==="Interest payment"?amt:d.type==="Principal payment"?0:Math.min(amt,s.accrued);
+    const split=d._manual?{i:num(d.interestPart),p:num(d.principalPart)}:{i:autoInt,p:Math.max(0,amt-autoInt)};
+    const tooMuch=isPay&&split.p>s.balance+0.01, bad=d._manual&&Math.abs(split.i+split.p-amt)>0.01;
+    const save=async()=>{ const txn={loanId:d.loanId,type:d.type,date:d.date,amount:amt,notes:d.notes||""}; if(d._manual){txn.interestPart=split.i;txn.principalPart=split.p;}
+      const r=await coCall("loan.saveCompanyTxn",{txn,manualSplit:!!d._manual},r=>r.noGeneral?"Saved — no General Expenses project, so the interest wasn't added to expenses":d.type==="Draw"?"Draw logged":split.i>0?"Payment logged · "+coMoney(split.i)+" interest added to "+(coProjName(r.expenseProject)||"expenses"):"Payment logged");
+      if(r&&d._payoff&&!d._manual&&Math.abs(amt-s.owed)<0.01) await coCall("loan.saveCompanyLoan",{loan:{id:L.id,status:"Paid off"}},"Paid off 🎉");
+      if(r) setCoPay(null); };
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:4}},(d._payoff?"Pay off · ":isPay?"Payment · ":"Draw · ")+(L.lender||"")),
+      e("div",{key:"s",style:{fontSize:12,color:"#7a9cc5",marginBottom:14}},"Owed on "+coNice(d.date)+": principal "+coMoney(s.balance)+" + interest "+coMoney(s.accrued)+" = "+coMoney(s.owed)),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Type",e("select",{style:S.input,value:d.type,onChange:ev=>{const v=ev.target.value;set(o=>({...o,type:v,_payoff:false}));}},...["Payment","Interest payment","Principal payment","Draw"].map(t=>e("option",{key:t,value:t},t==="Draw"?(L.type==="Line of credit"?"Draw":"More borrowed (draw)"):t)))),
+          fld("Date",e("input",{type:"date",style:S.input,value:d.date,onChange:ev=>{const v=ev.target.value;set(o=>({...o,date:v}));}})),
+          fld("Amount",moneyIn(d,set,"amount"))),
+        isPay&&amt>0&&e("div",{style:{background:"#071020",borderRadius:8,padding:"10px 12px",fontSize:12.5,color:"#c3cfe2"}},
+          d._manual?e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},fld("Interest part",moneyIn(d,set,"interestPart")),fld("Principal part",moneyIn(d,set,"principalPart")))
+            :e("div",null,"Interest ",e("b",{style:{color:"#f59e0b"}},coMoney(split.i))," · principal ",e("b",{style:{color:"#10b981"}},coMoney(split.p))),
+          split.i>0&&!d._manual&&e("div",{style:{fontSize:11.5,color:"#4a6fa5",marginTop:4}},"The interest goes to Loan Expenses in "+(L.projectId?coProjName(L.projectId):coGenName())+"."),
+          e("label",{style:{display:"flex",alignItems:"center",gap:6,fontSize:11.5,color:"#7a9cc5",marginTop:6,cursor:"pointer"}},
+            e("input",{type:"checkbox",checked:!!d._manual,onChange:ev=>{const on=ev.target.checked;set(o=>({...o,_manual:on,interestPart:on?String(split.i):o.interestPart,principalPart:on?String(split.p):o.principalPart}));}}),"Lender split it differently — set it myself")),
+        tooMuch&&e("div",{style:{fontSize:12,color:"#ef4444"}},"That's more than what's owed on "+coNice(d.date)+"."),
+        bad&&e("div",{style:{fontSize:12,color:"#ef4444"}},"Interest + principal must add up to the amount."),
+        fld("Notes",e("input",{style:S.input,placeholder:"e.g. check #1042, wire",value:d.notes||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,notes:v}));}}))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16}},
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setCoPay(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:coBusy||!(amt>0)||tooMuch||bad||!d.date,onClick:save},coBusy?"Saving…":"Save"))];
+  })()));
+
   const deal      =activeProject?deals[String(activeProject.id)]:null;
   const fundedList=pDraws.filter(d=>d.status==="Funded").map(d=>({amt:nz(d.amountFunded)||nz(d.amountRequested),date:d.fundedDate}));
-  const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded,funded:fundedList});
+  const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0});
   const totalCost =pp+rb;
   const rehabRem  =rb-rehabSpent;
   const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
@@ -3736,7 +3891,7 @@ function App() {
     const exps=(fm.db.expenses||[]).filter(x=>String(x.projectId)===pid);
     const fd=draws.filter(d=>String(d.projectId)===pid&&d.status==="Funded").map(d=>({amt:parseFloat(d.amountFunded)||parseFloat(d.amountRequested)||0,date:d.fundedDate}));
     const dr=fd.reduce((s,f)=>s+f.amt,0);
-    const c=calcProfit({pp:p.purchasePrice,rb:p.rehabBudget,expenses:exps,deal:dl,loan:ln,drawn:dr,funded:fd});
+    const c=calcProfit({pp:p.purchasePrice,rb:p.rehabBudget,expenses:exps,deal:dl,loan:ln,drawn:dr,funded:fd,otherInterest:coInterestFor(pid)});
     if(!c) return null;
     return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}},
       e("div",{style:{background:"#071020",borderRadius:7,padding:"10px 12px"}},
@@ -3807,6 +3962,7 @@ function App() {
       ["Rehab spent so far",c.rehabSpent],
       ...(c.interestPaid>0?[["Kiavi payments logged",c.interestPaid]]:[]),
       [c.interestNeedsClosing?"Kiavi interest (add closing date)":c.interestPaid>0?"Interest accrued since last payment (est.)":"Kiavi interest so far (est.)",c.interestToDate],
+      ...(c.coInt>0?[["Company loan interest accrued (not paid yet)",c.coInt]]:[]),
     ];
     const line=(l,v,opt)=>e("div",{key:l,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"#7a9cc5",...(opt||{})}},
       e("span",null,l),e("span",{style:{color:"#c3cfe2",whiteSpace:"nowrap"}},fmt(v)));
@@ -3836,7 +3992,7 @@ function App() {
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
-    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)||""},loan,drawn:drawnFunded,funded:fundedList});
+    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)||""},loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0});
     return [
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"#f8f0d8",marginBottom:14}},"ARV & selling costs"),
       e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
@@ -4499,7 +4655,7 @@ function App() {
   // after it applies a change, pull those fresh so every screen shows it right away.
   const bfRefreshAll=()=>{
     api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]);
-      const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setLoansLoaded(true); }).catch(()=>{});
+      const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setLoansLoaded(true); }).catch(()=>{});
     api("getLeads").then(d=>{ if(d&&d.leads) setLeads(d.leads); }).catch(()=>{});
     api("getProjects").then(d=>{ if(d&&d.projects&&d.projects.length) setProjects(d.projects); }).catch(()=>{});
     if(libLoaded&&bfLate.current.loadLib) bfLate.current.loadLib();
@@ -5229,6 +5385,8 @@ function App() {
         )
       ),
 
+      CompanyLoansCard(),
+
       // In Progress Projects
       inProgress.length>0&&e("div",{style:{...S.card,marginBottom:16}},
         e("div",{style:{fontSize:12,fontWeight:700,color:"#f59e0b",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}},"🔨 In Progress"),
@@ -5431,6 +5589,8 @@ function App() {
     LibItemModal(),
     LibPickModal(),
     LibOrderModal(),
+    CompanyLoanModal(),
+    CompanyTxnModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"#f8f0d8"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
