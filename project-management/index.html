@@ -2448,12 +2448,15 @@ function App() {
   const [vendors,setVendors] = useState({});
   const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
+  const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
+  const [dsMic,setDsMic] = useState(null); const [dsRev,setDsRev] = useState({}); const [dsOpen,setDsOpen] = useState({}); const [dsFilter,setDsFilter] = useState("all"); const [dsCollapsed,setDsCollapsed] = useState({}); const [dsNew,setDsNew] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
   const [libItems,setLibItems] = useState([]); const [libOrders,setLibOrders] = useState([]); const [libLoaded,setLibLoaded] = useState(false); const [libErr,setLibErr] = useState("");
   const [libList,setLibList] = useState(""); const [libSearch,setLibSearch] = useState(""); const [libEdit,setLibEdit] = useState(null); const [libPick,setLibPick] = useState(null); const [libBusy,setLibBusy] = useState(false); const [libOrderEdit,setLibOrderEdit] = useState(null);
   const bfLate = useRef({});   // functions defined further down; effects call them through here (safe on early-return renders)
+  useEffect(()=>{ if(view==="design"&&activeId&&dsLoadedFor!==String(activeId)&&bfLate.current.dsLoad) bfLate.current.dsLoad(String(activeId)); },[view,activeId,bfLate.current.dsReady]);
   useEffect(()=>{ if((view==="finishes"||view==="project-finishes")&&!libLoaded&&bfLate.current.loadLib) bfLate.current.loadLib(); },[view]);
   const [brief,setBrief] = useState(null); const [briefErr,setBriefErr] = useState(""); const [briefBusy,setBriefBusy] = useState(false); const [briefAll,setBriefAll] = useState(false);
   const [nl,setNl] = useState(null); const [nlErr,setNlErr] = useState(""); const [nlBusy,setNlBusy] = useState(false); const [nlForm,setNlForm] = useState({}); const [nlPreview,setNlPreview] = useState(null);
@@ -3372,6 +3375,7 @@ function App() {
   const Sidebar=()=>{
     const isMgmt = view==="management";
     const isProject = (p) => p.id===activeId&&!["home","management"].includes(view);
+    const inProj = !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&!["home","management","vendors","finishes","briefing","leads","fm-leads","fm-social","fm-calendar","fm-ask"].includes(view);
     const children = [
       e("div",{key:"nav-label",style:S.sideLabel},"Navigation"),
       e("div",{key:"home",style:S.sideItem(view==="home"),onClick:()=>navTo("home")},"🏠 All Projects"),
@@ -3393,13 +3397,14 @@ function App() {
       e("div",{key:"fm-social",style:S.sideItem(view==="fm-social"),onClick:()=>{setActiveId(null);navTo("fm-social");}},"📣 Social Posts"),
       e("div",{key:"fm-calendar",style:S.sideItem(view==="fm-calendar"),onClick:()=>{setActiveId(null);navTo("fm-calendar");}},"📅 Calendar"),
       e("div",{key:"fm-ask",style:S.sideItem(view==="fm-ask"),onClick:()=>{setActiveId(null);navTo("fm-ask");}},"✨ Ask Foreman"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"dashboard",style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"expenses",style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"tasks",style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"quotes",style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"planning",style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"loan",style:S.sideItem(view==="loan"),onClick:()=>navTo("loan")},"🏦 Loan & Draws"),
-      !isMgmt&&activeProject&&!activeProject.description?.includes("No budget")&&e("div",{key:"pfin",style:S.sideItem(view==="project-finishes"),onClick:()=>navTo("project-finishes")},"🛒 Finishes"),
+      inProj&&e("div",{key:"dashboard",style:S.sideItem(view==="dashboard"),onClick:()=>navTo("dashboard")},"📊 Dashboard"),
+      inProj&&e("div",{key:"expenses",style:S.sideItem(view==="expenses"),onClick:()=>navTo("expenses")},"📋 Expenses"),
+      inProj&&e("div",{key:"tasks",style:S.sideItem(view==="tasks"),onClick:()=>navTo("tasks")},"✅ Tasks"),
+      inProj&&e("div",{key:"quotes",style:S.sideItem(view==="quotes"),onClick:()=>navTo("quotes")},"💬 Quotes"),
+      inProj&&e("div",{key:"planning",style:S.sideItem(view==="planning"),onClick:()=>navTo("planning")},"📅 Planning"),
+      inProj&&e("div",{key:"loan",style:S.sideItem(view==="loan"),onClick:()=>navTo("loan")},"🏦 Loan & Draws"),
+      inProj&&e("div",{key:"pfin",style:S.sideItem(view==="project-finishes"),onClick:()=>navTo("project-finishes")},"🛒 Finishes"),
+      inProj&&e("div",{key:"design",style:S.sideItem(view==="design"),onClick:()=>navTo("design")},"🎨 Design"),
       e("div",{key:"projects-section",style:{marginTop:16}},
         e("div",{style:S.sideLabel},"Projects"),
         ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>{
@@ -3495,9 +3500,13 @@ function App() {
           e("div",{style:{fontWeight:700,color:"var(--t-ink)",marginBottom:8}},"No projects yet"),
           e("button",{style:{...S.btn(),marginTop:8},onClick:()=>{setForm({});navTo("add-project");}},"Create Project")
         )
-      :e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14},className:"project-grid"},
-          ...projects.filter(p=>!p.description?.includes("No budget")).map(p=>e("div",{key:p.id,
-            style:{...S.card,cursor:"pointer",borderColor:p.id===activeId?"var(--t-gold)":"var(--t-line)",transition:"border-color .15s"},
+      :e("div",null,...[["🔨 Active projects",projects.filter(p=>!p.description?.includes("No budget")&&!p.description?.includes("Sold"))],
+                         ["🏁 Sold",projects.filter(p=>p.description?.includes("Sold"))]].filter(g=>g[1].length).map(([title,list])=>e("div",{key:title,style:{marginBottom:24}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}},title+" · "+list.length),
+        e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14},className:"project-grid"},
+          ...list.map(p=>e("div",{key:p.id,
+            style:{...S.card,cursor:"pointer",borderColor:"var(--t-line)",transition:"border-color .15s",opacity:p.description?.includes("Sold")?0.92:1},
+            onMouseEnter:ev=>{ev.currentTarget.style.borderColor="var(--t-gold)";},onMouseLeave:ev=>{ev.currentTarget.style.borderColor="var(--t-line)";},
             onClick:()=>{setActiveId(p.id);setTaskFilter("");setTaskWorkFilter("");setReloadTick(t=>t+1);navTo("dashboard");}},
             e("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14}},
               e("div",null,
@@ -3538,7 +3547,7 @@ function App() {
               )
             )
           ))
-        )
+        ))))
   );
 
   // ── DASHBOARD VIEW ──
@@ -3558,6 +3567,7 @@ function App() {
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("expenses")},"Expenses"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("loan")},"Loan & Draws"),
+        !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("design")},"🎨 Design"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>navTo("project-finishes")},"🛒 Finishes"),
         !isGeneral&&e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openInvestors},"👥 Investors"),
         e("button",{style:{...S.btn("danger"),fontSize:12},onClick:()=>setDelConfirm({type:"project",id:activeId,name:activeProject?.name})},"Delete")
@@ -4703,6 +4713,174 @@ function App() {
   };
   bfLate.current.refreshAll=bfRefreshAll;
 
+  // ══ Project → 🎨 Design Decisions: paint colors, flooring, cabinets, baths, roof, AC… (Library.gs "Design Decisions" tab) ══
+  // Tap a choice (Keep / Fix / Paint / Replace / New / Remove / N/A), type or 🎤 say the details, add links. Every change saves by itself.
+  const DS_ACTIONS=["Keep","Fix","Paint/refinish","Replace","New","Remove","N/A"];
+  const DS_ACT_CLR={Keep:"var(--t-sub)",Fix:"var(--t-amber)","Paint/refinish":"var(--t-purple)",Replace:"var(--t-red)",New:"var(--t-green)",Remove:"#f97316","N/A":"#6b7280"};
+  const DS_STATUS=["Idea","Decided","Ordered","Done"], DS_ST_CLR={Idea:"var(--t-sub)",Decided:"var(--t-gold)",Ordered:"var(--t-cyan)",Done:"var(--t-green)"};
+  const DS_TEMPLATE=[
+    ["Exterior paint",["Body color","Trim color","Front door color","Shutters"]],
+    ["Exterior",["Siding","Windows","Gutters & downspouts","Front door","Porch & steps","Exterior lighting"]],
+    ["Roof",["Roof shingles","Roof color","Flashing & vents"]],
+    ["Interior paint",["Wall color","Trim & door color","Ceiling color","Accent wall"]],
+    ["Walls & ceilings",["Drywall (new boards / patch / paint only)","Ceiling texture (popcorn removal)","Ceiling fans"]],
+    ["Flooring",["Living & dining","Bedrooms","Kitchen","Bathrooms","Stairs","Flooring color"]],
+    ["Kitchen",["Cabinets","Cabinet color","Island","Countertops","Backsplash","Sink & faucet","Cabinet hardware","Appliances","Appliance finish"]],
+    ["Bathrooms",["Primary bath vanity","Primary shower / tub","Primary bath tile","Hall bath vanity","Hall bath shower / tub","Hall bath tile","Mirrors & bath lighting","Toilets"]],
+    ["Doors & trim",["Interior doors","Door hardware","Baseboards & trim","Closet doors"]],
+    ["Lighting & fixtures",["Light fixtures","Recessed lights","Switches & outlets","Plumbing fixture finish"]],
+    ["HVAC / AC",["AC / heat system","Ductwork","Thermostat"]],
+    ["Electrical",["Panel","Wiring","GFCI, smoke & CO detectors"]],
+    ["Plumbing",["Supply lines","Water heater","Drains / sewer line"]],
+    ["Laundry",["Laundry room","Washer / dryer hookups"]],
+    ["Garage",["Garage door","Garage floor","Garage walls"]],
+    ["Attic",["Insulation","Attic finish / storage"]],
+    ["Patio, deck & sunroom",["Patio","Deck","Sunroom"]],
+    ["Backyard & landscape",["Landscaping","Lawn / sod","Mulch & beds","Fence","Shed"]],
+    ["Staging",["Staging","Listing photos"]],
+  ];
+  const dsId=()=>"ds-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const dsMine=()=>dsItems.filter(x=>String(x.projectId)===String(activeId));
+  const dsLoad=async(pid)=>{ setDsErr(""); setDsLoadedFor(null);
+    try{ const r=await api("lib.designGet",{projectId:pid},0); setDsItems(prev=>prev.filter(x=>String(x.projectId)!==String(pid)).concat(r.items||[])); setDsLoadedFor(String(pid)); }
+    catch(err){ setDsErr(err.message+(/Unknown library action/i.test(err.message)?" — paste the new Library.gs into Apps Script and deploy a new version.":"")); setDsLoadedFor(String(pid)); } };
+  // save one decision: update the screen at once, then the Sheet
+  const dsSave=(it,patch)=>{
+    const next={...it,...patch};
+    setDsItems(prev=>prev.some(x=>x.id===it.id)?prev.map(x=>x.id===it.id?next:x):prev.concat([next]));
+    const body={id:next.id,projectId:next.projectId,area:next.area,item:next.item}; Object.keys(patch).forEach(k=>{ body[k]=patch[k]; });
+    return api("lib.designSave",{item:body},0).then(r=>{ if(r&&r.item) setDsItems(prev=>prev.map(x=>x.id===r.item.id?{...r.item}:x)); })
+      .catch(err=>{ showToast(err.message,"error"); setDsItems(prev=>prev.map(x=>x.id===it.id?it:x)); });
+  };
+  const dsSeed=async()=>{
+    const items=[]; let n=0; DS_TEMPLATE.forEach(([area,list])=>list.forEach(item=>items.push({id:dsId()+(n),area,item,sort:++n})));
+    setDsBusy(true);
+    try{ const r=await api("lib.designAddMany",{projectId:String(activeId),items},0); setDsItems(prev=>prev.filter(x=>String(x.projectId)!==String(activeId)).concat(r.items||[])); showToast(r.added+" items added — remove anything that doesn't apply"); }
+    catch(err){ showToast(err.message,"error"); } finally{ setDsBusy(false); }
+  };
+  const dsDelete=it=>{ if(!window.confirm("Remove \""+it.item+"\"?")) return;
+    setDsItems(prev=>prev.filter(x=>x.id!==it.id)); api("lib.designDelete",{id:it.id},0).catch(err=>{ showToast(err.message,"error"); setDsItems(prev=>prev.concat([it])); }); };
+
+  // 🎤 dictation for any text box (Chrome, Edge, Safari incl. iPhone). Adds what you say to the box and saves it.
+  const DS_SR=typeof window!=="undefined"&&(window.SpeechRecognition||window.webkitSpeechRecognition);
+  const dsListen=(fieldKey,onText)=>{
+    if(!DS_SR){ showToast("Voice typing isn't available in this browser — try Chrome or Safari, or use your keyboard's mic.","error"); return; }
+    if(dsMic&&dsMic.rec){ try{ dsMic.rec.stop(); }catch(_){ } if(dsMic.key===fieldKey) return; }
+    const rec=new DS_SR(); rec.lang=navigator.language||"en-US"; rec.interimResults=false; rec.maxAlternatives=1; rec.continuous=false;
+    rec.onresult=ev=>{ const t=Array.from(ev.results).map(r=>r[0].transcript).join(" ").trim(); if(t) onText(t); };
+    rec.onerror=ev=>{ if(ev.error==="not-allowed") showToast("Allow the microphone for this site, then tap 🎤 again.","error"); };
+    rec.onend=()=>setDsMic(m=>m&&m.rec===rec?null:m);
+    try{ rec.start(); setDsMic({key:fieldKey,rec}); }catch(_){ }
+  };
+  const micBtn=(fieldKey,onText)=>{ const on=dsMic&&dsMic.key===fieldKey;
+    return e("button",{type:"button",title:on?"Listening… tap to stop":"Say it instead of typing","aria-label":on?"Stop listening":"Dictate",onClick:()=>dsListen(fieldKey,onText),
+      style:{flexShrink:0,width:38,height:38,borderRadius:8,border:"1px solid "+(on?"var(--t-red)":"var(--t-line)"),background:on?"color-mix(in srgb, var(--t-red) 13%, transparent)":"var(--t-inset)",cursor:"pointer",fontSize:16,
+        display:"flex",alignItems:"center",justifyContent:"center",animation:on?"dsPulse 1.2s ease-in-out infinite":"none"}},on?"⏺":"🎤"); };
+  // text box + mic. Saves when you leave the box or when dictation finishes.
+  const dsText=(it,k,ph,opts)=>{ const fk=it.id+":"+k, rev=dsRev[fk]||0, multi=opts&&opts.multi;
+    const commit=v=>{ v=String(v); if(v!==String(it[k]||"")) dsSave(it,{[k]:v}); };
+    return e("div",{style:{display:"flex",gap:6,alignItems:multi?"flex-start":"center",flex:(opts&&opts.flex)||"1 1 220px",minWidth:0}},
+      e(multi?"textarea":"input",{key:fk+":"+rev,defaultValue:it[k]||"",placeholder:ph,rows:multi?2:undefined,
+        style:{...S.input,padding:"8px 10px",fontSize:13.5,...(multi?{resize:"vertical",minHeight:40}:{})},
+        onBlur:ev=>commit(ev.target.value),onKeyDown:ev=>{ if(!multi&&ev.key==="Enter") ev.target.blur(); }}),
+      !(opts&&opts.noMic)&&micBtn(fk,t=>{ const v=(String(it[k]||"").trim()?String(it[k]).trim()+" ":"")+t; dsSave(it,{[k]:v}); setDsRev(r=>({...r,[fk]:(r[fk]||0)+1})); }));
+  };
+  const dsChip=(label,on,color,onClick,small)=>e("button",{type:"button",onClick,
+    style:{padding:small?"3px 9px":"5px 11px",borderRadius:99,fontSize:small?11:12,fontWeight:on?700:600,cursor:"pointer",whiteSpace:"nowrap",
+      border:"1px solid "+(on?color:"var(--t-line)"),background:on?__ta(color,"22"):"transparent",color:on?color:"var(--t-sub)"}},label);
+
+  const DesignRow=it=>{
+    const open=!!dsOpen[it.id], st=it.status||"Idea";
+    return e("div",{key:it.id,style:{padding:"12px 0",borderTop:"1px solid var(--t-line2)"}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}},
+        e("div",{style:{display:"flex",alignItems:"center",gap:8,minWidth:0}},
+          it.color&&e("span",{title:it.color,style:{width:16,height:16,borderRadius:4,background:it.color,border:"1px solid var(--t-line)",flexShrink:0}}),
+          e("span",{style:{fontWeight:700,color:"var(--t-ink)",fontSize:14}},it.item),
+          it.status&&e("span",{style:{fontSize:10.5,fontWeight:700,padding:"2px 8px",borderRadius:99,background:__ta(DS_ST_CLR[st],"22"),color:DS_ST_CLR[st]}},st),
+          (+it.cost>0)&&e("span",{style:{fontSize:11.5,color:"var(--t-sub)"}},fmt(+it.cost)),
+          it.link&&e("a",{href:it.link,target:"_blank",rel:"noopener",style:{fontSize:12,color:"var(--t-gold)",textDecoration:"none"},onClick:ev=>ev.stopPropagation()},"🔗 Link"),
+          it.link2&&e("a",{href:it.link2,target:"_blank",rel:"noopener",style:{fontSize:12,color:"var(--t-gold)",textDecoration:"none"}},"🔗 2")),
+        e("button",{type:"button",onClick:()=>setDsOpen(o=>({...o,[it.id]:!open})),style:{background:"transparent",border:"none",color:"var(--t-mute)",cursor:"pointer",fontSize:12,fontWeight:600}},open?"Less ▲":"Links, color, cost ▼")),
+      e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}},
+        ...DS_ACTIONS.map(a=>dsChip(a,it.action===a,DS_ACT_CLR[a],()=>dsSave(it,{action:it.action===a?"":a,...(!it.status&&it.action!==a?{status:"Decided"}:{})})))),
+      e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+        dsText(it,"choice","What exactly? e.g. SW Agreeable Gray · white shaker · LVP \"Coastal Oak\"")),
+      open&&e("div",{style:{marginTop:10,display:"flex",flexDirection:"column",gap:8,background:"var(--t-inset)",borderRadius:8,padding:"10px 12px"}},
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
+          dsText(it,"link","Link (product, color, inspiration)…",{noMic:true}),
+          it.link&&e("a",{href:it.link,target:"_blank",rel:"noopener",style:{...S.btn("ghost"),fontSize:12,textDecoration:"none",padding:"8px 12px"}},"Open")),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}},
+          dsText(it,"link2","Second link (optional)…",{noMic:true}),
+          it.link2&&e("a",{href:it.link2,target:"_blank",rel:"noopener",style:{...S.btn("ghost"),fontSize:12,textDecoration:"none",padding:"8px 12px"}},"Open")),
+        e("div",{style:{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}},
+          e("label",{style:{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--t-sub)"}},"Color",
+            e("input",{type:"color",value:it.color||"#ffffff",onChange:ev=>{ const v=ev.target.value; setDsItems(p=>p.map(x=>x.id===it.id?{...x,color:v}:x)); },onBlur:ev=>dsSave(it,{color:ev.target.value}),
+              style:{width:38,height:30,border:"1px solid var(--t-line)",borderRadius:6,background:"transparent",padding:0,cursor:"pointer"}}),
+            it.color&&e("button",{type:"button",onClick:()=>dsSave(it,{color:""}),style:{background:"transparent",border:"none",color:"var(--t-mute)",cursor:"pointer",fontSize:11}},"clear")),
+          e("label",{style:{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--t-sub)"}},"Est. cost",
+            e("input",{key:it.id+":cost:"+(dsRev[it.id+":cost"]||0),defaultValue:it.cost==null?"":it.cost,inputMode:"decimal",placeholder:"$",style:{...S.input,width:110,padding:"7px 9px",fontSize:13},
+              onBlur:ev=>{ const v=String(ev.target.value).replace(/[$,\s]/g,""); if(v!==String(it.cost==null?"":it.cost)) dsSave(it,{cost:v}); }})),
+          e("div",{style:{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}},e("span",{style:{fontSize:12,color:"var(--t-sub)"}},"Status"),
+            ...DS_STATUS.map(s=>dsChip(s,st===s&&!!it.status,DS_ST_CLR[s],()=>dsSave(it,{status:s}),true)))),
+        e("div",{style:{display:"flex",gap:8,alignItems:"flex-start"}},dsText(it,"notes","Notes — who's doing it, quantities, where to buy…",{multi:true})),
+        e("div",{style:{display:"flex",justifyContent:"flex-end"}},
+          e("button",{type:"button",onClick:()=>dsDelete(it),style:{background:"transparent",border:"1px solid color-mix(in srgb, var(--t-red) 40%, transparent)",color:"var(--t-red)",borderRadius:8,fontSize:11,padding:"4px 10px",cursor:"pointer"}},"Remove item"))));
+  };
+
+  const DesignView=()=>{
+    if(!activeProject) return e("div",{style:{color:"var(--t-sub)"}},"Pick a project first.");
+    if(dsLoadedFor!==String(activeId)) return e("div",{style:{color:"var(--t-sub)",padding:20}},dsErr?"Couldn't load: "+dsErr:"Loading design decisions…");
+    const mine=dsMine(), areas=[]; const byArea={};
+    [...mine].sort((a,b)=>(+a.sort||1e9)-(+b.sort||1e9)).forEach(x=>{ const k=x.area||"Other"; if(!byArea[k]){byArea[k]=[];areas.push(k);} byArea[k].push(x); });
+    const decided=mine.filter(x=>x.action||(x.status&&x.status!=="Idea")).length, cost=mine.reduce((s,x)=>s+(+x.cost||0),0);
+    const flt=dsFilter, show=x=>flt==="open"?!x.action&&!(x.status&&x.status!=="Idea"):flt==="decided"?(!!x.action||(x.status&&x.status!=="Idea")):flt==="buy"?["Replace","New","Paint/refinish","Fix"].includes(x.action)&&x.status!=="Done":true;
+    const addItem=area=>{ const name=String(dsNew[area]||"").trim(); if(!name) return; const sort=(Math.max(0,...mine.map(x=>+x.sort||0))+1);
+      dsSave({id:dsId(),projectId:String(activeId),area,item:name,sort},{item:name,area,sort}); setDsNew(n=>({...n,[area]:""})); setDsRev(r=>({...r,["new:"+area]:(r["new:"+area]||0)+1})); };
+    const newBox=(area,ph)=>e("div",{style:{display:"flex",gap:6,marginTop:10}},
+      e("input",{key:"new:"+area+":"+(dsRev["new:"+area]||0),defaultValue:dsNew[area]||"",placeholder:ph,style:{...S.input,padding:"8px 10px",fontSize:13},
+        onChange:ev=>{ const v=ev.target.value; setDsNew(n=>({...n,[area]:v})); },onKeyDown:ev=>{ if(ev.key==="Enter") addItem(area); }}),
+      micBtn("new:"+area,t=>{ setDsNew(n=>({...n,[area]:((n[area]||"")+" "+t).trim()})); setDsRev(r=>({...r,["new:"+area]:(r["new:"+area]||0)+1})); }),
+      e("button",{type:"button",style:{...S.btn("ghost"),fontSize:12,padding:"8px 12px",flexShrink:0},onClick:()=>addItem(area)},"+ Add"));
+    return e("div",null,
+      e("style",null,"@keyframes dsPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--t-red) 40%, transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--t-red) 0%, transparent)}}"),
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap",marginBottom:14},className:"page-header"},
+        e("div",null,
+          e("h1",{style:{fontWeight:800,fontSize:22,color:"var(--t-ink)"}},"🎨 Design Decisions"),
+          e("p",{style:{color:"var(--t-mute)",fontSize:13,marginTop:3}},activeProject.name+(mine.length?" · "+decided+" of "+mine.length+" decided"+(cost>0?" · est. "+fmt(cost):""):""))),
+        mine.length>0&&e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+          dsChip("All",flt==="all",DS_ST_CLR.Decided,()=>setDsFilter("all")),dsChip("Still open",flt==="open",DS_ST_CLR.Decided,()=>setDsFilter("open")),
+          dsChip("Decided",flt==="decided",DS_ST_CLR.Decided,()=>setDsFilter("decided")),dsChip("To buy / do",flt==="buy",DS_ST_CLR.Decided,()=>setDsFilter("buy")))),
+      mine.length>0&&e("div",{style:{height:6,background:"var(--t-inset)",borderRadius:6,marginBottom:16,overflow:"hidden"}},
+        e("div",{style:{height:6,width:Math.round(decided/mine.length*100)+"%",background:"var(--t-gold)",borderRadius:6}})),
+      mine.length===0&&e("div",{style:{...S.card,textAlign:"center",padding:"32px 20px"}},
+        e("div",{style:{fontSize:34,marginBottom:8}},"🎨"),
+        e("div",{style:{fontWeight:700,color:"var(--t-ink)",fontSize:15,marginBottom:6}},"Plan every finish and fix for "+activeProject.name),
+        e("div",{style:{fontSize:13,color:"var(--t-sub)",maxWidth:520,margin:"0 auto 16px"}},"Start with the standard checklist: paint, flooring, kitchen, baths, roof, AC, electrical, plumbing, landscape, staging and more. Remove what doesn't apply, and tap 🎤 to talk instead of typing."),
+        e("div",{style:{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}},
+          e("button",{style:S.btn(),disabled:dsBusy,onClick:dsSeed},dsBusy?"Adding…":"Use the checklist ("+DS_TEMPLATE.reduce((s,a)=>s+a[1].length,0)+" items)"),
+          e("button",{style:S.btn("ghost"),onClick:()=>setDsNew(n=>({...n,__area:"Kitchen"}))},"Start blank"))),
+      mine.length>0&&e("div",{style:{display:"flex",justifyContent:"flex-end",gap:12,marginBottom:8}},
+        e("button",{type:"button",style:{background:"transparent",border:"none",color:"var(--t-sub)",cursor:"pointer",fontSize:12,fontWeight:600},onClick:()=>setDsCollapsed(Object.fromEntries(areas.map(a=>[a,false])))},"Expand all"),
+        e("button",{type:"button",style:{background:"transparent",border:"none",color:"var(--t-sub)",cursor:"pointer",fontSize:12,fontWeight:600},onClick:()=>setDsCollapsed(Object.fromEntries(areas.map(a=>[a,true])))},"Collapse all")),
+      ...areas.map(area=>{ const list=byArea[area], vis=list.filter(show), done=list.filter(x=>x.action||(x.status&&x.status!=="Idea")).length,
+        collapsed=dsCollapsed[area]===undefined?(mine.length>20&&flt==="all"):!!dsCollapsed[area];   // long lists start folded; tap an area to open it
+        if(flt!=="all"&&!vis.length) return null;
+        return e("div",{key:area,style:{...S.card,marginBottom:12,padding:"14px 18px"}},
+          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,cursor:"pointer"},onClick:()=>setDsCollapsed(c=>({...c,[area]:!collapsed}))},
+            e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-gold)",textTransform:"uppercase",letterSpacing:"0.08em"}},area),
+            e("div",{style:{display:"flex",alignItems:"center",gap:10}},e("span",{style:{fontSize:12,color:done===list.length?"var(--t-green)":"var(--t-sub)"}},done+"/"+list.length),
+              e("span",{style:{color:"var(--t-mute)",fontSize:12}},collapsed?"▼":"▲"))),
+          !collapsed&&e("div",{style:{marginTop:4}},...vis.map(DesignRow),flt==="all"&&newBox(area,"Add to "+area+"…")));
+      }),
+      (mine.length>0||dsNew.__area)&&e("div",{style:{...S.card,marginBottom:12,padding:"14px 18px"}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4}},"Add an item to a new area"),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+          e("input",{list:"ds-areas",placeholder:"Area (e.g. Basement, Pool)",value:dsNew.__area||"",onChange:ev=>{ const v=ev.target.value; setDsNew(n=>({...n,__area:v})); },style:{...S.input,flex:"1 1 180px",padding:"8px 10px",fontSize:13}}),
+          e("datalist",{id:"ds-areas"},...DS_TEMPLATE.map(a=>e("option",{key:a[0],value:a[0]})))),
+        String(dsNew.__area||"").trim()&&newBox(String(dsNew.__area).trim(),"Item (e.g. Pool resurfacing)")));
+  };
+
+  bfLate.current.dsLoad=dsLoad; bfLate.current.dsReady=true;
   // BuildFlow: vendor list, filtered total, and the vendor's spend across all projects
   const expVendors=(()=>{ const m={}; expenses.forEach(ex=>{ const k=vKey(ex.vendor); if(!k)return; const o=m[k]||(m[k]={key:k,n:0,names:{}}); o.n++; const nm=String(ex.vendor).trim(); o.names[nm]=(o.names[nm]||0)+1; });
     return Object.values(m).map(o=>({key:o.key,n:o.n,label:Object.keys(o.names).sort((a,b)=>o.names[b]-o.names[a])[0]})).sort((a,b)=>a.label.localeCompare(b.label)); })();
@@ -5591,10 +5769,10 @@ function App() {
         e("span",{style:{fontSize:10,fontWeight:700,color:"var(--t-gold)",border:"1px solid color-mix(in srgb, var(--t-gold) 33%, transparent)",borderRadius:99,padding:"2px 8px",marginLeft:4,letterSpacing:"0.04em"}},"BuildFlow")
       ),
       saving&&e("span",{style:{fontSize:12,color:"var(--t-gold)",marginLeft:4}},"Saving…"),
-      activeProject&&view!=="home"&&!isFm&&e("div",{style:{marginLeft:"auto"}},
+      activeProject&&view!=="home"&&view!=="design"&&!isFm&&e("div",{style:{marginLeft:"auto"}},
         e("button",{style:{...S.btn(),fontSize:13},onClick:()=>view==="tasks"?openAddTask():view==="quotes"?openAddQuote():view==="loan"?openDrawForm(null):openAddExpense()},view==="tasks"?"+ Task":view==="quotes"?"+ Quote":view==="loan"?"+ Draw":"+ Add")
       ),
-      e(ThemeBtn,{push:!(activeProject&&view!=="home"&&!isFm)})
+      e(ThemeBtn,{push:!(activeProject&&view!=="home"&&view!=="design"&&!isFm)})
     ),
 
     e("div",{style:{display:"flex",flex:1,minHeight:0}},
@@ -5608,6 +5786,7 @@ function App() {
         view==="finishes"  ?FinishesView():
         view==="briefing"  ?BriefingView():
         view==="project-finishes"?ProjectFinishesView():
+        view==="design"    ?DesignView():
         view==="dashboard" ?DashboardView():
         view==="expenses"  ?ExpensesView():
         view==="loan"      ?LoanView():
