@@ -2449,6 +2449,7 @@ function App() {
   const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
+  const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
   const [dsMic,setDsMic] = useState(null); const [dsRev,setDsRev] = useState({}); const [dsOpen,setDsOpen] = useState({}); const [dsFilter,setDsFilter] = useState("all"); const [dsCollapsed,setDsCollapsed] = useState({}); const [dsNew,setDsNew] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
@@ -2731,6 +2732,7 @@ function App() {
   const activeProject=projects.find(p=>String(p.id)===String(activeId))||null;
 
   const saveExpense=async()=>{
+    if(form.vendor){ const _cv=vpCanon(form.vendor); if(_cv!==form.vendor) form.vendor=_cv; }   // one spelling per vendor
     if(!form.description||!form.amount||!form.date){showToast("Fill in all required fields.","error");return;}
     let amount=parseFloat(String(form.amount).replace(/[$,\s]/g,""));
     if(isNaN(amount)||amount===0){showToast("Enter a valid amount.","error");return;}
@@ -2803,6 +2805,7 @@ function App() {
   };
 
   const saveQuote=async()=>{
+    if(form.vendor){ const _cv=vpCanon(form.vendor); if(_cv!==form.vendor) form.vendor=_cv; }   // one spelling per vendor
     if(!form.item||!form.vendor||!form.amount){showToast("Item, vendor, and amount are required.","error");return;}
     const amount=parseFloat(form.amount);
     if(isNaN(amount)||amount<=0){showToast("Enter a valid amount.","error");return;}
@@ -3164,6 +3167,62 @@ function App() {
   }).sort((a,b)=>pDate(b.date)-pDate(a.date));
 
   // ── FORM VIEWS ──
+  // ══ Vendor picker for expenses & quotes: pick from your vendors instead of typing, so the same vendor is never spelled two ways ══
+  // List = Vendors directory + every vendor already used on any project's expenses (all projects + General Expenses).
+  // "Lowes", "Lowe's" and "lowes " are the same vendor: typing one of them snaps to the spelling you already use.
+  const vpNorm=s=>String(s||"").toLowerCase().replace(/&/g," and ").replace(/^\s*the\s+/,"").replace(/[^a-z0-9]/g,"");   // "&" = "and"
+  const vpNames=()=>{
+    const m={};
+    const add=(name,inDir,n)=>{ const nm=String(name||"").trim(); const k=vpNorm(nm); if(!k) return;
+      const cur=m[k]||(m[k]={k,name:nm,n:0,inDir:false,cat:"",spell:{}});
+      cur.n+=n||0; cur.spell[nm]=(cur.spell[nm]||0)+(n||0)+(inDir?1e6:0);
+      if(inDir){ cur.inDir=true; cur.cat=inDir; } };
+    Object.keys(vendors||{}).forEach(cat=>(vendors[cat]||[]).forEach(v=>add(v.name,cat,0)));
+    ((fm&&fm.db&&fm.db.expenses)||[]).forEach(x=>add(x.vendor,null,1));
+    (expenses||[]).forEach(x=>add(x.vendor,null,0));
+    return Object.values(m).map(v=>{ const caps=x=>(x.match(/[A-Z]/g)||[]).length; v.name=Object.keys(v.spell).sort((a,b)=>v.spell[b]-v.spell[a]||(caps(b)>0)-(caps(a)>0)||(a===a.trim()?0:1))[0]; return v; })   // directory spelling wins, then the most used one
+      .sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name));
+  };
+  const vpCanon=name=>{ const k=vpNorm(name); if(!k) return String(name||"").trim(); const hit=vpNames().find(v=>v.k===k); return hit?hit.name:String(name||"").trim(); };
+  const vpAddVendor=(name,cat)=>{
+    name=String(name||"").trim(); if(!name) return false;
+    if(!vendorsLoaded){ showToast("Vendors haven't loaded yet. Reload the app and try again.","error"); return false; }
+    const c=VENDOR_CATEGORIES.includes(cat)?cat:(VENDOR_CATEGORIES.includes("Other")?"Other":VENDOR_CATEGORIES[0]);
+    setVendors(prev=>({...prev,[c]:(prev[c]||[]).concat([{id:"v-"+Date.now(),name,phone:"",email:"",notes:"Added from an expense"}])}));
+    return true;
+  };
+  const VendorPicker=(fieldKey,ph)=>{
+    const q=String(form[fieldKey]||""), open=vpOpen===fieldKey, qk=vpNorm(q), all=vpNames();
+    const exact=qk?all.find(v=>v.k===qk):null;
+    const list=(qk?all.filter(v=>v.k.includes(qk)||v.name.toLowerCase().includes(q.trim().toLowerCase())):all).slice(0,40);
+    const pick=name=>{ setForm(f=>({...f,[fieldKey]:name})); setVpOpen(null); setVpAdding(null); };
+    const row=(key,content,onPick,extra)=>e("div",{key,role:"option",onMouseDown:ev=>{ev.preventDefault();onPick();},
+      style:{padding:"9px 12px",cursor:"pointer",fontSize:13.5,color:"var(--t-ink)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,borderBottom:"1px solid var(--t-line2)",...(extra||{})},
+      onMouseEnter:ev=>{ev.currentTarget.style.background="var(--t-line)";},onMouseLeave:ev=>{ev.currentTarget.style.background="transparent";}},content);
+    return e("div",{style:{position:"relative"}},
+      e("div",{style:{display:"flex",alignItems:"center",gap:6}},
+        e("input",{style:S.input,placeholder:ph||"Pick or type a vendor",value:q,autoComplete:"off","aria-label":"Vendor",role:"combobox","aria-expanded":open,
+          onFocus:()=>setVpOpen(fieldKey),
+          onChange:ev=>{ const v=ev.target.value; setForm(f=>({...f,[fieldKey]:v})); setVpOpen(fieldKey); setVpAdding(null); },
+          onKeyDown:ev=>{ if(ev.key==="Escape") setVpOpen(null); if(ev.key==="Enter"&&open){ ev.preventDefault(); if(exact) pick(exact.name); else if(list.length===1) pick(list[0].name); } },
+          onBlur:()=>{ setTimeout(()=>setVpOpen(o=>o===fieldKey&&!vpAddingRef.current?null:o),120); if(exact&&exact.name!==q) setForm(f=>({...f,[fieldKey]:exact.name})); }}),
+        q&&e("button",{type:"button","aria-label":"Clear vendor",title:"Clear",onMouseDown:ev=>{ev.preventDefault();setForm(f=>({...f,[fieldKey]:""}));setVpOpen(fieldKey);},
+          style:{flexShrink:0,background:"transparent",border:"none",color:"var(--t-mute)",cursor:"pointer",fontSize:16,padding:"0 4px"}},"×")),
+      exact&&exact.name!==q.trim()&&e("div",{style:{fontSize:11.5,color:"var(--t-gold)",marginTop:4}},"Will be saved as \""+exact.name+"\" (already in your list)"),
+      open&&e("div",{role:"listbox",style:{position:"absolute",left:0,right:0,top:"calc(100% + 4px)",zIndex:60,background:"var(--t-card)",border:"1px solid var(--t-line)",borderRadius:8,maxHeight:260,overflowY:"auto",boxShadow:"0 10px 30px #0008"}},
+        list.length===0&&!qk&&e("div",{style:{padding:"10px 12px",fontSize:12.5,color:"var(--t-sub)"}},"No vendors yet — type a name to add one."),
+        ...list.map(v=>row(v.k,[e("span",{key:"n"},v.name),e("span",{key:"c",style:{fontSize:11,color:"var(--t-mute)",whiteSpace:"nowrap"}},(v.inDir?"📇 ":"")+(v.n?v.n+" expense"+(v.n>1?"s":""):v.cat))],()=>pick(v.name),v.name===q?{background:"color-mix(in srgb, var(--t-line) 33%, transparent)"}:null)),
+        qk&&!exact&&(vpAdding===fieldKey
+          ? e("div",{key:"__add",style:{padding:"10px 12px",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",background:"var(--t-inset)"},onMouseDown:ev=>{ if(ev.target.tagName!=="SELECT"&&ev.target.tagName!=="OPTION") ev.preventDefault(); }},
+              e("span",{style:{fontSize:12.5,color:"var(--t-ink4)"}},"Add \""+q.trim()+"\" to Vendors as"),
+              e("select",{style:{...S.input,width:"auto",flex:"1 1 150px",padding:"6px 8px",fontSize:12.5},value:vpCat,onFocus:()=>{vpAddingRef.current=true;},onBlur:()=>{vpAddingRef.current=false;},onChange:ev=>setVpCat(ev.target.value)},
+                ...VENDOR_CATEGORIES.map(c=>e("option",{key:c,value:c},c))),
+              e("button",{type:"button",style:{...S.btn(),fontSize:12,padding:"6px 12px"},onMouseDown:ev=>{ ev.preventDefault(); vpAddingRef.current=false;
+                if(vpAddVendor(q,vpCat)){ showToast("Added "+q.trim()+" to Vendors"); pick(q.trim()); } }},"Add vendor"),
+              e("button",{type:"button",style:{...S.btn("ghost"),fontSize:12,padding:"6px 10px"},onMouseDown:ev=>{ev.preventDefault();vpAddingRef.current=false;setVpAdding(null);}},"Cancel"))
+          : row("__new",[e("span",{key:"n",style:{color:"var(--t-gold)",fontWeight:700}},"+ Add \""+q.trim()+"\" as a new vendor"),e("span",{key:"h",style:{fontSize:11,color:"var(--t-mute)"}},"saves it to Vendors")],
+              ()=>{ setVpAdding(fieldKey); setVpCat(VENDOR_CATEGORIES.includes("Other")?"Other":VENDOR_CATEGORIES[0]); vpAddingRef.current=true; }))));
+  };
   if(view==="add-expense"||view==="add-project"||view==="edit-project"||view==="add-task"||view==="add-quote"){
     const isExpense=view==="add-expense";
     const isTask=view==="add-task";
@@ -3200,7 +3259,7 @@ function App() {
                   e("optgroup",{label:"── Rehab ──"},REHAB_CATEGORIES.map(c=>e("option",{key:c},c)))
                 )
               ),
-              e("div",{style:{flex:1}},e("label",{style:S.label},"Vendor"),e("input",{style:S.input,placeholder:"e.g. Home Depot",value:form.vendor||"",onChange:ev=>setForm({...form,vendor:ev.target.value})}))
+              e("div",{style:{flex:1,minWidth:0}},e("label",{style:S.label},"Vendor"),VendorPicker("vendor","Pick or type a vendor"))
             ),
             e("div",{key:"notes"},e("label",{style:S.label},"Notes"),e("textarea",{style:{...S.input,minHeight:60,resize:"vertical"},value:form.notes||"",onChange:ev=>setForm({...form,notes:ev.target.value})}))
           ]:isTask?[
@@ -3247,7 +3306,7 @@ function App() {
           ]:isQuote?[
             e("div",{key:"item"},e("label",{style:S.label},"Item / Project *"),e("input",{style:S.input,placeholder:"e.g. Windows, Roofing, Plumbing fixtures",value:form.item||"",onChange:ev=>setForm({...form,item:ev.target.value})})),
             e("div",{key:"vendoramt",style:{display:"flex",gap:12},className:"form-row"},
-              e("div",{style:{flex:1}},e("label",{style:S.label},"Vendor *"),e("input",{style:S.input,placeholder:"e.g. ABC Windows Co.",value:form.vendor||"",onChange:ev=>setForm({...form,vendor:ev.target.value})})),
+              e("div",{style:{flex:1,minWidth:0}},e("label",{style:S.label},"Vendor *"),VendorPicker("vendor","Pick or type a vendor")),
               e("div",{style:{flex:1}},e("label",{style:S.label},"Quote Amount ($) *"),e("input",{style:S.input,type:"number",step:"0.01",placeholder:"0.00",value:form.amount||"",onChange:ev=>setForm({...form,amount:ev.target.value})}))
             ),
             e("div",{key:"cat"},
