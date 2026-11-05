@@ -1977,9 +1977,25 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const canAccrue=!!(loan&&rate&&loan.closingDate);
   // The pro-rated interest paid at closing already covers the first days (closing → end of that month), so the
   // purchase loan only starts accruing once those prepaid days run out; otherwise those days are counted twice.
+  // Kiavi bills a flat month (balance × rate ÷ 12) whatever the month's length, so days are counted 30/360:
+  // Dec 1 → Jan 1 is 30 days, same as Feb 1 → Mar 1. Part of today counts as part of a day.
+  const day0=d=>{ const t=d instanceof Date?d:new Date(String(d).slice(0,10)+"T00:00:00"); return isNaN(t.getTime())?null:new Date(t.getFullYear(),t.getMonth(),t.getDate()); };
+  const d360=from=>{ const a=day0(from); if(!a) return 0; const b=new Date(now), b0=day0(b);
+    if(b0<a) return 0;
+    let d1=a.getDate(), d2=b0.getDate(); if(d1===31) d1=30; if(d2===31&&d1>=30) d2=30;
+    return (b0.getFullYear()-a.getFullYear())*360+(b0.getMonth()-a.getMonth())*30+(d2-d1)+Math.min(1,(now-b0.getTime())/864e5); };
+  // Purchase loan: the pro-rated interest paid at closing covers the first days (to the end of the closing month),
+  // so interest starts when those prepaid days run out — the 1st of the next month when they end within 3 days of it
+  // (Kiavi's interest starts at funding, which can be a day after the closing date entered here).
   const perDiem=adv*rate/100/360, prepaidDays=canAccrue&&perDiem>0?Math.max(0,n(loan.proratedInterest))/perDiem:0;
-  const interestAccrued=!canAccrue?0:perDiem*Math.max(0,daysSince(loan.closingDate)-prepaidDays)
-    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
+  let accrueFrom=canAccrue?day0(loan.closingDate):null;
+  if(accrueFrom&&prepaidDays>0){
+    const end=new Date(accrueFrom.getFullYear(),accrueFrom.getMonth(),accrueFrom.getDate()+Math.round(prepaidDays));
+    const first=new Date(end.getFullYear(),end.getMonth()+(end.getDate()>15?1:0),1);
+    accrueFrom=Math.abs(end-first)<=3.5*864e5?first:end;
+  }
+  const interestAccrued=!canAccrue||!accrueFrom?0:perDiem*d360(accrueFrom)
+    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*d360(f.date||loan.closingDate)/360,0);
   const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
   // Projected holding cost for the whole hold: interest so far + the months left on the FULL loan (the rest of the
   // holdback gets drawn), minus interest you've already paid (that's in "acq" as Loan Expenses, so it isn't counted twice).
