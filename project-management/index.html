@@ -1933,7 +1933,7 @@ const loanClosing=loan=>{
   const total=items.reduce((s,x)=>s+x[1],0), dp=n(loan.downPayment), emd=n(loan.emd);
   return {fromLoan:CLOSING_KEYS.some(has),items,total,dp,emd,cashCalc:dp-emd+total,cashStated:has("cashAtClosing")?n(loan.cashAtClosing):null};
 };
-const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest})=>{
+const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees})=>{
   const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
   deal=deal||{};
   const ownArv=n(deal.arv), lenderArv=n(loan&&loan.lenderArv);
@@ -1961,10 +1961,12 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest})=>{
   const rehab=Math.max(n(rb),rehabSpent);
   const adv=loan?(n(loan.initialAdvance)||Math.max(0,n(loan.loanAmount)-n(loan.holdback))):0;
   const balance=loan?adv+n(drawn):0, interestMo=loan?balance*n(loan.rate)/100/12:0;
-  const monthly=interestMo+other, holding=monthly*months;
+  const monthly=interestMo+other;
+  // Draw fees from the Draws list count as a cost, unless you already logged them as Loan Expenses ("draw"/"inspection" fee)
+  const feesLogged=sum((expenses||[]).filter(x=>x.category==="Loan Expenses"&&/draw|inspection/i.test(String(x.description||""))));
+  const drawFeesCounted=Math.max(0,n(drawFees)-feesLogged);
   const realtor=arv*rPct/100, closing=arv*cPct/100;
   const coInt=n(otherInterest);   // company loans that funded this project: interest accrued, not paid yet
-  const profit=arv-n(pp)-acq-rehab-holding-realtor-closing-coInt;
   // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
   const rate=loan?n(loan.rate):0, now=Date.now();
@@ -1976,9 +1978,16 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest})=>{
   const interestAccrued=!canAccrue?0:adv*rate/100*daysSince(loan.closingDate)/360
     +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
   const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
-  const costsToDate=n(pp)+acq+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
+  // Projected holding cost for the whole hold: interest so far + the months left on the FULL loan (the rest of the
+  // holdback gets drawn), minus interest you've already paid (that's in "acq" as Loan Expenses, so it isn't counted twice).
+  const monthsSince=canAccrue?daysSince(loan.closingDate)/30.4375:0, monthsLeft=Math.max(0,months-monthsSince);
+  const fullBal=loan?(n(loan.loanAmount)||adv+n(loan.holdback)):0, fullMo=fullBal*rate/100/12;
+  const interestTotal=canAccrue?interestAccrued+fullMo*monthsLeft:interestMo*months;
+  const holdingInterest=Math.max(0,interestTotal-interestPaid), holding=holdingInterest+other*months;
+  const profit=arv-n(pp)-acq-drawFeesCounted-rehab-holding-realtor-closing-coInt;
+  const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
   return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
-    interestToDate,interestLogged,interestPaid,interestAccrued,coInt,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
+    interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
@@ -3147,7 +3156,7 @@ function App() {
 
   const deal      =activeProject?deals[String(activeProject.id)]:null;
   const fundedList=pDraws.filter(d=>d.status==="Funded").map(d=>({amt:nz(d.amountFunded)||nz(d.amountRequested),date:d.fundedDate}));
-  const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0});
+  const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0,drawFees:pDraws.filter(d=>d.status!=="Denied").reduce((s,d)=>s+nz(d.fee),0)});
   const totalCost =pp+rb;
   const rehabRem  =rb-rehabSpent;
   const rehabPct  =rb>0?Math.min(100,(rehabSpent/rb)*100):0;
@@ -4001,7 +4010,8 @@ function App() {
     const exps=(fm.db.expenses||[]).filter(x=>String(x.projectId)===pid);
     const fd=draws.filter(d=>String(d.projectId)===pid&&d.status==="Funded").map(d=>({amt:parseFloat(d.amountFunded)||parseFloat(d.amountRequested)||0,date:d.fundedDate}));
     const dr=fd.reduce((s,f)=>s+f.amt,0);
-    const c=calcProfit({pp:p.purchasePrice,rb:p.rehabBudget,expenses:exps,deal:dl,loan:ln,drawn:dr,funded:fd,otherInterest:coInterestFor(pid)});
+    const c=calcProfit({pp:p.purchasePrice,rb:p.rehabBudget,expenses:exps,deal:dl,loan:ln,drawn:dr,funded:fd,otherInterest:coInterestFor(pid),
+      drawFees:draws.filter(d=>String(d.projectId)===pid&&d.status!=="Denied").reduce((s,d)=>s+(parseFloat(d.fee)||0),0)});
     if(!c) return null;
     return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}},
       e("div",{style:{background:"var(--t-inset)",borderRadius:7,padding:"10px 12px"}},
@@ -4028,7 +4038,10 @@ function App() {
     ["Purchase price",-c.pp,null,false],
     [c.closingFromLoan?"Acquisition costs (Loan section + loan expenses)":c.acqFromLoan?"Acquisition costs (Kiavi closing fees)":"Acquisition costs (closing + loan fees)",-c.acq,null,false],
     [c.rehabFromBudget?"Rehab (budget)":"Rehab (spent, over budget)",-c.rehab,null,false],
-    ["Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
+    ...(c.drawFeesCounted>0?[["Draw fees (from Draws)",-c.drawFeesCounted,null,false]]:[]),
+    [c.interestTotal&&c.monthsSince>0
+      ? "Holding: interest so far + "+(Math.round(c.monthsLeft*10)/10)+" mo left × "+fmt(c.fullMo)+" (full loan)"+(c.interestPaid>0?" − "+fmt(c.interestPaid)+" already paid":"")+(c.other?" + other "+fmt(c.other)+"/mo":"")
+      : "Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
     ["Realtor fee ("+pctTxt(c.rPct)+" of ARV)",-c.realtor,"var(--t-amber)",false],
     ["Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
   ];
@@ -4072,6 +4085,7 @@ function App() {
       ["Rehab spent so far",c.rehabSpent],
       ...(c.interestPaid>0?[["Kiavi payments logged",c.interestPaid]]:[]),
       [c.interestNeedsClosing?"Kiavi interest (add closing date)":c.interestPaid>0?"Interest accrued since last payment (est.)":"Kiavi interest so far (est.)",c.interestToDate],
+      ...(c.drawFeesCounted>0?[["Draw fees (from Draws)",c.drawFeesCounted]]:[]),
       ...(c.coInt>0?[["Company loan interest accrued (not paid yet)",c.coInt]]:[]),
     ];
     const line=(l,v,opt)=>e("div",{key:l,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"var(--t-sub)",...(opt||{})}},
@@ -4102,7 +4116,7 @@ function App() {
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
-    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)||""},loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0});
+    const prev=calcProfit({pp,rb,expenses,deal:{...d,arv:num(d.arv)||""},loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0,drawFees:pDraws.filter(x=>x.status!=="Denied").reduce((s,x)=>s+nz(x.fee),0)});
     return [
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:14}},"ARV & selling costs"),
       e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
@@ -4671,7 +4685,12 @@ function App() {
   const DrawBudgetCard=()=>{
     if(!loan) return null;
     const st=lineStats(null), T=k=>st.reduce((s,l)=>s+l[k],0);
-    const tot={budget:T("budget"),drawn:T("drawn"),pending:T("pending"),remaining:T("remaining"),ready:T("ready")};
+    // draws that were never split by line still use up the budget: count them in the totals and ask to split them
+    const unsplit=pBudget.length?pDraws.filter(d=>d.status!=="Denied"&&!Object.keys(drawSplit(d)).length):[];
+    const unDrawn=unsplit.filter(d=>d.status==="Funded").reduce((s,d)=>s+num(d.amountRequested||d.amountFunded),0);
+    const unPend=unsplit.filter(d=>PENDING_ST.includes(d.status)).reduce((s,d)=>s+num(d.amountRequested),0);
+    const lineReady=T("ready");
+    const tot={budget:T("budget"),drawn:T("drawn")+unDrawn,pending:T("pending")+unPend,remaining:T("remaining")-unDrawn-unPend,ready:Math.max(0,Math.round((lineReady-unDrawn-unPend)*100)/100)};
     const off=holdback>0&&pBudget.length&&Math.abs(tot.budget-holdback)>0.5;
     const fundedShort=pDraws.filter(d=>d.status==="Funded"&&d.lines).map(d=>({d,diff:Object.values(drawSplit(d)).reduce((s,v)=>s+num(v),0)-(num(d.amountFunded)||num(d.amountRequested))})).filter(x=>Math.abs(x.diff)>0.5);
     const bar=l=>{ const b=l.budget||1; return e("div",{style:{height:5,background:"var(--t-inset)",borderRadius:99,overflow:"hidden",display:"flex",marginTop:4,position:"relative"}},
@@ -4689,13 +4708,17 @@ function App() {
         e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
           pBudget.length>0&&e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>copyForLender(null)},"Copy for lender"),
           e("button",{style:{...S.btn("ghost"),fontSize:11,padding:"5px 10px"},onClick:()=>setLineEdit({id:"line-"+Date.now().toString(36),projectId:String(activeId),line:"",description:"",budget:"",pctComplete:0,sort:pBudget.length+1,notes:""})},"+ Line"),
-          tot.ready>0&&e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},onClick:newDrawFromReady},"Request "+fmt(tot.ready)+" ready"))),
+          tot.ready>0&&!unsplit.length&&e("button",{style:{...S.btn(),fontSize:11,padding:"5px 10px"},onClick:newDrawFromReady},"Request "+fmt(tot.ready)+" ready"))),
+      unsplit.length>0&&e("div",{style:{margin:"0 16px 12px",background:"var(--t-warnbg)",border:"1px solid var(--t-amber)",borderRadius:8,padding:"10px 12px",fontSize:12.5,color:"var(--t-amber3)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}},
+        e("span",null,"⚠️ "+unsplit.map(d=>"Draw #"+d.drawNumber+" ("+fmt(num(d.amountRequested||d.amountFunded))+")").join(", ")+(unsplit.length>1?" aren't":" isn't")+" split by line. The totals above include "+(unsplit.length>1?"them":"it")+
+          ", but the line rows below don't — so each line's Drawn and Ready to draw are off until you split "+(unsplit.length>1?"them":"it")+"."),
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},...unsplit.map(d=>e("button",{key:d.id,style:{...S.btn(),fontSize:11,padding:"5px 10px"},onClick:()=>openDrawForm(d)},"Split #"+d.drawNumber+" by line")))),
       pBudget.length>0&&e("div",{style:{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,padding:"0 16px 12px"},className:"summary-grid"},
         statTile("Budget",fmt(tot.budget),"var(--t-ink)",off?"Holdback is "+fmt(holdback):null),
-        statTile("Drawn",fmt(tot.drawn),"var(--t-green)",tot.budget?Math.round(tot.drawn/tot.budget*100)+"%":null),
+        statTile("Drawn",fmt(tot.drawn),"var(--t-green)",(tot.budget?Math.round(tot.drawn/tot.budget*100)+"%":"")+(unDrawn?" · incl. "+fmt(unDrawn)+" not split":"")),
         statTile("In request",fmt(tot.pending),"var(--t-amber)"),
         statTile("Remaining",fmt(tot.remaining),"var(--t-ink)"),
-        statTile("Ready to draw",fmt(tot.ready),"var(--t-gold)","Done, not drawn")),
+        statTile("Ready to draw",fmt(tot.ready),"var(--t-gold)",unsplit.length?"Estimate — split draws for exact":"Done, not drawn")),
       fundedShort.length>0&&e("div",{style:{fontSize:11.5,color:"var(--t-sub)",padding:"0 16px 10px"}},fundedShort.map(x=>"Draw #"+x.d.drawNumber+" was funded "+fmt(Math.abs(x.diff))+(x.diff>0?" less":" more")+" than its line split (lender fee/adjustment).").join(" ")),
       pBudget.length>0&&e("div",null,
         e("div",{className:"desktop-table"},e("table",null,
