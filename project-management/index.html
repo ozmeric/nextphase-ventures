@@ -4107,6 +4107,7 @@ function App() {
       :c.interestTotal&&c.monthsSince>0
       ? "Holding: interest so far + "+(Math.round(c.monthsLeft*10)/10)+" mo left × "+fmt(c.fullMo)+" (full loan)"+(c.interestPaid>0?" − "+fmt(c.interestPaid)+" already paid":"")+(c.other?" + other "+fmt(c.other)+"/mo":"")
       : "Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
+    ...(c.coInt>0?[["Company loan interest owed (not paid yet)",-c.coInt,null,false]]:[]),
     ["Realtor fee ("+pctTxt(c.rPct)+" of "+(c.soldPrice>0?"sale price":"ARV")+")",-c.realtor,"var(--t-amber)",false],
     ["Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
   ];
