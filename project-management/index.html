@@ -3870,6 +3870,7 @@ function App() {
         statTile("Pending",fmt(drawPending),"var(--t-amber)",pDraws.filter(d=>["Requested","Inspection","Approved"].includes(d.status)).length+" in progress"),
         statTile("Holdback left",fmt(holdbackLeft),holdbackLeft<0?"var(--t-red)":"var(--t-ink)",holdback>0?Math.round(Math.max(0,holdbackLeft)/holdback*100)+"% of holdback":null),
         statTile("Spent, not yet drawn",fmt(spentNotDrawn),"var(--t-gold)","Rehab spent "+fmt(rehabSpent)))),
+    loansLoaded&&LenderPaidCard(),
     loansLoaded&&DrawBudgetCard(),
     loansLoaded&&e("div",{style:{...S.card,padding:0,overflow:"hidden"}},
       e("div",{style:{padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}},
@@ -4814,6 +4815,74 @@ function App() {
     if(libLoaded&&bfLate.current.loadLib) bfLate.current.loadLib();
   };
   bfLate.current.refreshAll=bfRefreshAll;
+
+  // ══ Loan & Draws → 🏦 Paid to the lender: what has gone (and will go) to Kiavi, apart from title & other closing costs ══
+  // Same numbers the profit cards use, so they always agree. "Loan Expenses" should hold only money paid to the lender.
+  const lpParts=()=>{
+    if(!loan) return null;
+    const c=projCalc, n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;};
+    const le=(expenses||[]).filter(x=>x.category==="Loan Expenses"&&!/\[cl:/.test(String(x.notes||"")));   // company-loan interest isn't the lender
+    const d=x=>String(x.description||"");
+    const isClosingFee=x=>/origination|service fee|pro-?rated|prepaid/i.test(d(x));
+    const isDrawFee=x=>/draw|inspection/i.test(d(x));
+    const isPay=x=>/payment|interest/i.test(d(x)+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(d(x));
+    const looksClosing=x=>/title|recording|record fee|grantor|deed|transfer tax|insurance|hazard|settlement|attorney|notary|survey|hoa|closing cost/i.test(d(x));
+    const sum=a=>a.reduce((s,x)=>s+n(x.amount),0);
+    const lc=loanClosing(loan)||{}, fromLoan=!!lc.fromLoan;
+    const atClosingLoan=n(loan.originationFee)+n(loan.serviceFee)+n(loan.proratedInterest);
+    const atClosingLogged=sum(le.filter(isClosingFee));
+    // same rule as the profit math: closing costs in the Loan section → its fees; otherwise what you logged, or the Loan section's fees if nothing is logged
+    const atClosing=fromLoan?atClosingLoan:(atClosingLogged>0?atClosingLogged:atClosingLoan);
+    const pays=le.filter(isPay), feeExp=le.filter(isDrawFee);
+    const misplaced=le.filter(x=>!isClosingFee(x)&&!isPay(x)&&!isDrawFee(x)&&looksClosing(x));
+    const other=le.filter(x=>!isClosingFee(x)&&!isPay(x)&&!isDrawFee(x)&&!looksClosing(x));
+    const drawFeesTable=pDraws.filter(x=>x.status!=="Denied").reduce((s,x)=>s+n(x.fee),0);
+    const drawFees=Math.max(drawFeesTable,sum(feeExp));
+    const interestPaid=sum(pays), owedNow=c?c.interestToDate:0;
+    const paidSoFar=atClosing+interestPaid+drawFees+sum(other);   // mis-filed closing costs aren't the lender's money (the profit math still counts them once)
+    const futureInterest=c&&c.monthsSince>0?c.fullMo*c.monthsLeft:(c?Math.max(0,c.holdingInterest+interestPaid-(c.interestAccrued||0)):0);
+    const interestAll=(c?c.interestAccrued:0)+futureInterest;
+    const remainingHold=Math.max(0,holdback-drawnFunded), feeEach=pDraws.length?drawFeesTable/Math.max(1,pDraws.filter(x=>x.status!=="Denied").length):0;
+    const costAtEnd=atClosing+Math.max(interestAll,interestPaid)+drawFees+sum(other);
+    const principalEnd=n(loan.loanAmount)||(n(loan.initialAdvance)+holdback);
+    const sale=loan.closingDate&&c?new Date(new Date(String(loan.closingDate).slice(0,10)+"T12:00:00").getTime()+c.months*30.4375*864e5):null;
+    return {c,atClosing,atClosingLogged,fromLoan,interestPaid,payCount:pays.length,drawFees,drawFeesTable,feeExp,other,misplaced,paidSoFar,owedNow,
+      futureInterest,interestAll,costAtEnd,principalEnd,principalNow:c?c.payoffPrincipal:0,remainingHold,feeEach,sale};
+  };
+  const LenderPaidCard=()=>{
+    const P=lpParts(); if(!P||!P.c) return null;
+    const L=loan.lender||"the lender";
+    const row=(label,v,sub,col)=>e("div",{key:label,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"4px 0",color:"var(--t-sub)",borderBottom:"1px solid var(--t-line2)"}},
+      e("span",null,label,sub&&e("span",{style:{display:"block",fontSize:11,color:"var(--t-mute)"}},sub)),e("span",{style:{color:col||"var(--t-ink4)",whiteSpace:"nowrap",fontWeight:600}},fmt(v)));
+    const total=(label,v,col)=>e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13.5,fontWeight:800,padding:"6px 0 0",color:"var(--t-ink)"}},e("span",null,label),e("span",{style:{color:col||"var(--t-ink)"}},fmt(v)));
+    const head=t=>e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",letterSpacing:"0.08em",textTransform:"uppercase",margin:"2px 0 4px"}},t);
+    return e("div",{style:{...S.card,marginBottom:16}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:10}},
+        e("div",null,e("div",{style:{fontWeight:700,color:"var(--t-ink)"}},"🏦 Paid to "+L),
+          e("div",{style:{fontSize:12,color:"var(--t-mute)",marginTop:2}},"The cost of the loan: fees and interest only. Title, recording, insurance and other closing costs aren't included here, and principal isn't a cost.")),
+        e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+          statTile("Net paid so far",fmt(P.paidSoFar),"var(--t-ink)"),
+          statTile("By the end (est.)",fmt(P.costAtEnd),"var(--t-amber)",P.sale?"sale ~"+P.sale.toLocaleDateString("en-US",{month:"short",year:"numeric"}):null))),
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",columnGap:24,rowGap:12}},
+        e("div",null,head("So far"),
+          row("Lender fees at closing",P.atClosing,"origination + service fee + prepaid interest"+(P.fromLoan||!P.atClosingLogged?" (Loan section)":" (from expenses)")),
+          row("Interest payments",P.interestPaid,P.payCount+" payment(s) in Loan Expenses"),
+          row("Draw fees",P.drawFees,P.feeExp.length?"logged in expenses":"from the Draws list"),
+          ...P.other.map(x=>row(x.description||"Other lender charge",+x.amount||0,"Loan Expenses · "+(x.date?fmtDate(x.date):""))),
+          total("Net paid to "+L+" so far",P.paidSoFar),
+          P.misplaced.length>0&&e("div",{style:{marginTop:8,background:"var(--t-warnbg)",border:"1px solid color-mix(in srgb, var(--t-amber) 33%, transparent)",borderRadius:8,padding:"6px 10px"}},
+            e("div",{style:{fontSize:11.5,color:"var(--t-amber3)",marginBottom:2}},"⚠ In Loan Expenses but not paid to "+L+" (not counted above). Change the category to Closing Costs:"),
+            ...P.misplaced.map(x=>row(x.description||"Charge",+x.amount||0,(x.vendor?x.vendor+" · ":"")+(x.date?fmtDate(x.date):""),"var(--t-amber)"))),
+          e("div",{style:{marginTop:8}},row("Interest owed now (not paid yet)",P.owedNow,"since the last payment you logged","var(--t-amber)"))),
+        e("div",null,head("By the end of the project (est.)"),
+          row("Interest for the whole loan",P.interestAll,"so far "+fmt(P.c.interestAccrued)+" + "+(Math.round(P.c.monthsLeft*10)/10)+" mo left × "+fmt(P.c.fullMo)+" (full loan)"),
+          row("Fees (closing + draws so far)",P.atClosing+P.drawFees+P.other.reduce((s,x)=>s+(+x.amount||0),0),
+            P.remainingHold>0&&P.feeEach>0?"+ about "+fmt(P.feeEach)+" per future draw ("+fmt(P.remainingHold)+" holdback left)":null),
+          total("Total loan cost to "+L,P.costAtEnd,"var(--t-amber)"),
+          e("div",{style:{marginTop:8}},
+            row("Principal paid back at the sale",P.principalEnd,"borrowed so far "+fmt(P.principalNow)+(P.remainingHold>0?" + "+fmt(P.remainingHold)+" holdback still to draw":"")),
+            e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"At the sale "+L+" gets the principal back plus any unpaid interest. Only the fees and interest above are a cost — they're the same numbers the profit cards use, so nothing is counted twice.")))));
+  };
 
   // ══ Project → 🎨 Design Decisions: paint colors, flooring, cabinets, baths, roof, AC… (Library.gs "Design Decisions" tab) ══
   // Tap a choice (Keep / Fix / Paint / Replace / New / Remove / N/A), type or 🎤 say the details, add links. Every change saves by itself.
