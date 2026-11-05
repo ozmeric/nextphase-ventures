@@ -1985,8 +1985,14 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const interestTotal=canAccrue?interestAccrued+fullMo*monthsLeft:interestMo*months;
   const holdingInterest=Math.max(0,interestTotal-interestPaid), holding=holdingInterest+other*months;
   const profit=arv-n(pp)-acq-drawFeesCounted-rehab-holding-realtor-closing-coInt;
+  // Cash view if sold today: the sale pays off the loan (everything disbursed + unpaid interest); your cash in is
+  // the down payment, closing costs, fees, interest paid and rehab you paid that the draws didn't reimburse.
+  // Cash back − cash in equals "profit if sold today" exactly, because loan principal is never a cost.
+  const payoffPrincipal=loan?adv+n(drawn):0, payoff=payoffPrincipal+interestToDate;
+  const cashIn=n(pp)-(loan?adv:0)+acq+drawFeesCounted+rehabSpent-(loan?n(drawn):0)+coInt;
   const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
   return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
+    payoffPrincipal,payoff,cashIn,cashBack:arv-realtor-closing-payoff,
     interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
@@ -4112,7 +4118,21 @@ function App() {
           e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},
             e("span",null,"Profit if sold today"),e("span",{style:{color:good?"var(--t-green)":"var(--t-red)"}},fmt(c.profitToday))),
           e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12.5,padding:"5px 0 0",color:"var(--t-sub)"}},
-            e("span",null,"Projected at finish (remaining rehab + "+c.months+" more mo holding)"),e("span",{style:{color:c.profit<0?"var(--t-red)":"var(--t-green)",fontWeight:700}},fmt(c.profit))))));
+            e("span",null,"Projected at finish (remaining rehab + "+(c.monthsSince>0?Math.round(c.monthsLeft*10)/10:c.months)+" more mo holding)"),e("span",{style:{color:c.profit<0?"var(--t-red)":"var(--t-green)",fontWeight:700}},fmt(c.profit))))),
+      loan&&e("div",{style:{marginTop:12,borderTop:"1px solid var(--t-line)",paddingTop:8}},
+        e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💵 Cash view · if sold today"),
+        e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",columnGap:24}},
+          e("div",null,
+            line("Sale price (ARV)",c.arv),
+            line("− Realtor + seller closing",c.sellCosts),
+            line("− Loan payoff: "+fmt(c.payoffPrincipal)+" borrowed so far + "+fmt(c.interestToDate)+" unpaid interest",c.payoff),
+            e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},e("span",null,"Cash back to you"),e("span",null,fmt(c.cashBack)))),
+          e("div",null,
+            line("Your cash in (down payment, closing, fees, interest paid, rehab the draws didn't cover)",c.cashIn),
+            e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},
+              e("span",null,"Cash back − cash in"),e("span",{style:{color:c.cashBack-c.cashIn>=0?"var(--t-green)":"var(--t-red)"}},fmt(c.cashBack-c.cashIn))),
+            c.cashIn<0&&e("div",{style:{fontSize:11,color:"var(--t-amber)",marginTop:4}},"Below zero: the draws have paid out more than the rehab logged so far (expenses not entered yet, or work paid ahead)."),
+            e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"Same as Profit if sold today: the bigger loan balance is paid back from the sale, and the rehab it paid for is already counted once in your expenses.")))));
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
