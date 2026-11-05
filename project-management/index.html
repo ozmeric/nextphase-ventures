@@ -533,7 +533,7 @@ function DateField(props){
   inner.width = "100%"; inner.paddingRight = 36; inner.cursor = disabled ? "default" : "pointer";
   return h("div",{ref:wrap,style:outer},
     h("input",{ref:inp,id,name,type:"text",inputMode:"none",autoComplete:"off",className,style:inner,disabled,required,
-      value:text, placeholder:placeholder||"Select date", "aria-haspopup":"dialog","aria-expanded":open,
+      value:text, placeholder:placeholder||"Select date", "aria-label":props["aria-label"], "aria-haspopup":"dialog","aria-expanded":open,
       onClick:()=>{ if(!disabled) setOpen(true); },
       onFocus:()=>{ if(!disabled) setOpen(true); },
       onChange:ev=>{ setTyping(true); setText(ev.target.value); },
@@ -1937,9 +1937,15 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
   deal=deal||{};
   const ownArv=n(deal.arv), lenderArv=n(loan&&loan.lenderArv);
-  const arv=ownArv||lenderArv; if(!(arv>0)) return null;          // your ARV, or the lender's estimate until you set one
+  // Sold: the sold price replaces the ARV, interest stops on the sold date, and the rehab is what was actually spent
+  const soldPrice=n(deal.soldPrice), soldS=String(deal.soldDate||"").slice(0,10);
+  const soldD=/^\d{4}-\d{2}-\d{2}$/.test(soldS)&&!isNaN(new Date(soldS+"T00:00:00").getTime())?new Date(soldS+"T00:00:00"):null;
+  const arv=ownArv||lenderArv||soldPrice; if(!(arv>0)) return null;          // your ARV, or the lender's estimate until you set one
+  const salePrice=soldPrice>0?soldPrice:arv, sold=!!(soldPrice>0&&soldD&&soldD.getTime()<=Date.now());
   const rPct=blank(deal.realtorPct)?5:n(deal.realtorPct), cPct=blank(deal.sellerClosingPct)?1:n(deal.sellerClosingPct);
-  const months=blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
+  const closeD=loan&&loan.closingDate?new Date(String(loan.closingDate).slice(0,10)+"T00:00:00"):null;
+  const months=soldD&&closeD&&!isNaN(closeD.getTime())?Math.max(0,(soldD-closeD)/864e5/30.4375)   // sold (or sale date set) → hold = closing → sale
+    :blank(deal.holdMonths)?(loan&&n(loan.rate)?6:0):n(deal.holdMonths), other=n(deal.otherMonthly);
   const isEMD=x=>/\bemd\b|earnest/i.test(String(x.description||""));
   const sum=xs=>xs.reduce((s,x)=>s+n(x.amount),0);
   const isInterestPay=x=>x.category==="Loan Expenses"&&!/\[cl:/.test(String(x.notes||""))&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));   // [cl:…] = company-loan interest, not Kiavi
@@ -1958,18 +1964,18 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
     acqFromLoan=!(acqLogged-interestPaid>0)&&loanFees>0; acq=acqFromLoan?loanFees+interestPaid:acqLogged;   // nothing logged yet → lender's fees
   }
   const rehabSpent=sum((expenses||[]).filter(x=>REHAB_CATEGORIES.includes(x.category)));
-  const rehab=Math.max(n(rb),rehabSpent);
+  const rehab=sold?rehabSpent:Math.max(n(rb),rehabSpent);
   const adv=loan?(n(loan.initialAdvance)||Math.max(0,n(loan.loanAmount)-n(loan.holdback))):0;
   const balance=loan?adv+n(drawn):0, interestMo=loan?balance*n(loan.rate)/100/12:0;
   const monthly=interestMo+other;
   // Draw fees from the Draws list count as a cost, unless you already logged them as Loan Expenses ("draw"/"inspection" fee)
   const feesLogged=sum((expenses||[]).filter(x=>x.category==="Loan Expenses"&&/draw|inspection/i.test(String(x.description||""))));
   const drawFeesCounted=Math.max(0,n(drawFees)-feesLogged);
-  const realtor=arv*rPct/100, closing=arv*cPct/100;
+  const realtor=salePrice*rPct/100, closing=salePrice*cPct/100;
   const coInt=n(otherInterest);   // company loans that funded this project: interest accrued, not paid yet
   // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
-  const rate=loan?n(loan.rate):0, now=Date.now();
+  const rate=loan?n(loan.rate):0, now=sold?Math.min(Date.now(),soldD.getTime()+864e5):Date.now();   // sold → interest through the sold date
   const daysSince=d=>{ if(!d) return 0; const t=new Date(String(d).slice(0,10)+"T00:00:00").getTime(); return isNaN(t)?0:Math.max(0,(now-t)/864e5); };
   // Kiavi payments you log under Loan Expenses are already in "acq". The app estimates what has accrued
   // (actual/360, like Kiavi's per-diem) and only adds the part not yet covered by logged payments,
@@ -1977,13 +1983,17 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const canAccrue=!!(loan&&rate&&loan.closingDate);
   // The pro-rated interest paid at closing already covers the first days (closing → end of that month), so the
   // purchase loan only starts accruing once those prepaid days run out; otherwise those days are counted twice.
-  // Kiavi bills a flat month (balance × rate ÷ 12) whatever the month's length, so days are counted 30/360:
-  // Dec 1 → Jan 1 is 30 days, same as Feb 1 → Mar 1. Part of today counts as part of a day.
+  // How Kiavi bills (checked against Lincoln's statements): the payment on the 1st covers the month before, in arrears.
+  // A full month is a flat balance × rate ÷ 12 whatever its length; a part month (a draw funded mid-month, or the
+  // first days after closing) is charged by the actual day (balance × rate ÷ 360 per day).
   const day0=d=>{ const t=d instanceof Date?d:new Date(String(d).slice(0,10)+"T00:00:00"); return isNaN(t.getTime())?null:new Date(t.getFullYear(),t.getMonth(),t.getDate()); };
-  const d360=from=>{ const a=day0(from); if(!a) return 0; const b=new Date(now), b0=day0(b);
-    if(b0<a) return 0;
-    let d1=a.getDate(), d2=b0.getDate(); if(d1===31) d1=30; if(d2===31&&d1>=30) d2=30;
-    return (b0.getFullYear()-a.getFullYear())*360+(b0.getMonth()-a.getMonth())*30+(d2-d1)+Math.min(1,(now-b0.getTime())/864e5); };
+  const firstAfter=a=>a.getDate()===1?a:new Date(a.getFullYear(),a.getMonth()+1,1);
+  // billable days from a date (midnight) to time t: actual days to the next 1st, then 30 per month, then the days of this month (max 30)
+  const kDays=(from,t)=>{ const a=day0(from); if(!a||t<=a.getTime()) return 0; const f=firstAfter(a);
+    if(t<=f.getTime()) return (t-a.getTime())/864e5;
+    const head=Math.round((f-a)/864e5), b0=day0(new Date(t));
+    const months=(b0.getFullYear()-f.getFullYear())*12+(b0.getMonth()-f.getMonth());
+    return head+months*30+Math.min(30,b0.getDate()-1+(t-b0.getTime())/864e5); };
   // Purchase loan: the pro-rated interest paid at closing covers the first days (to the end of the closing month),
   // so interest starts when those prepaid days run out — the 1st of the next month when they end within 3 days of it
   // (Kiavi's interest starts at funding, which can be a day after the closing date entered here).
@@ -1994,25 +2004,53 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
     const first=new Date(end.getFullYear(),end.getMonth()+(end.getDate()>15?1:0),1);
     accrueFrom=Math.abs(end-first)<=3.5*864e5?first:end;
   }
-  const interestAccrued=!canAccrue||!accrueFrom?0:perDiem*d360(accrueFrom)
-    +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*d360(f.date||loan.closingDate)/360,0);
-  const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
+  const fd=(funded||[]).map(f=>({amt:n(f.amt),d:day0(f.date||loan.closingDate)})).filter(f=>f.amt>0&&f.d);
+  // Interest owed now. With payments logged, the last one shows how far Kiavi has billed: a payment made on the 1st–24th
+  // covers through the end of the month before; one made on the 25th or later is the next month's bill paid early.
+  // So only the interest since then is owed (plus any draw funded late last month that the payment didn't include).
+  // With no payments yet, it's everything since interest started.
+  let interestToDate=0, interestAccrued=0, paidThrough=null;
+  if(canAccrue&&accrueFrom){
+    const pays=(expenses||[]).filter(isInterestPay).map(x=>({d:day0(x.date),amt:n(x.amount)})).filter(x=>x.d&&x.d.getTime()<=now).sort((x,y)=>x.d-y.d);
+    const last=pays.length?pays[pays.length-1]:null;
+    let start=last?(last.d.getDate()>=25?new Date(last.d.getFullYear(),last.d.getMonth()+1,1):new Date(last.d.getFullYear(),last.d.getMonth(),1)):null;
+    if(start&&start<=accrueFrom) start=null;   // a payment before interest even started (e.g. an old entry) says nothing
+    if(start){
+      paidThrough=start;
+      const prev=new Date(start.getFullYear(),start.getMonth()-1,1);
+      // draws funded last month: which ones did the last payment include? pick the set that best explains its amount
+      const late=fd.filter(f=>f.d<start&&f.d>=prev), early=fd.filter(f=>f.d<prev);
+      const part=f=>f.amt*rate/100/360*Math.round((start-f.d)/864e5);
+      const base=(accrueFrom<=prev?adv*rate/100/12:perDiem*Math.round((start-accrueFrom)/864e5))+early.reduce((s,f)=>s+f.amt*rate/100/12,0);
+      let best=null;
+      for(let m=0;m<(1<<Math.min(late.length,8));m++){ const inc=late.filter((f,i)=>m&(1<<i)); const diff=Math.abs(base+inc.reduce((s,f)=>s+part(f),0)-last.amt);
+        if(!best||diff<best.diff-0.005) best={diff,inc}; }
+      const billed=best&&best.diff<=25?best.inc:late.filter(f=>(start-f.d)/864e5>5);   // amount doesn't match → assume the last 5 days weren't billed yet
+      const owedFor=t=>perDiem*kDays(accrueFrom>start?accrueFrom:start,t)
+        +fd.reduce((s,f)=>s+f.amt*rate/100/360*(f.d>=start?kDays(f.d,t):kDays(start,t)+(f.d>=prev&&!billed.includes(f)?Math.round((start-f.d)/864e5):0)),0);
+      interestToDate=owedFor(now); interestAccrued=interestPaid+interestToDate;
+    } else {
+      interestAccrued=perDiem*kDays(accrueFrom,now)+fd.reduce((s,f)=>s+f.amt*rate/100/360*kDays(f.d,now),0);
+      interestToDate=Math.max(0,interestAccrued-interestPaid);
+    }
+  }
+  const interestLogged=interestPaid>0;
   // Projected holding cost for the whole hold: interest so far + the months left on the FULL loan (the rest of the
   // holdback gets drawn), minus interest you've already paid (that's in "acq" as Loan Expenses, so it isn't counted twice).
   const monthsSince=canAccrue?daysSince(loan.closingDate)/30.4375:0, monthsLeft=Math.max(0,months-monthsSince);
   const fullBal=loan?(n(loan.loanAmount)||adv+n(loan.holdback)):0, fullMo=fullBal*rate/100/12;
   const interestTotal=canAccrue?interestAccrued+fullMo*monthsLeft:interestMo*months;
   const holdingInterest=Math.max(0,interestTotal-interestPaid), holding=holdingInterest+other*months;
-  const profit=arv-n(pp)-acq-drawFeesCounted-rehab-holding-realtor-closing-coInt;
+  const profit=salePrice-n(pp)-acq-drawFeesCounted-rehab-holding-realtor-closing-coInt;
   // Cash view if sold today: the sale pays off the loan (everything disbursed + unpaid interest); your cash in is
   // the down payment, closing costs, fees, interest paid and rehab you paid that the draws didn't reimburse.
   // Cash back − cash in equals "profit if sold today" exactly, because loan principal is never a cost.
   const payoffPrincipal=loan?adv+n(drawn):0, payoff=payoffPrincipal+interestToDate;
   const cashIn=n(pp)-(loan?adv:0)+acq+drawFeesCounted+rehabSpent-(loan?n(drawn):0)+coInt;
-  const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
-  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
-    payoffPrincipal,payoff,cashIn,cashBack:arv-realtor-closing-payoff,advance:adv,drawnTotal:n(drawn),
-    interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
+  const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=salePrice-costsToDate-sellCosts;
+  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:!sold&&n(rb)>=rehabSpent,sold,soldPrice,soldDate:soldD?soldS:"",salePrice,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/salePrice,
+    payoffPrincipal,payoff,cashIn,cashBack:salePrice-realtor-closing-payoff,advance:adv,drawnTotal:n(drawn),
+    interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/salePrice};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
 const pDate = v => (typeof v==="string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? new Date(v+"T00:00:00") : new Date(v);   // BuildFlow: local-date fix
@@ -2487,6 +2525,7 @@ function App() {
   const [dsMic,setDsMic] = useState(null); const [dsRev,setDsRev] = useState({}); const [dsOpen,setDsOpen] = useState({}); const [dsFilter,setDsFilter] = useState("all"); const [dsCollapsed,setDsCollapsed] = useState({}); const [dsNew,setDsNew] = useState({});
   const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
+  const [saleEdit,setSaleEdit] = useState(null); const [saleBusy,setSaleBusy] = useState(false);   // sold price / sold date / rate boxes
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
   const [libItems,setLibItems] = useState([]); const [libOrders,setLibOrders] = useState([]); const [libLoaded,setLibLoaded] = useState(false); const [libErr,setLibErr] = useState("");
   const [libList,setLibList] = useState(""); const [libSearch,setLibSearch] = useState(""); const [libEdit,setLibEdit] = useState(null); const [libPick,setLibPick] = useState(null); const [libBusy,setLibBusy] = useState(false); const [libOrderEdit,setLibOrderEdit] = useState(null);
@@ -4040,10 +4079,10 @@ function App() {
     if(!c) return null;
     return e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:10}},
       e("div",{style:{background:"var(--t-inset)",borderRadius:7,padding:"10px 12px"}},
-        e("div",{style:{fontSize:10,color:"var(--t-mute)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"ARV"),
-        e("div",{style:{fontSize:15,fontWeight:800,color:"var(--t-purple)"}},fmt(c.arv))),
+        e("div",{style:{fontSize:10,color:"var(--t-mute)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},c.soldPrice>0?(c.sold?"Sold price":"Sale price"):"ARV"),
+        e("div",{style:{fontSize:15,fontWeight:800,color:"var(--t-purple)"}},fmt(c.salePrice))),
       e("div",{style:{background:"var(--t-inset)",borderRadius:7,padding:"10px 12px"}},
-        e("div",{style:{fontSize:10,color:"var(--t-mute)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},"Est. profit"),
+        e("div",{style:{fontSize:10,color:"var(--t-mute)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},c.sold?"Final profit":"Est. profit"),
         e("div",{style:{fontSize:15,fontWeight:800,color:c.profit<0?"var(--t-red)":"var(--t-green)"}},fmt(c.profit))));
   };
 
@@ -4059,15 +4098,16 @@ function App() {
   const arvTooLow=a=>a>0&&(a<10000||(+pp>0&&a<+pp*0.5));                 // e.g. 550 typed for 550,000
   const arvGuess=a=>a>0&&a<10000?a*1000:null;
   const breakdown=c=>[
-    ["ARV",c.arv,"var(--t-purple)",false],
+    [c.soldPrice>0?"Sale price":"ARV",c.salePrice,"var(--t-purple)",false],
     ["Purchase price",-c.pp,null,false],
     [c.closingFromLoan?"Acquisition costs (Loan section + loan expenses)":c.acqFromLoan?"Acquisition costs (Kiavi closing fees)":"Acquisition costs (closing + loan fees)",-c.acq,null,false],
-    [c.rehabFromBudget?"Rehab (budget)":"Rehab (spent, over budget)",-c.rehab,null,false],
+    [c.sold?"Rehab (spent)":c.rehabFromBudget?"Rehab (budget)":"Rehab (spent, over budget)",-c.rehab,null,false],
     ...(c.drawFeesCounted>0?[["Draw fees (from Draws)",-c.drawFeesCounted,null,false]]:[]),
-    [c.interestTotal&&c.monthsSince>0
+    [c.sold?"Holding: interest still owed at the sale"+(c.interestPaid>0?" (the "+fmt(c.interestPaid)+" you paid is in acquisition costs)":"")+(c.other?" + other "+fmt(c.other)+"/mo":"")
+      :c.interestTotal&&c.monthsSince>0
       ? "Holding: interest so far + "+(Math.round(c.monthsLeft*10)/10)+" mo left × "+fmt(c.fullMo)+" (full loan)"+(c.interestPaid>0?" − "+fmt(c.interestPaid)+" already paid":"")+(c.other?" + other "+fmt(c.other)+"/mo":"")
       : "Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
-    ["Realtor fee ("+pctTxt(c.rPct)+" of ARV)",-c.realtor,"var(--t-amber)",false],
+    ["Realtor fee ("+pctTxt(c.rPct)+" of "+(c.soldPrice>0?"sale price":"ARV")+")",-c.realtor,"var(--t-amber)",false],
     ["Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
   ];
   const DealCard=()=>{
@@ -4117,21 +4157,26 @@ function App() {
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:12}},
         e("div",null,
           e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-gold)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💰 Profit"),
-          e("div",{style:{fontSize:12,color:"var(--t-sub)"}},"At "+(c.arvSource==="lender"?"Kiavi's estimated ARV":"your ARV")+": where the deal stands today, and where it ends up when the rehab is finished")),
+          e("div",{style:{fontSize:12,color:"var(--t-sub)"}},c.sold?"Sold "+fmtDate(c.soldDate+"T12:00:00")+" for "+fmt(c.soldPrice)+": the final numbers, with interest through the sold date"
+            :c.soldPrice>0?"At the sold price "+fmt(c.soldPrice)+(c.soldDate?", closing "+fmtDate(c.soldDate+"T12:00:00"):"")+": where the deal stands today, and the final result"
+            :"At "+(c.arvSource==="lender"?"Kiavi's estimated ARV":"your ARV")+": where the deal stands today, and where it ends up when the rehab is finished")),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openDealEdit},"Edit ARV")),
       arvWarn,
       e("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10},className:"summary-grid"},
-        statTile("ARV",fmt(c.arv),"var(--t-purple)",c.arvSource==="lender"?"Kiavi estimate":null),
-        loan?statTile("Cash back to you",fmt(c.cashBack),"var(--t-ink)","if sold today, after the loan payoff"):statTile("Spent so far",fmt(c.costsToDate),"var(--t-ink)","purchase + costs + rehab"),
-        statTile("Profit if sold today",fmt(c.profitToday),good?"var(--t-green)":"var(--t-red)",pctTxt(c.marginToday*100)+" of ARV"),
-        statTile("Profit at finish",fmt(c.profit),goodEnd?"var(--t-green)":"var(--t-red)","projected · "+pctTxt(c.margin*100)+" of ARV")),
+        c.soldPrice>0?statTile(c.sold?"Sold price":"Sale price",fmt(c.soldPrice),"var(--t-purple)",c.sold?fmtDate(c.soldDate+"T12:00:00"):"ARV was "+fmt(c.arv))
+          :statTile("ARV",fmt(c.arv),"var(--t-purple)",c.arvSource==="lender"?"Kiavi estimate":null),
+        loan?statTile("Cash back to you",fmt(c.cashBack),"var(--t-ink)",c.sold?"at the sale, after the loan payoff":"if sold today, after the loan payoff"):statTile("Spent so far",fmt(c.costsToDate),"var(--t-ink)","purchase + costs + rehab"),
+        statTile(c.sold?"Final profit":"Profit if sold today",fmt(c.profitToday),good?"var(--t-green)":"var(--t-red)",pctTxt(c.marginToday*100)+" of "+(c.soldPrice>0?"sale price":"ARV")),
+        c.sold?statTile("Interest paid + owed",fmt(c.interestPaid+c.interestToDate),"var(--t-amber)","through "+fmtDate(c.soldDate+"T12:00:00"))
+          :statTile("Profit at finish",fmt(c.profit),goodEnd?"var(--t-green)":"var(--t-red)","projected · "+pctTxt(c.margin*100)+" of "+(c.soldPrice>0?"sale price":"ARV"))),
+      SaleBoxes(),
       e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",columnGap:28,rowGap:16,marginTop:14,borderTop:"1px solid var(--t-line)",paddingTop:10}},
         // ── left: if sold today, in cash ──
         e("div",null,
-          head("If sold today","what you'd walk away with"),
-          line("Sale price (ARV)",c.arv),
+          head(c.sold?"At the sale":"If sold today",c.sold?"what you walked away with":"what you'd walk away with"),
+          line(c.soldPrice>0?"Sale price":"Sale price (ARV)",c.salePrice),
           line("Realtor "+pctTxt(c.rPct)+" + seller closing "+pctTxt(c.cPct),-c.sellCosts),
-          loan&&line("Pay off the loan: "+fmt(c.payoffPrincipal)+" borrowed so far + "+fmt(c.interestToDate)+" interest due",-c.payoff),
+          loan&&line("Pay off the loan: "+fmt(c.payoffPrincipal)+(c.sold?" borrowed":" borrowed so far")+" + "+fmt(c.interestToDate)+" interest due",-c.payoff),
           loan?sumLine("Cash back to you",c.cashBack):null,
           e("div",{style:{height:10}}),
           e("div",{style:{fontSize:11.5,color:"var(--t-sub)",fontWeight:700,marginBottom:2}},"What you've put in so far"),
@@ -4140,15 +4185,57 @@ function App() {
           c.coInt>0&&line("Company loan interest owed",c.coInt),
           loan?line(rehabOwn>=0?"Rehab you paid beyond the draws":"Draw money not spent on rehab yet",rehabOwn):line("Rehab spent so far",c.rehabSpent),
           sumLine("You've put in",c.cashIn),
-          sumLine("Profit if sold today",c.profitToday,good?"var(--t-green)":"var(--t-red)",loan?(c.cashIn>=0?"cash back "+fmt(c.cashBack)+" minus the "+fmt(c.cashIn)+" you've put in":"cash back "+fmt(c.cashBack)+" plus "+fmt(-c.cashIn)+" of draw money you're still holding"):"sale price minus selling costs and everything spent"),
+          sumLine(c.sold?"Final profit":"Profit if sold today",c.profitToday,good?"var(--t-green)":"var(--t-red)",loan?(c.cashIn>=0?"cash back "+fmt(c.cashBack)+" minus the "+fmt(c.cashIn)+" you've put in":"cash back "+fmt(c.cashBack)+" plus "+fmt(-c.cashIn)+" of draw money you're still holding"):"sale price minus selling costs and everything spent"),
           rehabOwn<0&&loan&&e("div",{style:{fontSize:11,color:"var(--t-amber)",marginTop:4}},"The draws have paid out more than the rehab logged so far (expenses not entered yet, or work paid ahead).")),
         // ── right: projected at finish ──
         e("div",null,
-          head("At finish (projected)","full rehab budget + "+monthsLeftTxt+" more month"+(monthsLeftTxt===1?"":"s")+" of holding"),
+          head(c.sold?"Final breakdown":"At finish (projected)",c.sold?"rehab actually spent + interest through the sold date":"full rehab budget + "+monthsLeftTxt+" more month"+(monthsLeftTxt===1?"":"s")+" of holding"),
           ...breakdown(c).map(([l,v,col],k)=>line(l,v,{key:"b"+k,vcolor:col||undefined})),
-          sumLine("Profit at finish",c.profit,goodEnd?"var(--t-green)":"var(--t-red)",pctTxt(c.margin*100)+" of ARV"))),
+          sumLine(c.sold?"Final profit":"Profit at finish",c.profit,goodEnd?"var(--t-green)":"var(--t-red)",pctTxt(c.margin*100)+" of "+(c.soldPrice>0?"sale price":"ARV")))),
       c.emdExcluded>0&&e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:8}},"EMD ("+fmt(c.emdExcluded)+") is part of the purchase price, so it isn't counted again."),
       c.arvSource==="lender"&&e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"Using Kiavi's estimated ARV. Press Edit ARV to use your own."));
+  };
+  // ── Sold price · Sold date · Interest rate: edit right on the Profit card; the numbers above follow them ──
+  const saleCur=()=>({pid:String(activeId),soldPrice:deal&&deal.soldPrice!=null&&deal.soldPrice!==""?String(deal.soldPrice):"",
+    soldDate:deal?String(deal.soldDate||"").slice(0,10):"",rate:loan&&loan.rate!=null&&loan.rate!==""?String(loan.rate):""});
+  const saleVals=()=>saleEdit&&saleEdit.pid===String(activeId)?saleEdit:saleCur();
+  const saleDirty=()=>{ const v=saleVals(), c=saleCur(); return num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate||(loan&&num(v.rate)!==num(c.rate)); };
+  const saveSale=async(clear)=>{
+    const v=clear?{...saleVals(),soldPrice:"",soldDate:""}:saleVals(), c=saleCur(), pid=String(activeId);
+    if(String(v.soldPrice).trim()!==""&&!(num(v.soldPrice)>0)){ showToast("Sold price must be a number","error"); return; }
+    if(String(v.soldPrice).trim()!==""&&+pp>0&&num(v.soldPrice)<+pp*0.5){ showToast("Sold price looks too low — type the full amount (e.g. 685,000 or 685k)","error"); return; }
+    if(loan&&String(v.rate).trim()!==""&&!(num(v.rate)>0&&num(v.rate)<30)){ showToast("Interest rate should be a % like 9.25","error"); return; }
+    setSaleBusy(true);
+    try{
+      if(num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate){
+        const d={...dealDefaults(),...(deal||{}),projectId:pid,soldPrice:String(v.soldPrice).trim()===""?"":num(v.soldPrice),soldDate:v.soldDate||""};
+        const r=await api("loan.saveDeal",{deal:d},0);
+        if((d.soldPrice!==""||d.soldDate)&&r.deal&&!("soldPrice" in r.deal)){ showToast("Not saved — Apps Script is running an older Loans.gs. Paste in the new Loans.gs, then Deploy → Manage deployments → ✏️ Edit → New version.","error"); return; }
+        setDeals(m=>({...m,[pid]:r.deal}));
+      }
+      if(loan&&num(v.rate)!==num(c.rate)){
+        const r=await api("loan.saveLoan",{loan:{...loan,rate:String(v.rate).trim()===""?"":num(v.rate)}},0);
+        setLoans(m=>({...m,[pid]:r.loan}));
+      }
+      setSaleEdit(null); showToast(clear?"Sale cleared":"Saved — the profit numbers are updated");
+    }catch(err){ showToast(err.message,"error"); } finally{ setSaleBusy(false); }
+  };
+  const SaleBoxes=()=>{
+    const v=saleVals(), set=f=>setSaleEdit(o=>({...(o&&o.pid===String(activeId)?o:saleCur()),...f})), dirty=saleDirty();
+    const box=(label,input,sub)=>e("div",{style:{flex:"1 1 150px",minWidth:140}},e("label",{style:{...S.label,marginBottom:4}},label),input,
+      sub&&e("div",{style:{fontSize:10.5,color:"var(--t-mute)",marginTop:3}},sub));
+    const hasSale=deal&&(num(deal.soldPrice)>0||deal.soldDate);
+    return e("div",{style:{display:"flex",gap:10,flexWrap:"wrap",alignItems:"flex-end",background:"var(--t-inset)",border:"1px solid var(--t-line)",borderRadius:10,padding:"10px 12px",marginTop:12}},
+      box("Sold price",e("input",{style:S.input,inputMode:"decimal","aria-label":"Sold price",placeholder:"not sold yet",value:v.soldPrice,onChange:ev=>set({soldPrice:ev.target.value})}),
+        num(v.soldPrice)>0?"used instead of the ARV":"blank = use the ARV"),
+      box("Sold date",e("input",{style:S.input,type:"date","aria-label":"Sold date",value:v.soldDate,onChange:ev=>set({soldDate:ev.target.value})}),
+        v.soldDate?"interest stops on this date":"blank = still holding"),
+      loan&&box("Interest rate (%)",e("input",{style:S.input,inputMode:"decimal","aria-label":"Interest rate",placeholder:"e.g. 9.25",value:v.rate,onChange:ev=>set({rate:ev.target.value})}),
+        "the "+(loan.lender||"loan")+" rate (same as Loan & Draws)"),
+      e("div",{style:{display:"flex",gap:6,flex:"0 0 auto",paddingBottom:dirty||hasSale?18:0}},
+        dirty&&e("button",{style:{...S.btn(),fontSize:12.5},disabled:saleBusy,onClick:()=>saveSale(false)},saleBusy?"Saving…":"Save"),
+        dirty&&e("button",{style:{...S.btn("ghost"),fontSize:12.5},disabled:saleBusy,onClick:()=>setSaleEdit(null)},"Cancel"),
+        !dirty&&hasSale&&e("button",{style:{...S.btn("ghost"),fontSize:12},disabled:saleBusy,onClick:()=>saveSale(true)},"Clear sale")));
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
@@ -6010,7 +6097,7 @@ function App() {
       )
     ),
 
-    toast&&e("div",{style:{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?"var(--t-red)":"var(--t-green)",color:"#fff",padding:"10px 20px",borderRadius:8,fontSize:13,fontWeight:600,zIndex:100,boxShadow:"0 4px 20px #0006",whiteSpace:"nowrap"}},toast.msg)
+    toast&&e("div",{style:{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?"var(--t-red)":"var(--t-green)",color:"#fff",padding:"10px 20px",borderRadius:8,fontSize:13,fontWeight:600,zIndex:100,boxShadow:"0 4px 20px #0006",whiteSpace:"normal",maxWidth:"calc(100vw - 32px)",width:"max-content",textAlign:"center",lineHeight:1.4}},toast.msg)
   );
 }
 
