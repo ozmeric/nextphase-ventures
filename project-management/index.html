@@ -1992,7 +1992,7 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const cashIn=n(pp)-(loan?adv:0)+acq+drawFeesCounted+rehabSpent-(loan?n(drawn):0)+coInt;
   const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=arv-costsToDate-sellCosts;
   return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:n(rb)>=rehabSpent,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/arv,
-    payoffPrincipal,payoff,cashIn,cashBack:arv-realtor-closing-payoff,
+    payoffPrincipal,payoff,cashIn,cashBack:arv-realtor-closing-payoff,advance:adv,drawnTotal:n(drawn),
     interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/arv};
 };
 const vKey    = s => String(s||"").trim().toLowerCase().replace(/\s+/g," ");   // BuildFlow: "Home Depot" = "home depot "
@@ -3666,7 +3666,6 @@ function App() {
       )
     ),
 
-    !isGeneral&&DealCard(),
     !isGeneral&&DrawsCard(),
 
     // Rehab Budget — hidden for General Expenses
@@ -4078,7 +4077,7 @@ function App() {
     const c=projCalc;
     if(!c) return loansLoaded?e("div",{style:{...S.card,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",border:"1px solid color-mix(in srgb, var(--t-gold) 33%, transparent)"}},
       e("div",null,e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-gold)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💰 Profit status"),
-        e("div",{style:{fontSize:13,color:"var(--t-sub)"}},"Add the ARV to see where this deal stands today.")),
+        e("div",{style:{fontSize:13,color:"var(--t-sub)"}},"Add the ARV to see the realtor fee, your cash back and the profit.")),
       e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"+ Add ARV")):null;
     const good=c.profitToday>=0;
     const fixArv=c.arvSource==="yours"&&arvTooLow(c.arv)?arvGuess(c.arv):null;
@@ -4086,54 +4085,51 @@ function App() {
       e("span",null,"⚠️ The ARV is "+fmt(c.arv)+", far below the "+fmt(+pp)+" purchase price, so these numbers are off."+(fixArv?" Did you mean "+fmt(fixArv)+"?":"")),
       fixArv?e("button",{style:{...S.btn(),fontSize:12},disabled:loanBusy,onClick:()=>saveDeal({...dealDefaults(),...(deal||{}),arv:fixArv})},"Use "+fmt(fixArv))
         :e("button",{style:{...S.btn(),fontSize:12},onClick:openDealEdit},"Fix ARV"));
-    const rows=[
-      [loan&&+loan.downPayment>0?"Purchase price (incl. "+fmt(+loan.downPayment)+" down)":"Purchase price",c.pp],
-      [c.closingFromLoan?"Closing costs (Loan section)":c.acqFromLoan?"Loan closing fees (from Kiavi)":"Closing & loan costs paid",c.acq-c.interestPaid],
-      ["Rehab spent so far",c.rehabSpent],
-      ...(c.interestPaid>0?[["Kiavi payments logged",c.interestPaid]]:[]),
-      [c.interestNeedsClosing?"Kiavi interest (add closing date)":c.interestPaid>0?"Interest accrued since last payment (est.)":"Kiavi interest so far (est.)",c.interestToDate],
-      ...(c.drawFeesCounted>0?[["Draw fees (from Draws)",c.drawFeesCounted]]:[]),
-      ...(c.coInt>0?[["Company loan interest accrued (not paid yet)",c.coInt]]:[]),
-    ];
     const line=(l,v,opt)=>e("div",{key:l,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"var(--t-sub)",...(opt||{})}},
-      e("span",null,l),e("span",{style:{color:"var(--t-ink4)",whiteSpace:"nowrap"}},fmt(v)));
+      e("span",null,l),e("span",{style:{color:(opt&&opt.vcolor)||"var(--t-ink4)",whiteSpace:"nowrap"}},(v<0?"− ":"")+fmt(Math.abs(v))));
+    const sumLine=(l,v,col,sub)=>e("div",{style:{padding:"6px 0 2px",marginTop:3,borderTop:"1px solid var(--t-line)"}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:13.5,fontWeight:800,color:"var(--t-ink)"}},e("span",null,l),e("span",{style:{color:col||"var(--t-ink)"}},fmt(v))),
+      sub&&e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:1}},sub));
+    const head=(t,sub)=>e("div",{style:{marginBottom:4}},e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-gold)",letterSpacing:"0.08em",textTransform:"uppercase"}},t),
+      sub&&e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:1}},sub));
+    const down=loan?c.pp-c.advance:c.pp, rehabOwn=c.rehabSpent-(loan?c.drawnTotal:0), monthsLeftTxt=c.monthsSince>0?Math.round(c.monthsLeft*10)/10:c.months;
+    const goodEnd=c.profit>=0;
     return e("div",{style:{...S.card,marginBottom:16,padding:20,background:"linear-gradient(135deg,var(--t-grad1),var(--t-grad2))",border:"1px solid color-mix(in srgb, var(--t-gold) 40%, transparent)"}},
       e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:12}},
         e("div",null,
-          e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-gold)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💰 Profit status · today"),
-          e("div",{style:{fontSize:12,color:"var(--t-sub)"}},"If it sold at "+(c.arvSource==="lender"?"Kiavi's estimated ARV":"your ARV")+" with what's been spent so far")),
+          e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-gold)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💰 Profit"),
+          e("div",{style:{fontSize:12,color:"var(--t-sub)"}},"At "+(c.arvSource==="lender"?"Kiavi's estimated ARV":"your ARV")+": where the deal stands today, and where it ends up when the rehab is finished")),
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:openDealEdit},"Edit ARV")),
       arvWarn,
       e("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10},className:"summary-grid"},
         statTile("ARV",fmt(c.arv),"var(--t-purple)",c.arvSource==="lender"?"Kiavi estimate":null),
-        statTile("All-in cost today",fmt(c.costsToDate),"var(--t-ink)","Purchase + spent + interest"),
-        statTile("Realtor + selling",fmt(c.sellCosts),"var(--t-amber)","Realtor "+pctTxt(c.rPct)+" "+fmt(c.realtor)),
-        statTile("Profit if sold today",fmt(c.profitToday),good?"var(--t-green)":"var(--t-red)",pctTxt(c.marginToday*100)+" of ARV")),
-      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",columnGap:24,marginTop:12,borderTop:"1px solid var(--t-line)",paddingTop:8}},
-        e("div",null,...rows.map(([l,v])=>line(l,v)),
-          e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},
-            e("span",null,"All-in cost today"),e("span",null,fmt(c.costsToDate)))),
+        loan?statTile("Cash back to you",fmt(c.cashBack),"var(--t-ink)","if sold today, after the loan payoff"):statTile("Spent so far",fmt(c.costsToDate),"var(--t-ink)","purchase + costs + rehab"),
+        statTile("Profit if sold today",fmt(c.profitToday),good?"var(--t-green)":"var(--t-red)",pctTxt(c.marginToday*100)+" of ARV"),
+        statTile("Profit at finish",fmt(c.profit),goodEnd?"var(--t-green)":"var(--t-red)","projected · "+pctTxt(c.margin*100)+" of ARV")),
+      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",columnGap:28,rowGap:16,marginTop:14,borderTop:"1px solid var(--t-line)",paddingTop:10}},
+        // ── left: if sold today, in cash ──
         e("div",null,
-          line("Realtor fee ("+pctTxt(c.rPct)+" of ARV)",c.realtor),
-          line("Seller closing costs ("+pctTxt(c.cPct)+")",c.closing),
-          e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},
-            e("span",null,"Profit if sold today"),e("span",{style:{color:good?"var(--t-green)":"var(--t-red)"}},fmt(c.profitToday))),
-          e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12.5,padding:"5px 0 0",color:"var(--t-sub)"}},
-            e("span",null,"Projected at finish (remaining rehab + "+(c.monthsSince>0?Math.round(c.monthsLeft*10)/10:c.months)+" more mo holding)"),e("span",{style:{color:c.profit<0?"var(--t-red)":"var(--t-green)",fontWeight:700}},fmt(c.profit))))),
-      loan&&e("div",{style:{marginTop:12,borderTop:"1px solid var(--t-line)",paddingTop:8}},
-        e("div",{style:{fontSize:10,fontWeight:700,color:"var(--t-mute)",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}},"💵 Cash view · if sold today"),
-        e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",columnGap:24}},
-          e("div",null,
-            line("Sale price (ARV)",c.arv),
-            line("− Realtor + seller closing",c.sellCosts),
-            line("− Loan payoff: "+fmt(c.payoffPrincipal)+" borrowed so far + "+fmt(c.interestToDate)+" unpaid interest",c.payoff),
-            e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},e("span",null,"Cash back to you"),e("span",null,fmt(c.cashBack)))),
-          e("div",null,
-            line("Your cash in (down payment, closing, fees, interest paid, rehab the draws didn't cover)",c.cashIn),
-            e("div",{style:{display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,padding:"5px 0 0",marginTop:3,borderTop:"1px solid var(--t-line)",color:"var(--t-ink)"}},
-              e("span",null,"Cash back − cash in"),e("span",{style:{color:c.cashBack-c.cashIn>=0?"var(--t-green)":"var(--t-red)"}},fmt(c.cashBack-c.cashIn))),
-            c.cashIn<0&&e("div",{style:{fontSize:11,color:"var(--t-amber)",marginTop:4}},"Below zero: the draws have paid out more than the rehab logged so far (expenses not entered yet, or work paid ahead)."),
-            e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"Same as Profit if sold today: the bigger loan balance is paid back from the sale, and the rehab it paid for is already counted once in your expenses.")))));
+          head("If sold today","what you'd walk away with"),
+          line("Sale price (ARV)",c.arv),
+          line("Realtor "+pctTxt(c.rPct)+" + seller closing "+pctTxt(c.cPct),-c.sellCosts),
+          loan&&line("Pay off the loan: "+fmt(c.payoffPrincipal)+" borrowed so far + "+fmt(c.interestToDate)+" interest due",-c.payoff),
+          loan?sumLine("Cash back to you",c.cashBack):null,
+          e("div",{style:{height:10}}),
+          e("div",{style:{fontSize:11.5,color:"var(--t-sub)",fontWeight:700,marginBottom:2}},"What you've put in so far"),
+          line(loan?"Down payment":"Purchase price (cash)",down),
+          line("Closing costs, loan fees"+(c.interestPaid>0?" & interest paid":""),c.acq+c.drawFeesCounted),
+          c.coInt>0&&line("Company loan interest owed",c.coInt),
+          loan?line(rehabOwn>=0?"Rehab you paid beyond the draws":"Draw money not spent on rehab yet",rehabOwn):line("Rehab spent so far",c.rehabSpent),
+          sumLine("You've put in",c.cashIn),
+          sumLine("Profit if sold today",c.profitToday,good?"var(--t-green)":"var(--t-red)",loan?(c.cashIn>=0?"cash back "+fmt(c.cashBack)+" minus the "+fmt(c.cashIn)+" you've put in":"cash back "+fmt(c.cashBack)+" plus "+fmt(-c.cashIn)+" of draw money you're still holding"):"sale price minus selling costs and everything spent"),
+          rehabOwn<0&&loan&&e("div",{style:{fontSize:11,color:"var(--t-amber)",marginTop:4}},"The draws have paid out more than the rehab logged so far (expenses not entered yet, or work paid ahead).")),
+        // ── right: projected at finish ──
+        e("div",null,
+          head("At finish (projected)","full rehab budget + "+monthsLeftTxt+" more month"+(monthsLeftTxt===1?"":"s")+" of holding"),
+          ...breakdown(c).map(([l,v,col],k)=>line(l,v,{key:"b"+k,vcolor:col||undefined})),
+          sumLine("Profit at finish",c.profit,goodEnd?"var(--t-green)":"var(--t-red)",pctTxt(c.margin*100)+" of ARV"))),
+      c.emdExcluded>0&&e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:8}},"EMD ("+fmt(c.emdExcluded)+") is part of the purchase price, so it isn't counted again."),
+      c.arvSource==="lender"&&e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"Using Kiavi's estimated ARV. Press Edit ARV to use your own."));
   };
   const DealModal=()=>dealEdit&&e("div",{key:"deal-m"},overlay(()=>setDealEdit(null),(()=>{
     const d=dealEdit, set=setDealEdit;
