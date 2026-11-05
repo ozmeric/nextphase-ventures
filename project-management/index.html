@@ -1975,7 +1975,10 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   // (actual/360, like Kiavi's per-diem) and only adds the part not yet covered by logged payments,
   // so interest is never counted twice and there's nothing to tick.
   const canAccrue=!!(loan&&rate&&loan.closingDate);
-  const interestAccrued=!canAccrue?0:adv*rate/100*daysSince(loan.closingDate)/360
+  // The pro-rated interest paid at closing already covers the first days (closing → end of that month), so the
+  // purchase loan only starts accruing once those prepaid days run out; otherwise those days are counted twice.
+  const perDiem=adv*rate/100/360, prepaidDays=canAccrue&&perDiem>0?Math.max(0,n(loan.proratedInterest))/perDiem:0;
+  const interestAccrued=!canAccrue?0:perDiem*Math.max(0,daysSince(loan.closingDate)-prepaidDays)
     +(funded||[]).reduce((s,f)=>s+n(f.amt)*rate/100*daysSince(f.date||loan.closingDate)/360,0);
   const interestToDate=Math.max(0,interestAccrued-interestPaid), interestLogged=interestPaid>0;
   // Projected holding cost for the whole hold: interest so far + the months left on the FULL loan (the rest of the
