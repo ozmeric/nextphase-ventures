@@ -2536,6 +2536,7 @@ function App() {
   const [vendors,setVendors] = useState({});
   const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
+  const [payItems,setPayItems] = useState([]); const [payLog,setPayLog] = useState([]); const [payEdit,setPayEdit] = useState(null); const [payMark,setPayMark] = useState(null); const [payOpen,setPayOpen] = useState({}); const [payBusy,setPayBusy] = useState(false); const [payShowHist,setPayShowHist] = useState(false); const [payShowIdle,setPayShowIdle] = useState(false);   // Management → Payment reminders
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
   const [txYear,setTxYear] = useState(()=>{const d=new Date();return String(d.getMonth()<2?d.getFullYear()-1:d.getFullYear());}); const [txBusy,setTxBusy] = useState(""); const [txDone,setTxDone] = useState(null);   // tax package
   const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
@@ -2748,7 +2749,7 @@ function App() {
     }).catch(()=>{ setLoadWarn(w=>w.concat(["management"])); });   // SAFETY: stay "not loaded" so nothing is saved over the Sheet
 
     // BuildFlow: loans & Kiavi draws (Loans.gs)
-    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setLoansLoaded(true); setLoanErr(""); })
+    api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setPayItems(d.payments||[]); setPayLog(d.paymentLog||[]); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
   },[authed]);
 
@@ -3551,6 +3552,128 @@ function App() {
         e("div",{style:{color:txDone.flags?"var(--t-amber)":"var(--t-green)"}},txDone.flags?txDone.flags+" thing"+(txDone.flags===1?"":"s")+" to review: open the \"To review\" tab before you send it.":"Nothing flagged.")));
   };
   // ══ end tax package ══
+
+  // ══ Management → Payment reminders: credit cards, loans, insurance… with amount + due date, "Mark paid", and a saved history (Loans.gs) ══
+  // The same reminders go into the daily briefing email (overdue / today / next 14 days). State lives with the other loan state (see assemble.py).
+  const PAY_TYPES=["Credit card","Loan","Insurance","Tax","Utility","Other"], PAY_ICON={"Credit card":"💳","Loan":"🏦","Insurance":"🛡️","Tax":"🧾","Utility":"💡","Other":"📌"};
+  const PAY_FREQ=[["Once","One time"],["Monthly","Every month"],["Quarterly","Every 3 months"],["Yearly","Every year"]];
+  const payToday=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+  const payUtc=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||""));return m?Date.UTC(+m[1],+m[2]-1,+m[3]):null;};
+  const payDays=due=>{const a=payUtc(due),b=payUtc(payToday());return a===null?null:Math.round((a-b)/864e5);};
+  const payNice=d=>d?new Date(String(d).slice(0,10)+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+  const payMoney=v=>{if(v===null||v===undefined||v==="")return "—";const n=Math.round((+v||0)*100)/100;return (n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});};
+  const payFreqName=f=>(PAY_FREQ.find(x=>x[0]===f)||PAY_FREQ[0])[1];
+  const payApply=r=>{ if(r&&r.payments){ setPayItems(r.payments); setPayLog(r.paymentLog||[]); } };
+  const payCall=async(action,body,okMsg)=>{
+    setPayBusy(true);
+    try{ const r=await api("loan."+action,body,0); payApply(r); if(okMsg) showToast(typeof okMsg==="function"?okMsg(r):okMsg); return r; }
+    catch(err){ showToast(/Unknown loan action/.test(err.message)?"Apps Script is running an older Loans.gs. Paste in the new Loans.gs, then Deploy → Manage deployments → ✏️ Edit → New version.":err.message,"error"); return null; }
+    finally{ setPayBusy(false); }
+  };
+
+  const PaymentsCard=()=>{
+    const active=payItems.filter(p=>p.status==="Active").sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate))||String(a.name).localeCompare(String(b.name)));
+    const idle=payItems.filter(p=>p.status!=="Active").sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    const over=active.filter(p=>payDays(p.dueDate)<0), soon=active.filter(p=>{const n=payDays(p.dueDate);return n>=0&&n<=7;});
+    const sum=xs=>xs.reduce((s,p)=>s+(+p.amount||0),0), ym=payToday().slice(0,7);
+    const paidMonth=payLog.filter(h=>String(h.paidDate).slice(0,7)===ym);
+    const tile=(label,val,color,sub)=>e("div",{style:{background:"var(--t-inset)",borderRadius:8,padding:"10px 12px",minWidth:0}},
+      e("div",{style:{fontSize:10,color:"var(--t-mute)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}},label),
+      e("div",{style:{fontSize:16,fontWeight:800,color}},val),sub&&e("div",{style:{fontSize:10.5,color:"var(--t-mute)",marginTop:2}},sub));
+    const smallBtn=(label,onClick,ghost,extra)=>e("button",{style:{...S.btn(ghost?"ghost":undefined),fontSize:11,padding:"5px 11px",...(extra||{})},disabled:payBusy,onClick},label);
+    const row=p=>{
+      const n=payDays(p.dueDate), open=!!payOpen[p.id], hist=payLog.filter(h=>h.reminderId===p.id), act=p.status==="Active";
+      const col=!act?"var(--t-mute)":n<0?"var(--t-red)":n<=3?"var(--t-amber)":"var(--t-sub)";
+      const when=!act?(p.status==="Paid"?"Paid "+payNice(p.lastPaidDate):"Closed"):n<0?Math.abs(n)+(n===-1?" day":" days")+" overdue · was due "+payNice(p.dueDate):n===0?"Due today":n===1?"Due tomorrow · "+payNice(p.dueDate):"Due "+payNice(p.dueDate)+" · in "+n+" days";
+      return e("div",{key:p.id,"data-testid":"pay-row",style:{borderTop:"1px solid var(--t-line2)",padding:"12px 0",opacity:act?1:0.65}},
+        e("div",{style:{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"flex-start"}},
+          e("div",{style:{minWidth:0,flex:"1 1 220px"}},
+            e("div",{style:{fontWeight:700,color:"var(--t-ink)",fontSize:14}},(PAY_ICON[p.type]||"📌")+" "+p.name),
+            e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:2}},[p.type,payFreqName(p.frequency)].join(" · ")+(p.notes?" · "+p.notes:"")),
+            e("div",{style:{fontSize:12,marginTop:3,fontWeight:act&&n<=3?700:400,color:col}},when)),
+          e("div",{style:{textAlign:"right"}},e("div",{style:{fontSize:17,fontWeight:800,color:"var(--t-ink)"}},payMoney(p.amount)))),
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}},
+          act&&smallBtn("✓ Mark paid",()=>setPayMark({id:p.id,date:payToday(),amount:p.amount==null?"":String(p.amount),notes:""})),
+          smallBtn((open?"Hide":"History")+" ("+hist.length+")",()=>setPayOpen(o=>({...o,[p.id]:!open})),true),
+          smallBtn("Edit",()=>setPayEdit({...p,amount:p.amount==null?"":String(p.amount)}),true)),
+        open&&e("div",{style:{marginTop:8,background:"var(--t-inset)",borderRadius:8,padding:"6px 12px"}},
+          hist.length===0&&e("div",{style:{fontSize:12,color:"var(--t-mute)",padding:"6px 0"}},"Nothing paid yet."),
+          ...hist.map(h=>histRow(h,false))));
+    };
+    const histRow=(h,showName)=>e("div",{key:h.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,fontSize:12,padding:"6px 0",borderBottom:"1px solid var(--t-line2)",color:"var(--t-sub)"}},
+      e("span",{style:{minWidth:0}},payNice(h.paidDate)+" · "+(showName?(PAY_ICON[h.type]||"📌")+" "+h.name+" · ":"")+(h.dueDate?"covered the "+payNice(h.dueDate)+" due date":"paid")+(h.notes?" · "+h.notes:"")),
+      e("span",{style:{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}},e("span",{style:{color:"var(--t-green)",fontWeight:700}},payMoney(h.amount)),
+        e("button",{"aria-label":"Undo payment",title:"Undo this payment (puts the due date back)",style:{background:"transparent",border:"1px solid color-mix(in srgb, var(--t-red) 40%, transparent)",color:"var(--t-red)",borderRadius:6,fontSize:10,padding:"2px 7px",cursor:"pointer"},disabled:payBusy,
+          onClick:()=>{ if(window.confirm("Undo the "+payMoney(h.amount)+" payment to "+h.name+" on "+payNice(h.paidDate)+"? The reminder goes back to its earlier due date.")) payCall("payUndo",{id:h.id},"Payment removed"); }},"Undo")));
+    const histList=payShowHist?payLog:payLog.slice(0,8);
+    return e("div",{style:{...S.card,marginBottom:16},"data-testid":"payments-card"},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-gold)",textTransform:"uppercase",letterSpacing:"0.06em"}},"💳 Payment Reminders"),
+        e("button",{style:{...S.btn(),fontSize:12},disabled:!loansLoaded,onClick:()=>setPayEdit({_new:true,type:"Credit card",name:"",amount:"",dueDate:"",frequency:"Monthly",status:"Active",notes:""})},"+ Add payment")),
+      payItems.length===0?e("div",{style:{fontSize:13,color:"var(--t-mute)"}},"Add your credit cards, loans, insurance and other bills with the amount and due date. They show up in your daily email, and every payment you mark paid is saved here."):
+      e("div",null,
+        e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8,marginBottom:6}},
+          tile("Overdue",over.length?payMoney(sum(over)):"None",over.length?"var(--t-red)":"var(--t-green)",over.length?over.length+" payment"+(over.length===1?"":"s"):"all caught up"),
+          tile("Due in 7 days",payMoney(sum(soon)),"var(--t-amber)",soon.length+" payment"+(soon.length===1?"":"s")),
+          tile("Paid this month",payMoney(sum(paidMonth)),"var(--t-green)",paidMonth.length+" payment"+(paidMonth.length===1?"":"s"))),
+        active.length===0&&e("div",{style:{fontSize:13,color:"var(--t-mute)",padding:"10px 0"}},"Nothing active right now."),
+        ...active.map(row),
+        idle.length>0&&e("div",{style:{marginTop:10}},
+          e("button",{style:{background:"transparent",border:"none",color:"var(--t-mute)",cursor:"pointer",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",padding:0},onClick:()=>setPayShowIdle(v=>!v)},(payShowIdle?"▾":"▸")+" Paid / closed ("+idle.length+")"),
+          payShowIdle&&e("div",null,...idle.map(row))),
+        payLog.length>0&&e("div",{style:{marginTop:14,borderTop:"1px solid var(--t-line)",paddingTop:10}},
+          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}},
+            e("div",{style:{fontSize:11,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.06em"}},"Payment history · "+payLog.length+" saved · "+payMoney(sum(payLog))+" total"),
+            payLog.length>8&&smallBtn(payShowHist?"Show less":"Show all",()=>setPayShowHist(v=>!v),true)),
+          e("div",{style:{background:"var(--t-inset)",borderRadius:8,padding:"4px 12px"},"data-testid":"pay-history"},...histList.map(h=>histRow(h,true))))));
+  };
+
+  const PaymentModal=()=>payEdit&&e("div",{key:"pay-m"},overlay(()=>setPayEdit(null),(()=>{
+    const d=payEdit, set=setPayEdit, isNew=!!d._new, hasHist=payLog.some(h=>h.reminderId===d.id);
+    const save=async()=>{ const body={...d}; delete body._new; const r=await payCall("paySave",{payment:body},isNew?"Payment reminder added":"Saved"); if(r) setPayEdit(null); };
+    const ph={"Credit card":"e.g. Chase Ink ····1234","Loan":"e.g. Kiavi — Lincoln Ave","Insurance":"e.g. State Farm","Tax":"e.g. Estimated tax Q4","Utility":"e.g. Dominion Energy","Other":"What is it for?"}[d.type]||"What is it for?";
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:14}},isNew?"New payment reminder":"Edit payment"),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        e("div",null,e("label",{style:S.label},"Type"),
+          e("div",{style:{display:"flex",gap:6,flexWrap:"wrap"},role:"group","aria-label":"Payment type"},...PAY_TYPES.map(t=>{ const on=d.type===t;
+            return e("button",{key:t,type:"button","aria-pressed":on,style:{background:on?"var(--t-gold)":"var(--t-inset)",color:on?"var(--t-bg)":"var(--t-sub)",border:"1px solid "+(on?"var(--t-gold)":"var(--t-line)"),borderRadius:99,fontSize:12.5,fontWeight:700,padding:"6px 13px",cursor:"pointer"},onClick:()=>set(o=>({...o,type:t}))},(PAY_ICON[t]||"")+" "+t); }))),
+        fld("Name *",e("input",{style:S.input,"aria-label":"Payment name",placeholder:ph,value:d.name||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,name:v}));}})),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Amount",e("input",{style:S.input,inputMode:"decimal","aria-label":"Payment amount",placeholder:d.type==="Credit card"?"statement or minimum":"0.00",value:d.amount==null?"":d.amount,onChange:ev=>{const v=ev.target.value;set(o=>({...o,amount:v}));}})),
+          fld("Due date *",e("input",{type:"date",style:S.input,"aria-label":"Due date",value:d.dueDate||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,dueDate:v}));}}))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Repeats",e("select",{style:S.input,"aria-label":"Repeats",value:d.frequency||"Once",onChange:ev=>{const v=ev.target.value;set(o=>({...o,frequency:v}));}},...PAY_FREQ.map(([v,l])=>e("option",{key:v,value:v},l)))),
+          !isNew&&fld("Status",e("select",{style:S.input,"aria-label":"Status",value:d.status||"Active",onChange:ev=>{const v=ev.target.value;set(o=>({...o,status:v}));}},e("option",{value:"Active"},"Active — remind me"),e("option",{value:"Closed"},"Closed — stop reminding")))),
+        d.frequency&&d.frequency!=="Once"&&e("div",{style:{fontSize:11.5,color:"var(--t-mute)"}},"After you press ✓ Mark paid, the due date moves ahead on its own ("+payFreqName(d.frequency).toLowerCase()+")."),
+        fld("Notes",e("input",{style:S.input,"aria-label":"Notes",placeholder:"e.g. autopay is off, account number ending 4321",value:d.notes||"",onChange:ev=>{const v=ev.target.value;set(o=>({...o,notes:v}));}}))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16,flexWrap:"wrap"}},
+        !isNew&&e("button",{style:{...S.btn("ghost"),color:"var(--t-red)"},disabled:payBusy,title:hasHist?"Its payment history stays saved":"",
+          onClick:async()=>{ if(window.confirm("Delete the reminder for "+d.name+"?"+(hasHist?" Its saved payment history stays.":""))){ const r=await payCall("payDelete",{id:d.id},"Reminder deleted"); if(r) setPayEdit(null);} }},"Delete"),
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setPayEdit(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:payBusy||!String(d.name||"").trim()||!d.dueDate,onClick:save},payBusy?"Saving…":"Save"))];
+  })()));
+
+  const PayMarkModal=()=>payMark&&e("div",{key:"pay-p"},overlay(()=>setPayMark(null),(()=>{
+    const d=payMark, set=setPayMark, p=payItems.find(x=>x.id===d.id)||{}, amt=String(d.amount).trim()===""?null:num(d.amount);
+    const save=async()=>{ const r=await payCall("payMarkPaid",{id:d.id,paidDate:d.date,amount:String(d.amount).trim()===""?"":amt,notes:d.notes||""},r=>{ const q=(r.payments||[]).find(x=>x.id===d.id); return q&&q.status==="Active"?"Paid — next due "+payNice(q.dueDate):"Marked paid"; }); if(r) setPayMark(null); };
+    const q=num(p.amount);
+    return [
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:4}},"Mark paid · "+(p.name||"")),
+      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:14}},"Due "+payNice(p.dueDate)+(p.amount!=null?" · "+payMoney(p.amount):"")+(p.frequency&&p.frequency!=="Once"?" · the next due date is set automatically":" · one-time payment")),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Date paid",e("input",{type:"date",style:S.input,"aria-label":"Date paid",value:d.date,onChange:ev=>{const v=ev.target.value;set(o=>({...o,date:v}));}})),
+          fld("Amount paid",e("input",{style:S.input,inputMode:"decimal","aria-label":"Amount paid",placeholder:"0.00",value:d.amount,onChange:ev=>{const v=ev.target.value;set(o=>({...o,amount:v}));}}))),
+        amt!==null&&q>0&&Math.abs(amt-q)>0.004&&e("div",{style:{fontSize:11.5,color:"var(--t-amber)"}},"Different from the reminder amount ("+payMoney(q)+"). The history keeps what you actually paid."),
+        fld("Notes",e("input",{style:S.input,"aria-label":"Notes",placeholder:"e.g. paid online, confirmation #",value:d.notes,onChange:ev=>{const v=ev.target.value;set(o=>({...o,notes:v}));}}))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16}},
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setPayMark(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:payBusy||!d.date||(String(d.amount).trim()!==""&&!(amt>=0)),onClick:save},payBusy?"Saving…":"Save payment"))];
+  })()));
+
 
   const deal      =activeProject?deals[String(activeProject.id)]:null;
   const fundedList=pDraws.filter(d=>d.status==="Funded").map(d=>({amt:nz(d.amountFunded)||nz(d.amountRequested),date:d.fundedDate}));
@@ -6220,6 +6343,7 @@ function App() {
         )
       ),
 
+      PaymentsCard(),
       CompanyLoansCard(),
       TaxCard(),
 
@@ -6429,6 +6553,8 @@ function App() {
     LibOrderModal(),
     CompanyLoanModal(),
     CompanyTxnModal(),
+    PaymentModal(),
+    PayMarkModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"var(--t-ink)"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
