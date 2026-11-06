@@ -1933,7 +1933,8 @@ const loanClosing=loan=>{
   const total=items.reduce((s,x)=>s+x[1],0), dp=n(loan.downPayment), emd=n(loan.emd);
   return {fromLoan:CLOSING_KEYS.some(has),items,total,dp,emd,cashCalc:dp-emd+total,cashStated:has("cashAtClosing")?n(loan.cashAtClosing):null};
 };
-const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees})=>{
+const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees,asOf})=>{
+  const T=asOf||Date.now();   // asOf (ms) = work out the numbers as of that moment, e.g. Dec 31 for the tax package
   const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x;}, blank=v=>v==null||String(v).trim()==="";
   deal=deal||{};
   const ownArv=n(deal.arv), lenderArv=n(loan&&loan.lenderArv);
@@ -1941,7 +1942,7 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const soldPrice=n(deal.soldPrice), soldS=String(deal.soldDate||"").slice(0,10);
   const soldD=/^\d{4}-\d{2}-\d{2}$/.test(soldS)&&!isNaN(new Date(soldS+"T00:00:00").getTime())?new Date(soldS+"T00:00:00"):null;
   const arv=ownArv||lenderArv||soldPrice; if(!(arv>0)) return null;          // your ARV, or the lender's estimate until you set one
-  const salePrice=soldPrice>0?soldPrice:arv, sold=!!(soldPrice>0&&soldD&&soldD.getTime()<=Date.now());
+  const salePrice=soldPrice>0?soldPrice:arv, sold=!!(soldPrice>0&&soldD&&soldD.getTime()<=T);
   const rPct=blank(deal.realtorPct)?5:n(deal.realtorPct), cPct=blank(deal.sellerClosingPct)?1:n(deal.sellerClosingPct);
   const closeD=loan&&loan.closingDate?new Date(String(loan.closingDate).slice(0,10)+"T00:00:00"):null;
   const months=soldD&&closeD&&!isNaN(closeD.getTime())?Math.max(0,(soldD-closeD)/864e5/30.4375)   // sold (or sale date set) → hold = closing → sale
@@ -1975,7 +1976,7 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees}
   const coInt=n(otherInterest);   // company loans that funded this project: interest accrued, not paid yet
   // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
-  const rate=loan?n(loan.rate):0, now=sold?Math.min(Date.now(),soldD.getTime()+864e5):Date.now();   // sold → interest through the sold date
+  const rate=loan?n(loan.rate):0, now=sold?Math.min(T,soldD.getTime()+864e5):T;   // sold → interest through the sold date
   const daysSince=d=>{ if(!d) return 0; const t=new Date(String(d).slice(0,10)+"T00:00:00").getTime(); return isNaN(t)?0:Math.max(0,(now-t)/864e5); };
   // Kiavi payments you log under Loan Expenses are already in "acq". The app estimates what has accrued
   // (actual/360, like Kiavi's per-diem) and only adds the part not yet covered by logged payments,
@@ -2521,9 +2522,11 @@ function App() {
   const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
+  const [txYear,setTxYear] = useState(()=>{const d=new Date();return String(d.getMonth()<2?d.getFullYear()-1:d.getFullYear());}); const [txBusy,setTxBusy] = useState(""); const [txDone,setTxDone] = useState(null);   // tax package
   const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
   const [dsMic,setDsMic] = useState(null); const [dsRev,setDsRev] = useState({}); const [dsOpen,setDsOpen] = useState({}); const [dsFilter,setDsFilter] = useState("all"); const [dsCollapsed,setDsCollapsed] = useState({}); const [dsNew,setDsNew] = useState({});
-  const [loans,setLoans] = useState({}); const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
+  const [loans,setLoans] = useState({});
+ const [draws,setDraws] = useState([]); const [loansLoaded,setLoansLoaded] = useState(false);   // BuildFlow: loans & draws
   const [deals,setDeals] = useState({}); const [dealEdit,setDealEdit] = useState(null);   // BuildFlow: ARV & profit
   const [saleEdit,setSaleEdit] = useState(null); const [saleBusy,setSaleBusy] = useState(false);   // sold price / sold date / rate boxes
   const [invOpen,setInvOpen] = useState(false); const [invLinks,setInvLinks] = useState(null); const [invForm,setInvForm] = useState({}); const [invBusy,setInvBusy] = useState(false); const [invMail,setInvMail] = useState(null); const [invAddr,setInvAddr] = useState(null);
@@ -3217,6 +3220,320 @@ function App() {
         e("button",{style:S.btn("ghost"),onClick:()=>setCoPay(null)},"Cancel"),
         e("button",{style:S.btn(),disabled:coBusy||!(amt>0)||tooMuch||bad||!d.date,onClick:save},coBusy?"Saving…":"Save"))];
   })()));
+
+  // ══ Management → 🧾 Tax package for your CPA: one Excel workbook for a tax year, built in the browser from your own data ══
+  // Basis (as chosen): expenses by the date paid; sales by the sold date. Year-end figures are as of Dec 31.
+  // It's a bookkeeping export, not tax advice: it lists, adds up and flags — your CPA decides the treatment.
+  const TX_CO="NextPhase Ventures";
+  const TX_ACQ=["Down Payment","Closing Costs","Loan Expenses"];
+  const TX_SERVICE=["Labor","Professional Fees","Demo/Cleanup"];
+  const TX_MONEY='"$"#,##0.00;[Red]-"$"#,##0.00', TX_DATE="mmm d, yyyy";
+  const txN=v=>{const x=parseFloat(v);return isNaN(x)?0:x;};
+  const txR2=v=>Math.round((+v||0)*100)/100;
+  const txYmd=d=>{ const s=String(d==null?"":d).slice(0,10); return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:""; };
+  const txNorm=s=>String(s||"").toLowerCase().replace(/&/g," and ").replace(/^\s*the\s+/,"").replace(/[^a-z0-9]/g,"");
+  const txUsd=v=>(v<0?"-$":"$")+Math.abs(txR2(v)).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const txIsGeneral=p=>/no budget/i.test(String(p.description||""));
+  const txIsInterestPay=x=>x.category==="Loan Expenses"&&!/\[cl:/.test(String(x.notes||""))&&/payment|interest/i.test(String(x.description||"")+" "+String(x.notes||""))&&!/origination|service|draw|fee|prepaid|pro-?rated/i.test(String(x.description||""));
+  const txKind=(x,general)=>{  // general = a General Expenses row
+    if(general) return "Company overhead (General Expenses)";
+    const c=String(x.category||"");
+    if(c==="Down Payment") return "Purchase: down payment";
+    if(c==="Closing Costs") return "Purchase: closing costs";
+    if(c==="Loan Expenses") return /\[cl:/.test(String(x.notes||""))?"Interest: company / partner loan":txIsInterestPay(x)?"Loan interest paid":"Loan fees";
+    return "Project cost";
+  };
+
+  // Everything the workbook says, as plain data (no Excel in here, so it can be checked on its own)
+  const txCompute=({year,projects,exps,loans,draws,deals,coLoans,coTxns,coState,calcProfit,loanClosing,now})=>{
+    const Y=String(year), yEnd=Y+"-12-31", prevEnd=(+Y-1)+"-12-31", inY=d=>txYmd(d).slice(0,4)===Y;
+    const endMs=new Date(+Y,11,31,23,59,59).getTime(), nowMs=now||Date.now();
+    const flags=[], flag=(pri,where,what,detail)=>flags.push({pri,where,what,detail:detail||""});
+    const P=projects.filter(p=>p&&p.id!=null).map(p=>({p,id:String(p.id),name:String(p.name||p.id),general:txIsGeneral(p),soldTag:String(p.description||"").includes("Sold")}));
+    const byId={}; P.forEach(x=>{byId[x.id]=x;});
+    const dealOf=id=>deals[id]||null, loanOf=id=>loans[id]||null;
+    const soldDate=id=>{ const d=dealOf(id); return d?txYmd(d.soldDate):""; };
+
+    // ── expense ledger (this year) + everything else dated before / after ──
+    const ledger=[], before={}, noDate=[];
+    P.forEach(x=>{
+      const loan=loanOf(x.id), cl=loan?loanClosing(loan):null, noVendor=[], dupes={}, ignored=[];
+      (exps[x.id]||[]).forEach(e=>{
+        const d=txYmd(e.date), amt=txN(e.amount), vendor=String(e.vendor||"").trim(), desc=String(e.description||"");
+        if(!d){ flag("High",x.name,"Expense has no valid date, so it can't be placed in a tax year",(desc||"(no description)")+" · "+txUsd(amt)); return; }
+        if(d<Y+"-01-01"){ before[x.id]=(before[x.id]||0)+amt; return; }
+        if(d>yEnd) return;
+        const ign=!x.general&&cl&&cl.fromLoan&&(e.category==="Closing Costs"||e.category==="Down Payment");
+        const row={date:d,project:x.name,pid:x.id,category:String(e.category||""),vendor,desc,amount:amt,kind:txKind(e,x.general),
+          counted:ign?"No (already in the Loan section's closing statement)":"Yes",notes:String(e.notes||"")};
+        ledger.push(row);
+        if(ign) ignored.push(row);
+        if(!vendor&&amt>0&&!/\[cl:/.test(row.notes)) noVendor.push(row);
+        if(amt<0) flag("Low",x.name,"Negative amount (credit or refund?)",d+" · "+(desc||"(no description)")+" · "+txUsd(amt));
+        if(row.category&&TX_ACQ.indexOf(row.category)<0&&REHAB_CATEGORIES.indexOf(row.category)<0&&!x.general) flag("Low",x.name,"Category \""+row.category+"\" isn't one of the standard ones",d+" · "+desc+" · "+txUsd(amt));
+        const k=[d,amt.toFixed(2),txNorm(vendor),txNorm(desc)].join("|"); (dupes[k]=dupes[k]||[]).push(row);
+      });
+      if(noVendor.length) flag("Medium",x.name,noVendor.length+" expense(s) with no vendor ("+txUsd(noVendor.reduce((s,r)=>s+r.amount,0))+"). Your CPA may ask who was paid.",noVendor.slice(0,5).map(r=>r.date+" "+(r.desc||"(no description)")+" "+txUsd(r.amount)).join(" · ")+(noVendor.length>5?" …":""));
+      Object.keys(dupes).filter(k=>dupes[k].length>1).forEach(k=>flag("Medium",x.name,"Possible duplicate: "+dupes[k].length+" identical expenses",dupes[k][0].date+" · "+(dupes[k][0].desc||"(no description)")+" · "+txUsd(dupes[k][0].amount)));
+      if(ignored.length) flag("Medium",x.name,ignored.length+" Closing Costs / Down Payment expense(s) are in the ledger but not counted in the project cost, because the Loan section already has this loan's closing statement ("+txUsd(ignored.reduce((s,r)=>s+r.amount,0))+").","Tell your CPA to use one source, not both. Column H of the ledger marks them.");
+      const looks=(exps[x.id]||[]).filter(e=>e.category==="Loan Expenses"&&inY(e.date)&&/title|recording|record fee|deed|transfer tax|hazard|insurance|settlement|attorney|notary|survey/i.test(String(e.description||"")));
+      if(looks.length) flag("Low",x.name,looks.length+" Loan Expenses item(s) look like closing costs, not lender charges","Check the category: "+looks.slice(0,4).map(e=>(e.description||"")+" "+txUsd(txN(e.amount))).join(" · "));
+    });
+    ledger.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.project.localeCompare(b.project)||a.desc.localeCompare(b.desc));
+    const ledgerTotal=txR2(ledger.reduce((s,r)=>s+r.amount,0));
+
+    // ── by category × project ──
+    const catOrder=TX_ACQ.concat(REHAB_CATEGORIES), cats=[], seenC={};
+    ledger.forEach(r=>{ const c=r.category||"(no category)"; if(!seenC[c]){seenC[c]=1;cats.push(c);} });
+    cats.sort((a,b)=>{const ia=catOrder.indexOf(a),ib=catOrder.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b);});
+    const matCols=P.filter(x=>ledger.some(r=>r.pid===x.id)).sort((a,b)=>(a.general-b.general)).map(x=>x.name);
+    const matrix=cats.map(c=>({cat:c,vals:matCols.map(n=>txR2(ledger.filter(r=>(r.category||"(no category)")===c&&r.project===n).reduce((s,r)=>s+r.amount,0)))}));
+
+    // ── vendors ──
+    const vm={};
+    ledger.forEach(r=>{ const k=txNorm(r.vendor)||"__none"; const v=vm[k]||(vm[k]={spell:{},n:0,total:0,services:0,cats:{},lender:false}); const nm=r.vendor||"(no vendor)";
+      v.spell[nm]=(v.spell[nm]||0)+1; v.n++; v.total+=r.amount; v.cats[r.category||"(none)"]=(v.cats[r.category||"(none)"]||0)+r.amount;
+      if(TX_SERVICE.indexOf(r.category)>=0&&r.kind==="Project cost") v.services+=r.amount;
+      if(r.category==="Loan Expenses"||r.category==="Closing Costs"||r.category==="Down Payment") v.lender=true; });
+    const vendors=Object.keys(vm).map(k=>{ const v=vm[k]; const name=Object.keys(v.spell).sort((a,b)=>v.spell[b]-v.spell[a])[0];
+      const main=Object.keys(v.cats).sort((a,b)=>v.cats[b]-v.cats[a])[0];
+      const svc=txR2(v.services), note=k==="__none"?"No vendor on these expenses":svc>=600?"Labor/services "+txUsd(svc)+": ask your CPA whether a 1099-NEC and W-9 are needed":v.lender&&svc===0?"Lender / closing party":"";
+      return {name,n:v.n,total:txR2(v.total),services:svc,main,note}; }).sort((a,b)=>b.total-a.total);
+    const likelyNEC=vendors.filter(v=>v.services>=600&&v.name!=="(no vendor)");
+    if(likelyNEC.length) flag("Medium","Vendors",likelyNEC.length+" vendor(s) were paid $600 or more for labor or services in "+Y,likelyNEC.slice(0,6).map(v=>v.name+" "+txUsd(v.services)).join(" · ")+(likelyNEC.length>6?" …":"")+". Collect W-9s; your CPA decides who gets a 1099-NEC.");
+    const similar=[]; const vk=vendors.filter(v=>txNorm(v.name).length>=4);
+    vk.forEach(a=>vk.forEach(b=>{ const x=txNorm(a.name),y=txNorm(b.name); if(x<y&&(x.indexOf(y)>=0||y.indexOf(x)>=0)) similar.push(a.name+" / "+b.name); }));
+    if(similar.length) flag("Low","Vendors","Vendor names that may be the same company",similar.slice(0,6).join(" · "));
+
+    // ── as of Dec 31 for each project with a loan or costs: costs to date, principal, accrued interest ──
+    const coFor=id=>coLoans.filter(L=>String(L.projectId||"")===id&&L.status!=="Paid off");
+    const fundedOf=(id,limit)=>draws.filter(d=>String(d.projectId)===id&&d.status==="Funded"&&(!limit||(txYmd(d.fundedDate)&&txYmd(d.fundedDate)<=limit))).map(d=>({amt:txN(d.amountFunded)||txN(d.amountRequested),date:d.fundedDate}));
+    const feesOf=(id,limit)=>draws.filter(d=>String(d.projectId)===id&&d.status!=="Denied"&&(!limit||(txYmd(d.fundedDate||d.requestedDate)&&txYmd(d.fundedDate||d.requestedDate)<=limit))).reduce((s,d)=>s+txN(d.fee),0);
+    const purchaseDate=id=>{ const l=loanOf(id); if(l&&txYmd(l.closingDate)) return txYmd(l.closingDate);
+      const ds=(exps[id]||[]).map(e=>txYmd(e.date)).filter(Boolean).sort(); return ds[0]||""; };
+    const calc=(x,asOf)=>{
+      const loan=loanOf(x.id), deal=dealOf(x.id)||{}, lim=asOf?yEnd:"";
+      const es=(exps[x.id]||[]).filter(e=>!lim||(txYmd(e.date)&&txYmd(e.date)<=lim));
+      const f=fundedOf(x.id,lim), drawn=f.reduce((s,y)=>s+y.amt,0);
+      const arv=txN(deal.arv)||txN(loan&&loan.lenderArv)||txN(deal.soldPrice)||1;   // only the ARV-based lines need it; costs don't
+      return calcProfit({pp:x.p.purchasePrice,rb:x.p.rehabBudget,expenses:es,deal:{...deal,arv:txN(deal.arv)||(txN(loan&&loan.lenderArv)?"":arv)},loan,drawn,funded:f,
+        otherInterest:asOf?coFor(x.id).reduce((s,L)=>s+coState(L,yEnd).accrued,0):coFor(x.id).reduce((s,L)=>s+coState(L).accrued,0),drawFees:feesOf(x.id,lim),asOf:asOf?endMs:undefined});
+    };
+
+    // ── sales (sold date in the year) ──
+    const sales=[];
+    P.filter(x=>!x.general).forEach(x=>{
+      const d=dealOf(x.id), sd=soldDate(x.id), sp=d?txN(d.soldPrice):0;
+      if(x.soldTag&&!(sp>0&&sd)) flag("High",x.name,"Marked Sold but no sold price/date in the Profit card","Enter the sold price and date there so the sale lands in the right year.");
+      if(!(sp>0&&sd)) return;
+      if(sd.slice(0,4)!==Y) return;
+      if(new Date(sd+"T00:00:00").getTime()>nowMs){ flag("High",x.name,"Sold date "+sd+" is in the future, so this sale isn't counted yet","Fix the date, or leave it out of this year's package."); return; }
+      const c=calc(x,false); if(!c) return;
+      const costs=c.pp+c.acq+c.drawFeesCounted+c.rehab+c.holding+c.coInt+c.realtor+c.closing;
+      sales.push({project:x.name,closing:purchaseDate(x.id),sold:sd,price:c.salePrice,realtor:c.realtor,sellerClosing:c.closing,pp:c.pp,acq:c.acq,drawFees:c.drawFeesCounted,rehab:c.rehab,interestOwed:c.holding,coInt:c.coInt,total:txR2(costs),gain:txR2(c.salePrice-costs),appProfit:txR2(c.profit),rPct:c.rPct,cPct:c.cPct});
+      flag("Medium",x.name,"Selling costs on the Sales tab are estimates ("+c.rPct+"% realtor + "+c.cPct+"% seller closing of the sold price)","Replace them with the actual figures from the settlement statement before filing.");
+    });
+    sales.sort((a,b)=>a.sold<b.sold?-1:1);
+
+    // ── projects still being held at Dec 31 (costs to date, principal, interest accrued) ──
+    const inventory=[], asOfCalc={};
+    P.filter(x=>!x.general).forEach(x=>{
+      const pd=purchaseDate(x.id), sd=soldDate(x.id), isSold=(sd&&sd<=yEnd&&txN((dealOf(x.id)||{}).soldPrice)>0);
+      if(pd&&pd>yEnd) return;
+      if(isSold) return;
+      if(x.soldTag&&!sd) return;                                       // flagged above: sold, date unknown
+      const c=calc(x,true); if(!c) return;
+      asOfCalc[x.id]=c;
+      if(!pd) flag("Medium",x.name,"No closing date (Loan section) and no expenses, so the purchase date is unknown","Add the closing date so your CPA can date the purchase.");
+      inventory.push({project:x.name,purchased:pd,pp:c.pp,acq:c.acq,drawFees:c.drawFeesCounted,rehab:c.rehabSpent,accrued:c.interestToDate,coInt:c.coInt,total:txR2(c.costsToDate),principal:txR2(c.payoffPrincipal)});
+    });
+
+    // ── loans on projects ──
+    const loanRows=[];
+    P.filter(x=>!x.general&&loanOf(x.id)).forEach(x=>{
+      const l=loanOf(x.id), cd=txYmd(l.closingDate), closedIn=cd&&cd.slice(0,4)===Y, closedBefore=cd&&cd<Y+"-01-01", rows=ledger.filter(r=>r.pid===x.id);
+      const intPaid=txR2(rows.filter(r=>r.kind==="Loan interest paid").reduce((s,r)=>s+r.amount,0));
+      const feesPaid=txR2(rows.filter(r=>r.kind==="Loan fees").reduce((s,r)=>s+r.amount,0));
+      const lenderFees=closedIn?txN(l.originationFee)+txN(l.serviceFee):0, prepaid=closedIn?txN(l.proratedInterest):0;
+      const funded=fundedOf(x.id).filter(y=>txYmd(y.date).slice(0,4)===Y).reduce((s,y)=>s+y.amt,0);
+      const ac=asOfCalc[x.id];
+      if(!cd) flag("Medium",x.name,"Loan has no closing date","Interest can't be dated or accrued without it.");
+      if(cd&&cd>yEnd) return;
+      loanRows.push({project:x.name,lender:String(l.lender||""),num:String(l.loanNumber||""),closing:cd,amount:txN(l.loanAmount),advance:txN(l.initialAdvance)||Math.max(0,txN(l.loanAmount)-txN(l.holdback)),rate:txN(l.rate),
+        intPaid,prepaid,lenderFees,feesPaid,drawsIn:txR2(funded),total:txR2(intPaid+prepaid+lenderFees+feesPaid),principal:ac?txR2(ac.payoffPrincipal):0,accrued:ac?txR2(ac.interestToDate):0,closedBefore:!!closedBefore});
+    });
+
+    // ── company / partner loans ──
+    const coRows=[];
+    coLoans.forEach(L=>{
+      const s1=coState(L,yEnd), s0=coState(L,prevEnd), st=txYmd(L.startDate);
+      if(st&&st>yEnd) return;
+      const intPaid=txR2(s1.interestPaid-s0.interestPaid), prin=txR2(s1.principalPaid-s0.principalPaid), drawn=txR2(s1.drawn-s0.drawn);
+      if(!intPaid&&!prin&&!drawn&&!(s1.balance>0)) return;
+      coRows.push({lender:String(L.lender||""),type:String(L.type||""),project:byId[String(L.projectId||"")]?byId[String(L.projectId||"")].name:"",rate:txN(L.rate),start:st,borrowed:drawn,intPaid,prin,balance:s1.balance,accrued:s1.accrued});
+      if(intPaid>=600) flag("Medium","Company loans",String(L.lender||"A lender")+": "+txUsd(intPaid)+" of interest paid in "+Y,"Interest paid to an individual may need a 1099-INT; ask your CPA.");
+    });
+
+    // ── closing statements (closing in the year) ──
+    const closings=[];
+    P.filter(x=>!x.general&&loanOf(x.id)).forEach(x=>{ const l=loanOf(x.id), cd=txYmd(l.closingDate); if(!cd||cd.slice(0,4)!==Y) return;
+      const cl=loanClosing(l)||{items:[],total:0,dp:0};
+      if(!cl.fromLoan&&!(txN(l.originationFee)||txN(l.serviceFee)||txN(l.proratedInterest))){ flag("Low",x.name,"No closing statement entered in the Loan section","Title, recording, insurance and tax-proration amounts for this purchase aren't in the app, so they can't be listed here. Get them from the settlement statement."); return; }
+      closings.push({project:x.name,closing:cd,pp:txN(x.p.purchasePrice),dp:txN(l.downPayment),emd:txN(l.emd),orig:txN(l.originationFee),service:txN(l.serviceFee),prorated:txN(l.proratedInterest),title:txN(l.titleFees),recording:txN(l.recordingTaxes),
+        hazard:txN(l.hazardInsurance),taxProration:txN(l.taxProration),other:txN(l.otherClosing),total:txR2(cl.total),cash:l.cashAtClosing!=null&&String(l.cashAtClosing).trim()!==""?txN(l.cashAtClosing):null}); });
+
+    // ── summary by project ──
+    const summary=[];
+    P.forEach(x=>{
+      const rows=ledger.filter(r=>r.pid===x.id), sale=sales.find(s=>s.project===x.name), inv=inventory.find(s=>s.project===x.name), cd=purchaseDate(x.id);
+      const closedIn=!x.general&&cd&&cd.slice(0,4)===Y;
+      if(!rows.length&&!sale&&!closedIn&&!inv) return;
+      const sd=soldDate(x.id);
+      summary.push({project:x.name,status:x.general?"Company (General Expenses)":sale?"Sold "+sd:inv?"Held at Dec 31":x.soldTag?"Sold (date missing)":"Other",purchased:x.general?"":cd,pp:x.general?null:txN(x.p.purchasePrice),
+        sold:sale?sale.sold:"",price:sale?sale.price:null,paidIn:txR2(rows.reduce((s,r)=>s+r.amount,0)),paidBefore:txR2(before[x.id]||0),gain:sale?sale.gain:null});
+    });
+    const totals={ledger:ledgerTotal,interest:txR2(ledger.filter(r=>r.kind==="Loan interest paid"||r.kind==="Interest: company / partner loan").reduce((s,r)=>s+r.amount,0)),
+      sales:txR2(sales.reduce((s,r)=>s+r.price,0)),gain:txR2(sales.reduce((s,r)=>s+r.gain,0)),inventory:txR2(inventory.reduce((s,r)=>s+r.total,0)),flags:flags.length};
+    const order={High:0,Medium:1,Low:2}; flags.sort((a,b)=>order[a.pri]-order[b.pri]);
+    return {year:Y,generated:new Date(nowMs),ledger,cats,matCols,matrix,vendors,sales,inventory,loanRows,coRows,closings,summary,flags,totals};
+  };
+
+  // The workbook
+  const txDate=s=>{ const d=txYmd(s); return d?new Date(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))):null; };
+  const txCol=n=>{ let s=""; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
+  const txWrite=async(X,m)=>{
+    const wb=new X.Workbook(); wb.creator=TX_CO+" · BuildFlow"; wb.created=m.generated;
+    const NAVY="FF0A1628", GOLD="FFD4A017", fillH={type:"pattern",pattern:"solid",fgColor:{argb:NAVY}};
+    const fmtOf=t=>t==="money"?TX_MONEY:t==="date"?TX_DATE:t==="pct"?'0.00"%"':t==="int"?"#,##0":undefined;
+    const styleHead=(ws,row,n)=>{ const r=ws.getRow(row); for(let i=1;i<=n;i++){ const c=r.getCell(i); c.font={bold:true,color:{argb:"FFFFFFFF"}}; c.fill=fillH; c.alignment={vertical:"middle",wrapText:true}; } r.height=32; };
+    const table=(name,cols,rows,opt)=>{
+      opt=opt||{};
+      const ws=wb.addWorksheet(name,{views:[{state:"frozen",ySplit:1,xSplit:opt.freezeCols||0}]});
+      cols.forEach((c,i)=>{ ws.getColumn(i+1).width=c.w||14; });
+      ws.addRow(cols.map(c=>c.h)); styleHead(ws,1,cols.length);
+      rows.forEach((r,ri)=>{ const row=ws.addRow(cols.map(c=>c.t==="date"?txDate(r[c.k]):(r[c.k]==null?null:r[c.k])));
+        cols.forEach((c,i)=>{ const cell=row.getCell(i+1), f=fmtOf(c.t); if(f) cell.numFmt=f; cell.alignment={vertical:"top",wrapText:!!c.wrap}; }); });
+      const n=rows.length;
+      if(!n){ const r=ws.addRow(["Nothing to list for "+m.year+"."]); r.font={italic:true,color:{argb:"FF666666"}}; return ws; }
+      ws.autoFilter={from:{row:1,column:1},to:{row:n+1,column:cols.length}};
+      const sumCols=cols.map((c,i)=>c.sum?i:-1).filter(i=>i>=0);
+      if(sumCols.length){ const tr=ws.getRow(n+3); tr.getCell(opt.labelCol||1).value=opt.totalLabel||"Total (visible rows)"; tr.getCell(opt.labelCol||1).font={bold:true};
+        sumCols.forEach(i=>{ const L=txCol(i+1), cell=tr.getCell(i+1); cell.value={formula:"SUBTOTAL(109,"+L+"2:"+L+(n+1)+")",result:txR2(rows.reduce((s,r)=>s+(+r[cols[i].k]||0),0))};
+          cell.numFmt=fmtOf(cols[i].t); cell.font={bold:true}; cell.border={top:{style:"thin",color:{argb:GOLD}}}; }); }
+      return ws;
+    };
+    const sheetNote=(ws,text)=>{ ws.addRow([]); const r2=ws.addRow([text]); r2.font={italic:true,color:{argb:"FF555555"}}; };
+
+    // ── Summary ──
+    const S=wb.addWorksheet("Summary"); S.getColumn(1).width=46; for(let i=2;i<=9;i++) S.getColumn(i).width=17;
+    S.addRow([TX_CO+" — tax package "+m.year]).font={bold:true,size:16,color:{argb:NAVY}};
+    S.addRow(["Prepared "+m.generated.toLocaleString("en-US",{dateStyle:"long",timeStyle:"short"})+" from the BuildFlow app"]).font={color:{argb:"FF555555"}};
+    S.addRow([]);
+    ["How this is organized: expenses are listed by the date they were paid; a sale belongs to the year of its sold date. Year-end figures are as of Dec 31, "+m.year+".",
+     "This is a bookkeeping export. It lists, adds up and flags items; it does not decide tax treatment (capitalizing vs expensing, depreciation, 1099s). Your CPA does.",
+     "Open the \"To review\" tab first: it lists what looks incomplete or worth a second look before you send this on."].forEach(t=>{ const r=S.addRow([t]); r.alignment={wrapText:true,vertical:"top"}; S.mergeCells("A"+r.number+":I"+r.number); r.height=32; });
+    S.addRow([]);
+    const kt=S.addRow(["Key figures"]); kt.font={bold:true,color:{argb:"FFFFFFFF"}}; for(let i=1;i<=2;i++) kt.getCell(i).fill=fillH;
+    [["Expenses paid in "+m.year+" (all projects + general)",m.totals.ledger,"money"],["…of which loan & company-loan interest paid",m.totals.interest,"money"],
+     ["Sales closed in "+m.year+" (sold price)",m.totals.sales,"money"],["Gain on those sales (after all project costs)",m.totals.gain,"money"],
+     ["Costs in projects still held at Dec 31",m.totals.inventory,"money"],["Items to review",m.totals.flags,"int"]].forEach(([l,v,t])=>{ const r=S.addRow([l,v]); r.getCell(2).numFmt=fmtOf(t); });
+    S.addRow([]);
+    const hr=S.addRow(["Project","Status","Purchased","Purchase price","Sold","Sold price","Paid in "+m.year,"Paid before "+m.year,"Gain on sale"]); styleHead(S,hr.number,9);
+    m.summary.forEach(r=>{ const row=S.addRow([r.project,r.status,txDate(r.purchased),r.pp,txDate(r.sold),r.price,r.paidIn,r.paidBefore,r.gain]);
+      [3,5].forEach(i=>{row.getCell(i).numFmt=TX_DATE;}); [4,6,7,8,9].forEach(i=>{row.getCell(i).numFmt=TX_MONEY;}); });
+    if(m.summary.length){ const f=hr.number+1, l=hr.number+m.summary.length, tr=S.addRow(["Total"]); tr.font={bold:true};
+      [[7,"paidIn"],[8,"paidBefore"],[9,"gain"],[6,"price"]].forEach(([i,k])=>{ const L=txCol(i); const c=tr.getCell(i); c.value={formula:"SUM("+L+f+":"+L+l+")",result:txR2(m.summary.reduce((s,r)=>s+(+r[k]||0),0))}; c.numFmt=TX_MONEY; c.border={top:{style:"thin",color:{argb:GOLD}}}; }); }
+    S.views=[{showGridLines:false}];
+
+    // ── To review ──
+    const R=table("To review",[{h:"Priority",k:"pri",w:10},{h:"Where",k:"where",w:28},{h:"What",k:"what",w:70,wrap:true},{h:"Detail",k:"detail",w:70,wrap:true}],m.flags);
+    if(!m.flags.length){ R.getRow(2).getCell(1).value="Nothing flagged for "+m.year+"."; }
+
+    // ── Expense ledger ──
+    table("Expense ledger",[{h:"Date",k:"date",t:"date",w:13},{h:"Project",k:"project",w:26},{h:"Category",k:"category",w:16},{h:"Vendor",k:"vendor",w:24},{h:"Description",k:"desc",w:36,wrap:true},
+      {h:"Amount",k:"amount",t:"money",w:14,sum:true},{h:"Kind",k:"kind",w:28},{h:"Counted in project cost?",k:"counted",w:30,wrap:true},{h:"Notes",k:"notes",w:30,wrap:true}],m.ledger,{labelCol:5,totalLabel:"Total (visible rows)"});
+
+    // ── By category ──
+    const M=wb.addWorksheet("By category"); M.getColumn(1).width=24; m.matCols.forEach((c,i)=>{ M.getColumn(i+2).width=18; }); M.getColumn(m.matCols.length+2).width=16;
+    M.addRow(["Expenses paid in "+m.year+", by category and project (adds up the Expense ledger)"]).font={bold:true,size:13,color:{argb:NAVY}};
+    M.addRow([]);
+    const mh=M.addRow(["Category"].concat(m.matCols,["Total"])); styleHead(M,3,m.matCols.length+2);
+    m.matrix.forEach((r,i)=>{ const rn=4+i, row=M.addRow([r.cat]);
+      r.vals.forEach((v,j)=>{ row.getCell(j+2).value={formula:"SUMIFS('Expense ledger'!$F:$F,'Expense ledger'!$C:$C,$A"+rn+",'Expense ledger'!$B:$B,"+txCol(j+2)+"$3)",result:v}; row.getCell(j+2).numFmt=TX_MONEY; });
+      const tc=row.getCell(m.matCols.length+2), L1=txCol(2), L2=txCol(m.matCols.length+1); tc.value={formula:"SUM("+L1+rn+":"+L2+rn+")",result:txR2(r.vals.reduce((s,v)=>s+v,0))}; tc.numFmt=TX_MONEY; tc.font={bold:true}; });
+    if(m.matrix.length){ const tr=M.addRow(["Total"]); tr.font={bold:true}; const f=4, l=3+m.matrix.length;
+      for(let j=0;j<=m.matCols.length;j++){ const L=txCol(j+2), c=tr.getCell(j+2); c.value={formula:"SUM("+L+f+":"+L+l+")",result:txR2(m.matrix.reduce((s,r)=>s+(j<m.matCols.length?r.vals[j]:r.vals.reduce((a,b)=>a+b,0)),0))}; c.numFmt=TX_MONEY; c.border={top:{style:"thin",color:{argb:GOLD}}}; } }
+    else M.addRow(["Nothing to list for "+m.year+"."]).font={italic:true};
+    M.views=[{state:"frozen",ySplit:3,xSplit:1}];
+
+    // ── Vendors ──
+    const V=table("Vendors",[{h:"Vendor",k:"name",w:34},{h:"Payments",k:"n",t:"int",w:11},{h:"Total paid",k:"total",t:"money",w:16,sum:true},{h:"Labor / services",k:"services",t:"money",w:16,sum:true},{h:"Main category",k:"main",w:18},{h:"Note",k:"note",w:70,wrap:true}],m.vendors);
+    sheetNote(V,"Labor / services = Labor, Professional Fees and Demo/Cleanup paid on projects. $600 or more is a prompt to ask your CPA about a W-9 / 1099-NEC; card payments to retailers are usually reported by the card company instead.");
+
+    // ── Sales ──
+    const SA=table("Sales & profit",[{h:"Project",k:"project",w:28},{h:"Purchased",k:"closing",t:"date",w:13},{h:"Sold",k:"sold",t:"date",w:13},{h:"Sold price",k:"price",t:"money",w:15,sum:true},
+      {h:"Purchase price",k:"pp",t:"money",w:15,sum:true},{h:"Closing costs, loan fees & interest paid",k:"acq",t:"money",w:18,sum:true,wrap:true},{h:"Draw fees",k:"drawFees",t:"money",w:12,sum:true},{h:"Rehab spent",k:"rehab",t:"money",w:14,sum:true},
+      {h:"Interest still owed at sale",k:"interestOwed",t:"money",w:15,sum:true,wrap:true},{h:"Company loan interest",k:"coInt",t:"money",w:14,sum:true,wrap:true},{h:"Realtor (est.)",k:"realtor",t:"money",w:14,sum:true},{h:"Seller closing (est.)",k:"sellerClosing",t:"money",w:14,sum:true},
+      {h:"Total costs",k:"total",t:"money",w:15,sum:true},{h:"Gain",k:"gain",t:"money",w:15,sum:true}],m.sales,{freezeCols:1});
+    sheetNote(SA,"Whole-project view: all costs of the project, including those paid in earlier years. Realtor and seller closing are the percentages entered in the Profit card until you replace them with the settlement statement.");
+
+    // ── Projects still held ──
+    const IV=table("Held at Dec 31",[{h:"Project",k:"project",w:28},{h:"Purchased",k:"purchased",t:"date",w:13},{h:"Purchase price",k:"pp",t:"money",w:15,sum:true},{h:"Closing costs, loan fees & interest paid",k:"acq",t:"money",w:18,sum:true,wrap:true},
+      {h:"Draw fees",k:"drawFees",t:"money",w:12,sum:true},{h:"Rehab spent",k:"rehab",t:"money",w:14,sum:true},{h:"Interest accrued, unpaid (est.)",k:"accrued",t:"money",w:16,sum:true,wrap:true},{h:"Company loan interest owed",k:"coInt",t:"money",w:15,sum:true,wrap:true},
+      {h:"Total costs to date",k:"total",t:"money",w:16,sum:true},{h:"Loan principal outstanding",k:"principal",t:"money",w:16,sum:true,wrap:true}],m.inventory,{freezeCols:1});
+    sheetNote(IV,"Projects bought on or before Dec 31 and not sold by then. Costs are as of Dec 31, "+m.year+" (only expenses dated on or before it). Accrued interest is an estimate from the loan terms; the lender's year-end statement is the source.");
+
+    // ── Loans & interest ──
+    const LO=table("Loans & interest",[{h:"Project",k:"project",w:28},{h:"Lender",k:"lender",w:14},{h:"Loan #",k:"num",w:12},{h:"Closing",k:"closing",t:"date",w:13},{h:"Loan amount",k:"amount",t:"money",w:15},{h:"Purchase advance",k:"advance",t:"money",w:15},{h:"Rate %",k:"rate",t:"num",w:8},
+      {h:"Interest payments in "+m.year,k:"intPaid",t:"money",w:16,sum:true,wrap:true},{h:"Pro-rated interest at closing",k:"prepaid",t:"money",w:16,sum:true,wrap:true},{h:"Origination + service fees",k:"lenderFees",t:"money",w:15,sum:true,wrap:true},
+      {h:"Draw & other loan fees",k:"feesPaid",t:"money",w:14,sum:true,wrap:true},{h:"Loan cost in "+m.year,k:"total",t:"money",w:15,sum:true},{h:"Funded in "+m.year,k:"drawsIn",t:"money",w:14,sum:true},{h:"Principal at Dec 31",k:"principal",t:"money",w:15,sum:true},{h:"Interest accrued, unpaid (est.)",k:"accrued",t:"money",w:16,sum:true,wrap:true}],m.loanRows,{freezeCols:1});
+    sheetNote(LO,"Lender statements (and Form 1098, if the lender sends one) are the source for interest; this tab is for cross-checking. Principal is borrowed money, not income or an expense.");
+    { LO.addRow([]); const th=LO.addRow(["Company / partner loans","Type","Linked project","Rate %","Started","Borrowed in "+m.year,"Interest paid in "+m.year,"Principal repaid in "+m.year,"Balance at Dec 31","Interest accrued, unpaid"]); styleHead(LO,th.number,10);
+      if(!m.coRows.length) LO.addRow(["None with activity in "+m.year+"."]).font={italic:true};
+      m.coRows.forEach(r=>{ const row=LO.addRow([r.lender,r.type,r.project,r.rate,txDate(r.start),r.borrowed,r.intPaid,r.prin,r.balance,r.accrued]); row.getCell(4).numFmt="0.00"; row.getCell(5).numFmt=TX_DATE; for(let i=6;i<=10;i++) row.getCell(i).numFmt=TX_MONEY; }); }
+
+    // ── Closing statements ──
+    table("Closing statements",[{h:"Project",k:"project",w:28},{h:"Closing",k:"closing",t:"date",w:13},{h:"Purchase price",k:"pp",t:"money",w:15,sum:true},{h:"Down payment (incl. EMD)",k:"dp",t:"money",w:15,sum:true,wrap:true},{h:"EMD",k:"emd",t:"money",w:12,sum:true},
+      {h:"Origination fee",k:"orig",t:"money",w:13,sum:true},{h:"Service fee",k:"service",t:"money",w:12,sum:true},{h:"Pro-rated interest",k:"prorated",t:"money",w:13,sum:true},{h:"Title & settlement",k:"title",t:"money",w:14,sum:true},{h:"Recording & transfer taxes",k:"recording",t:"money",w:15,sum:true,wrap:true},
+      {h:"Hazard insurance",k:"hazard",t:"money",w:13,sum:true},{h:"Property tax proration",k:"taxProration",t:"money",w:14,sum:true,wrap:true},{h:"Other closing costs",k:"other",t:"money",w:13,sum:true},{h:"Closing costs total",k:"total",t:"money",w:15,sum:true},{h:"Cash at closing (statement)",k:"cash",t:"money",w:15,sum:true,wrap:true}],m.closings,{freezeCols:1});
+
+    return wb.xlsx.writeBuffer();
+  };
+  const txLoadLib=()=>window.ExcelJS?Promise.resolve(window.ExcelJS):new Promise((res,rej)=>{
+    const urls=["https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js","https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"]; let i=0;
+    const next=()=>{ if(i>=urls.length) return rej(new Error("couldn't load the Excel library (check your connection)")); const s=document.createElement("script"); s.src=urls[i++]; s.onload=()=>window.ExcelJS?res(window.ExcelJS):next(); s.onerror=next; document.head.appendChild(s); };
+    next(); });
+  const txDownload=(buf,name)=>{ const url=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); const a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1500); };
+  const txRun=async()=>{
+    if(txBusy) return;
+    if(!loansLoaded||loanErr){ showToast("Loans haven't loaded yet. Reload the app and try again.","error"); return; }
+    setTxDone(null); setTxBusy("Loading the Excel library…");
+    try{
+      const X=await txLoadLib(), list=projects.filter(p=>p&&p.id!=null), exps={}; let done=0;
+      for(let i=0;i<list.length;i+=4) await Promise.all(list.slice(i,i+4).map(async p=>{ const r=await api("getExpenses",{projectId:p.id},2); exps[String(p.id)]=r.expenses||[]; done++; setTxBusy("Reading expenses… "+done+"/"+list.length); }));
+      setTxBusy("Building the workbook…");
+      const m=txCompute({year:txYear,projects,exps,loans,draws,deals,coLoans,coTxns,coState,calcProfit,loanClosing,now:Date.now()});
+      const buf=await txWrite(X,m), name=TX_CO.replace(/[^A-Za-z0-9]+/g,"-")+"-Tax-Package-"+txYear+".xlsx";
+      txDownload(buf,name);
+      setTxDone({name,year:txYear,expenses:m.ledger.length,total:m.totals.ledger,sales:m.sales.length,flags:m.totals.flags});
+    }catch(err){ showToast("Couldn't build the tax package: "+(err&&err.message||err),"error"); }
+    finally{ setTxBusy(""); }
+  };
+  const TaxCard=()=>{
+    const thisYear=new Date().getFullYear(), years=[thisYear,thisYear-1,thisYear-2,thisYear-3].map(String);
+    return e("div",{style:{...S.card,marginBottom:16,padding:20}},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"}},
+        e("div",{style:{flex:"1 1 280px"}},
+          e("div",{style:{fontWeight:700,color:"var(--t-ink)"}},"🧾 Tax package for your CPA"),
+          e("div",{style:{fontSize:12,color:"var(--t-mute)",marginTop:3,lineHeight:1.5}},"One Excel file for the year: every expense by the date paid, totals by category and project, vendors, sales and gain, loans and interest, closing statements, and a list of things to double-check before you send it.")),
+        e("div",{style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
+          e("select",{style:{...S.input,width:"auto",padding:"8px 10px"},"aria-label":"Tax year",value:txYear,disabled:!!txBusy,onChange:ev=>{setTxYear(ev.target.value);setTxDone(null);}},...years.map(y=>e("option",{key:y,value:y},"Tax year "+y))),
+          e("button",{style:{...S.btn(),fontSize:13},disabled:!!txBusy||!loansLoaded,onClick:txRun},txBusy||"⬇ Download Excel"))),
+      txDone&&e("div",{style:{marginTop:12,background:"var(--t-inset)",border:"1px solid var(--t-line)",borderRadius:8,padding:"10px 12px",fontSize:12.5,color:"var(--t-ink4)",lineHeight:1.6}},
+        "✓ "+txDone.name+" · "+txDone.expenses+" expense"+(txDone.expenses===1?"":"s")+" totaling "+fmt(txDone.total)+" · "+txDone.sales+" sale"+(txDone.sales===1?"":"s"),
+        e("div",{style:{color:txDone.flags?"var(--t-amber)":"var(--t-green)"}},txDone.flags?txDone.flags+" thing"+(txDone.flags===1?"":"s")+" to review: open the \"To review\" tab before you send it.":"Nothing flagged.")));
+  };
+  // ══ end tax package ══
 
   const deal      =activeProject?deals[String(activeProject.id)]:null;
   const fundedList=pDraws.filter(d=>d.status==="Funded").map(d=>({amt:nz(d.amountFunded)||nz(d.amountRequested),date:d.fundedDate}));
@@ -5879,6 +6196,7 @@ function App() {
       ),
 
       CompanyLoansCard(),
+      TaxCard(),
 
       // In Progress Projects
       inProgress.length>0&&e("div",{style:{...S.card,marginBottom:16}},
