@@ -1923,6 +1923,19 @@ const QUOTE_STATUS_COLORS = {"Pending":"var(--t-amber)","Accepted":"var(--t-gree
 const fmt     = n => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(n||0);
 // BuildFlow: profit projection. Realtor 5% / seller closing 1% / 6 months hold are defaults, editable per project.
 // Closing costs + down payment entered in the Loan section (from the settlement statement)
+// Days held: every day from the loan's closing date to today (or to the sold date once the project is sold).
+const heldInfo=(loan,deal,now)=>{
+  const cd=String(loan&&loan.closingDate||"").slice(0,10), md=/^(\d{4})-(\d{2})-(\d{2})$/.exec(cd);
+  if(!md) return null;
+  const n=now||new Date(), today=Date.UTC(n.getFullYear(),n.getMonth(),n.getDate()), close=Date.UTC(+md[1],+md[2]-1,+md[3]);
+  const sp=parseFloat(deal&&deal.soldPrice), sd=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(deal&&deal.soldDate||"").slice(0,10));
+  const soldMs=sd?Date.UTC(+sd[1],+sd[2]-1,+sd[3]):null, sold=sp>0&&soldMs!=null&&soldMs<=today;
+  const end=sold?soldMs:today, days=Math.round((end-close)/864e5);
+  if(days<0) return {future:true,days:-days,sold:false};
+  return {future:false,days,sold};
+};
+const heldLabel=h=>!h?"":h.future?"Closing in "+h.days+" day"+(h.days===1?"":"s")
+  :h.sold?"Held "+h.days+" day"+(h.days===1?"":"s")+" · closing → sold":h.days===0?"Closing day":"Held "+h.days+" day"+(h.days===1?"":"s")+" since closing";
 const CLOSING_KEYS=["titleFees","recordingTaxes","hazardInsurance","taxProration","otherClosing"];
 const loanClosing=loan=>{
   if(!loan) return null;
@@ -4010,7 +4023,8 @@ function App() {
           isSold&&e("span",{style:{background:"color-mix(in srgb, var(--t-red) 13%, transparent)",color:"var(--t-red)",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"Sold"),
           isGeneral&&e("span",{style:{background:"var(--t-line)",color:"var(--t-mute)",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99}},"General")
         ),
-        e("p",{style:{color:"var(--t-mute)",fontSize:13}},activeProject?.description?.split("|")[0]?.trim()||"Fix & Flip")
+        e("p",{style:{color:"var(--t-mute)",fontSize:13}},activeProject?.description?.split("|")[0]?.trim()||"Fix & Flip",
+          (()=>{const h=isGeneral?null:heldInfo(loan,deal); return h?e("span",{"data-testid":"held-days",title:"Counted from the closing date on Loan & Draws"+(h.sold?" to the sold date":" to today"),style:{marginLeft:10,display:"inline-block",background:h.future?"color-mix(in srgb, var(--t-amber) 13%, transparent)":"#3b82f622",color:h.future?"var(--t-amber)":"var(--t-blue2)",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,whiteSpace:"nowrap"}},"⏱ "+heldLabel(h)):null;})())
       ),
       e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
         e("button",{style:{...S.btn("ghost"),fontSize:12},onClick:()=>{setForm({...activeProject});navTo("edit-project");}},"Edit"),
