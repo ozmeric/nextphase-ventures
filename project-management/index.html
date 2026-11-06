@@ -1985,7 +1985,9 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees,
   // Draw fees from the Draws list count as a cost, unless you already logged them as Loan Expenses ("draw"/"inspection" fee)
   const feesLogged=sum((expenses||[]).filter(x=>x.category==="Loan Expenses"&&/draw|inspection/i.test(String(x.description||""))));
   const drawFeesCounted=Math.max(0,n(drawFees)-feesLogged);
-  const realtor=salePrice*rPct/100, closing=salePrice*cPct/100;
+  // Sold with the real numbers from the settlement statement (commission, other seller costs) → those replace the % estimates
+  const realtorAct=sold&&!blank(deal.sellCommission), closingAct=sold&&!blank(deal.sellCosts);
+  const realtor=realtorAct?n(deal.sellCommission):salePrice*rPct/100, closing=closingAct?n(deal.sellCosts):salePrice*cPct/100;
   const coInt=n(otherInterest);   // company loans that funded this project: interest accrued, not paid yet
   // Where you stand TODAY: money actually spent + interest so far (Kiavi charges on disbursed funds:
   // the purchase loan since closing, each draw since it funded) + selling costs at ARV
@@ -2062,7 +2064,7 @@ const calcProfit=({pp,rb,expenses,deal,loan,drawn,funded,otherInterest,drawFees,
   const payoffPrincipal=loan?adv+n(drawn):0, payoff=payoffPrincipal+interestToDate;
   const cashIn=n(pp)-(loan?adv:0)+acq+drawFeesCounted+rehabSpent-(loan?n(drawn):0)+coInt;
   const costsToDate=n(pp)+acq+drawFeesCounted+rehabSpent+interestToDate+coInt, sellCosts=realtor+closing, profitToday=salePrice-costsToDate-sellCosts;
-  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:!sold&&n(rb)>=rehabSpent,sold,soldPrice,soldDate:soldD?soldS:"",salePrice,balance,interestMo,other,monthly,holding,realtor,closing,profit,margin:profit/salePrice,
+  return {arv,arvSource:ownArv?"yours":"lender",lenderArv,pp:n(pp),rPct,cPct,months,acq,acqFromLoan,closingFromLoan,ignoredClosing,emdExcluded,rehab,rehabSpent,rehabFromBudget:!sold&&n(rb)>=rehabSpent,sold,soldPrice,soldDate:soldD?soldS:"",salePrice,balance,interestMo,other,monthly,holding,realtor,closing,realtorAct,closingAct,profit,margin:profit/salePrice,
     payoffPrincipal,payoff,cashIn,cashBack:salePrice-realtor-closing-payoff,advance:adv,drawnTotal:n(drawn),
     interestToDate,interestLogged,interestPaid,interestAccrued,coInt,drawFeesCounted,feesLogged,monthsLeft,monthsSince,fullMo,interestTotal,holdingInterest,interestNeedsClosing:!!(loan&&rate&&!loan.closingDate),costsToDate,sellCosts,profitToday,marginToday:profitToday/salePrice};
 };
@@ -3343,8 +3345,10 @@ function App() {
       if(new Date(sd+"T00:00:00").getTime()>nowMs){ flag("High",x.name,"Sold date "+sd+" is in the future, so this sale isn't counted yet","Fix the date, or leave it out of this year's package."); return; }
       const c=calc(x,false); if(!c) return;
       const costs=c.pp+c.acq+c.drawFeesCounted+c.rehab+c.holding+c.coInt+c.realtor+c.closing;
-      sales.push({project:x.name,closing:purchaseDate(x.id),sold:sd,price:c.salePrice,realtor:c.realtor,sellerClosing:c.closing,pp:c.pp,acq:c.acq,drawFees:c.drawFeesCounted,rehab:c.rehab,interestOwed:c.holding,coInt:c.coInt,total:txR2(costs),gain:txR2(c.salePrice-costs),appProfit:txR2(c.profit),rPct:c.rPct,cPct:c.cPct});
-      flag("Medium",x.name,"Selling costs on the Sales tab are estimates ("+c.rPct+"% realtor + "+c.cPct+"% seller closing of the sold price)","Replace them with the actual figures from the settlement statement before filing.");
+      sales.push({project:x.name,closing:purchaseDate(x.id),sold:sd,price:c.salePrice,realtor:c.realtor,sellerClosing:c.closing,pp:c.pp,acq:c.acq,drawFees:c.drawFeesCounted,rehab:c.rehab,interestOwed:c.holding,coInt:c.coInt,total:txR2(costs),gain:txR2(c.salePrice-costs),appProfit:txR2(c.profit),rPct:c.rPct,cPct:c.cPct,costsSrc:c.realtorAct&&c.closingAct?"Settlement statement":c.realtorAct||c.closingAct?"Part statement, part estimate":"Estimate"});
+      if(!(c.realtorAct&&c.closingAct)) flag("Medium",x.name,"Selling costs on the Sales tab are estimates ("+(c.realtorAct?"":c.rPct+"% realtor")+(c.realtorAct||c.closingAct?"":" + ")+(c.closingAct?"":c.cPct+"% seller closing")+" of the sold price)","Enter the actual figures from the settlement statement in the Profit card before filing.");
+      if(c.realtorAct&&(exps[x.id]||[]).some(e=>/realtor|commission|compass|brokerage/i.test(String(e.description||"")+" "+String(e.vendor||""))))
+        flag("Medium",x.name,"The sale uses the actual realtor commission ("+txUsd(c.realtor)+"), but an expense that looks like a commission is also logged","Check it isn't counted twice (once as an expense, once in the sale).");
     });
     sales.sort((a,b)=>a.sold<b.sold?-1:1);
 
@@ -3486,9 +3490,9 @@ function App() {
     // ── Sales ──
     const SA=table("Sales & profit",[{h:"Project",k:"project",w:28},{h:"Purchased",k:"closing",t:"date",w:13},{h:"Sold",k:"sold",t:"date",w:13},{h:"Sold price",k:"price",t:"money",w:15,sum:true},
       {h:"Purchase price",k:"pp",t:"money",w:15,sum:true},{h:"Closing costs, loan fees & interest paid",k:"acq",t:"money",w:18,sum:true,wrap:true},{h:"Draw fees",k:"drawFees",t:"money",w:12,sum:true},{h:"Rehab spent",k:"rehab",t:"money",w:14,sum:true},
-      {h:"Interest still owed at sale",k:"interestOwed",t:"money",w:15,sum:true,wrap:true},{h:"Company loan interest",k:"coInt",t:"money",w:14,sum:true,wrap:true},{h:"Realtor (est.)",k:"realtor",t:"money",w:14,sum:true},{h:"Seller closing (est.)",k:"sellerClosing",t:"money",w:14,sum:true},
-      {h:"Total costs",k:"total",t:"money",w:15,sum:true},{h:"Gain",k:"gain",t:"money",w:15,sum:true}],m.sales,{freezeCols:1});
-    sheetNote(SA,"Whole-project view: all costs of the project, including those paid in earlier years. Realtor and seller closing are the percentages entered in the Profit card until you replace them with the settlement statement.");
+      {h:"Interest still owed at sale",k:"interestOwed",t:"money",w:15,sum:true,wrap:true},{h:"Company loan interest",k:"coInt",t:"money",w:14,sum:true,wrap:true},{h:"Realtor commission",k:"realtor",t:"money",w:14,sum:true,wrap:true},{h:"Other selling costs",k:"sellerClosing",t:"money",w:14,sum:true,wrap:true},
+      {h:"Total costs",k:"total",t:"money",w:15,sum:true},{h:"Gain",k:"gain",t:"money",w:15,sum:true},{h:"Selling costs are",k:"costsSrc",w:22,wrap:true}],m.sales,{freezeCols:1});
+    sheetNote(SA,"Whole-project view: all costs of the project, including those paid in earlier years. Realtor commission and other selling costs are the actual settlement-statement figures when entered in the Profit card; otherwise they are the percentage estimates (see the last column).");
 
     // ── Projects still held ──
     const IV=table("Held at Dec 31",[{h:"Project",k:"project",w:28},{h:"Purchased",k:"purchased",t:"date",w:13},{h:"Purchase price",k:"pp",t:"money",w:15,sum:true},{h:"Closing costs, loan fees & interest paid",k:"acq",t:"money",w:18,sum:true,wrap:true},
@@ -4439,8 +4443,8 @@ function App() {
       ? "Holding: interest so far + "+(Math.round(c.monthsLeft*10)/10)+" mo left × "+fmt(c.fullMo)+" (full loan)"+(c.interestPaid>0?" − "+fmt(c.interestPaid)+" already paid":"")+(c.other?" + other "+fmt(c.other)+"/mo":"")
       : "Holding: "+c.months+" mo × "+fmt(c.monthly)+(c.interestMo?" (interest"+(c.other?" + other":"")+")":c.other?" (other)":""),-c.holding,null,false],
     ...(c.coInt>0?[["Company loan interest owed (not paid yet)",-c.coInt,null,false]]:[]),
-    ["Realtor fee ("+pctTxt(c.rPct)+" of "+(c.soldPrice>0?"sale price":"ARV")+")",-c.realtor,"var(--t-amber)",false],
-    ["Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
+    [c.realtorAct?"Realtor commission (actual, from the settlement statement)":"Realtor fee ("+pctTxt(c.rPct)+" of "+(c.soldPrice>0?"sale price":"ARV")+")",-c.realtor,"var(--t-amber)",false],
+    [c.closingAct?"Other selling costs (actual: closing costs, seller credit, prorations)":"Seller closing costs ("+pctTxt(c.cPct)+")",-c.closing,null,false],
   ];
   const DealCard=()=>{
     const c=projCalc;
@@ -4452,7 +4456,7 @@ function App() {
         e("button",{style:{...S.btn(c?"ghost":undefined),fontSize:12},disabled:!loansLoaded,onClick:openDealEdit},c?"Edit ARV":"+ Add ARV")),
       c&&e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10},className:"summary-grid"},
         statTile("ARV",fmt(c.arv),"var(--t-purple)"),
-        statTile("Realtor fee",fmt(c.realtor),"var(--t-amber)",pctTxt(c.rPct)+" of ARV"),
+        statTile("Realtor fee",fmt(c.realtor),"var(--t-amber)",c.realtorAct?"actual, from the statement":pctTxt(c.rPct)+" of "+(c.soldPrice>0?"sale price":"ARV")),
         statTile("Potential profit",fmt(c.profit),c.profit<0?"var(--t-red)":"var(--t-green)",pctTxt(c.margin*100)+" of ARV")),
       c&&e("div",{style:{marginTop:12,borderTop:"1px solid var(--t-line)",paddingTop:8}},
         ...breakdown(c).map(([l,v,col],i)=>e("div",{key:i,style:{display:"flex",justifyContent:"space-between",gap:10,fontSize:12.5,padding:"3px 0",color:"var(--t-sub)"}},
@@ -4507,7 +4511,7 @@ function App() {
         e("div",null,
           head(c.sold?"At the sale":"If sold today",c.sold?"what you walked away with":"what you'd walk away with"),
           line(c.soldPrice>0?"Sale price":"Sale price (ARV)",c.salePrice),
-          line("Realtor "+pctTxt(c.rPct)+" + seller closing "+pctTxt(c.cPct),-c.sellCosts),
+          line(c.realtorAct||c.closingAct?"Realtor commission + other selling costs"+(c.realtorAct&&c.closingAct?" (actual)":""):"Realtor "+pctTxt(c.rPct)+" + seller closing "+pctTxt(c.cPct),-c.sellCosts),
           loan&&line("Pay off the loan: "+fmt(c.payoffPrincipal)+(c.sold?" borrowed":" borrowed so far")+" + "+fmt(c.interestToDate)+" interest due",-c.payoff),
           loan?sumLine("Cash back to you",c.cashBack):null,
           e("div",{style:{height:10}}),
@@ -4529,9 +4533,11 @@ function App() {
   };
   // ── Sold price · Sold date · Interest rate: edit right on the Profit card; the numbers above follow them ──
   const saleCur=()=>({pid:String(activeId),soldPrice:deal&&deal.soldPrice!=null&&deal.soldPrice!==""?String(deal.soldPrice):"",
-    soldDate:deal?String(deal.soldDate||"").slice(0,10):"",rate:loan&&loan.rate!=null&&loan.rate!==""?String(loan.rate):""});
+    soldDate:deal?String(deal.soldDate||"").slice(0,10):"",rate:loan&&loan.rate!=null&&loan.rate!==""?String(loan.rate):"",
+    sellCommission:deal&&deal.sellCommission!=null&&deal.sellCommission!==""?String(deal.sellCommission):"",sellCosts:deal&&deal.sellCosts!=null&&deal.sellCosts!==""?String(deal.sellCosts):""});
   const saleVals=()=>saleEdit&&saleEdit.pid===String(activeId)?saleEdit:saleCur();
-  const saleDirty=()=>{ const v=saleVals(), c=saleCur(); return num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate||(loan&&num(v.rate)!==num(c.rate)); };
+  const saleDirty=()=>{ const v=saleVals(), c=saleCur(); return num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate||(loan&&num(v.rate)!==num(c.rate))||blankNum(v.sellCommission)!==blankNum(c.sellCommission)||blankNum(v.sellCosts)!==blankNum(c.sellCosts); };
+  const blankNum=x=>String(x==null?"":x).trim()===""?"":num(x);
   const saveSale=async(clear)=>{
     const v=clear?{...saleVals(),soldPrice:"",soldDate:""}:saleVals(), c=saleCur(), pid=String(activeId);
     if(String(v.soldPrice).trim()!==""&&!(num(v.soldPrice)>0)){ showToast("Sold price must be a number","error"); return; }
@@ -4539,10 +4545,11 @@ function App() {
     if(loan&&String(v.rate).trim()!==""&&!(num(v.rate)>0&&num(v.rate)<30)){ showToast("Interest rate should be a % like 9.25","error"); return; }
     setSaleBusy(true);
     try{
-      if(num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate){
-        const d={...dealDefaults(),...(deal||{}),projectId:pid,soldPrice:String(v.soldPrice).trim()===""?"":num(v.soldPrice),soldDate:v.soldDate||""};
+      if(num(v.soldPrice)!==num(c.soldPrice)||v.soldDate!==c.soldDate||blankNum(v.sellCommission)!==blankNum(c.sellCommission)||blankNum(v.sellCosts)!==blankNum(c.sellCosts)){
+        const d={...dealDefaults(),...(deal||{}),projectId:pid,soldPrice:String(v.soldPrice).trim()===""?"":num(v.soldPrice),soldDate:v.soldDate||"",
+          sellCommission:clear?"":blankNum(v.sellCommission),sellCosts:clear?"":blankNum(v.sellCosts)};
         const r=await api("loan.saveDeal",{deal:d},0);
-        if((d.soldPrice!==""||d.soldDate)&&r.deal&&!("soldPrice" in r.deal)){ showToast("Not saved — Apps Script is running an older Loans.gs. Paste in the new Loans.gs, then Deploy → Manage deployments → ✏️ Edit → New version.","error"); return; }
+        if((d.soldPrice!==""||d.soldDate||d.sellCommission!==""||d.sellCosts!=="")&&r.deal&&!("sellCosts" in r.deal)){ showToast("Not saved — Apps Script is running an older Loans.gs. Paste in the new Loans.gs, then Deploy → Manage deployments → ✏️ Edit → New version.","error"); return; }
         setDeals(m=>({...m,[pid]:r.deal}));
       }
       if(loan&&num(v.rate)!==num(c.rate)){
@@ -4562,6 +4569,10 @@ function App() {
         num(v.soldPrice)>0?"used instead of the ARV":"blank = use the ARV"),
       box("Sold date",e("input",{style:S.input,type:"date","aria-label":"Sold date",value:v.soldDate,onChange:ev=>set({soldDate:ev.target.value})}),
         v.soldDate?"interest stops on this date":"blank = still holding"),
+      num(v.soldPrice)>0&&v.soldDate&&box("Realtor commission ($)",e("input",{style:S.input,inputMode:"decimal","aria-label":"Realtor commission",placeholder:"estimate 5%",value:v.sellCommission,onChange:ev=>set({sellCommission:ev.target.value})}),
+        String(v.sellCommission).trim()!==""?"actual, from the settlement statement":"blank = estimate from the realtor %"),
+      num(v.soldPrice)>0&&v.soldDate&&box("Other selling costs ($)",e("input",{style:S.input,inputMode:"decimal","aria-label":"Other selling costs",placeholder:"estimate 1%",value:v.sellCosts,onChange:ev=>set({sellCosts:ev.target.value})}),
+        String(v.sellCosts).trim()!==""?"closing costs + seller credit + prorations":"blank = estimate from the closing %"),
       loan&&box("Interest rate (%)",e("input",{style:S.input,inputMode:"decimal","aria-label":"Interest rate",placeholder:"e.g. 9.25",value:v.rate,onChange:ev=>set({rate:ev.target.value})}),
         "the "+(loan.lender||"loan")+" rate (same as Loan & Draws)"),
       e("div",{style:{display:"flex",gap:6,flex:"0 0 auto",paddingBottom:dirty||hasSale?18:0}},
