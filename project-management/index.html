@@ -2537,6 +2537,7 @@ function App() {
   const [coLoans,setCoLoans] = useState([]); const [coTxns,setCoTxns] = useState([]);   // Management → Company Loans
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [payItems,setPayItems] = useState([]); const [payLog,setPayLog] = useState([]); const [payEdit,setPayEdit] = useState(null); const [payMark,setPayMark] = useState(null); const [payOpen,setPayOpen] = useState({}); const [payBusy,setPayBusy] = useState(false); const [payShowHist,setPayShowHist] = useState(false); const [payShowIdle,setPayShowIdle] = useState(false);   // Management → Payment reminders
+  const [rcItems,setRcItems] = useState([]); const [rcLoaded,setRcLoaded] = useState(false); const [rcErr,setRcErr] = useState(""); const [rcBusy,setRcBusy] = useState(false); const [rcEdit,setRcEdit] = useState(null); const [rcEdits,setRcEdits] = useState({}); const [rcShowDone,setRcShowDone] = useState(false);   // Management → Receipts to review
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
   const [txYear,setTxYear] = useState(()=>{const d=new Date();return String(d.getMonth()<2?d.getFullYear()-1:d.getFullYear());}); const [txBusy,setTxBusy] = useState(""); const [txDone,setTxDone] = useState(null);   // tax package
   const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
@@ -2751,6 +2752,7 @@ function App() {
     // BuildFlow: loans & Kiavi draws (Loans.gs)
     api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setPayItems(d.payments||[]); setPayLog(d.paymentLog||[]); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
+    api("rcpt.list").then(d=>{ setRcItems(d.receipts||[]); setRcLoaded(true); setRcErr(""); }).catch(err=>setRcErr(err.message));   // Receipts.gs
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced, only after initial load)
@@ -3673,6 +3675,98 @@ function App() {
         e("button",{style:S.btn("ghost"),onClick:()=>setPayMark(null)},"Cancel"),
         e("button",{style:S.btn(),disabled:payBusy||!d.date||(String(d.amount).trim()!==""&&!(amt>=0)),onClick:save},payBusy?"Saving…":"Save payment"))];
   })()));
+
+
+  // ══ Management → Receipts to review: Home Depot / Lowe's / Amazon order emails that arrived in the bills inbox (Receipts.gs) ══
+  // Nothing is an expense until you press Add. The project is guessed from the PO / job name; you can change it first.
+  // State lives next to the other loan state (see assemble.py). Uses payMoney/payNice from the payment reminders code above.
+  const RC_ICON={"Home Depot":"🟧","Lowe's":"🟦","Amazon":"📦"};
+  const rcApply=r=>{ if(r&&r.receipts){ setRcItems(r.receipts); setRcLoaded(true); setRcErr(""); } };
+  const rcCall=async(action,body,okMsg)=>{
+    setRcBusy(true);
+    try{ const r=await api("rcpt."+action,body,0); rcApply(r); if(okMsg&&r&&!r.duplicate) showToast(typeof okMsg==="function"?okMsg(r):okMsg); return r; }
+    catch(err){ showToast(/Unknown action/.test(err.message)?"The app's Apps Script doesn't have receipts yet. Paste in the new Code.gs and Receipts.gs, then Deploy → Manage deployments → ✏️ Edit → New version.":err.message,"error"); return null; }
+    finally{ setRcBusy(false); }
+  };
+  const rcRefresh=async()=>{ setRcBusy(true); try{ const r=await api("rcpt.list",{},0); rcApply(r); showToast("Receipts refreshed"); }catch(err){ setRcErr(err.message); showToast(err.message,"error"); } finally{ setRcBusy(false); } };
+  const rcDraft=r=>({projectId:r.projectId||"",amount:r.total==null?"":String(r.total),date:r.orderDate||"",category:"Materials",description:"",notes:"",...(rcEdits[r.id]||{})});
+  const rcSet=(id,patch)=>setRcEdits(m=>({...m,[id]:{...(m[id]||{}),...patch}}));
+  const rcAdd=async(r,d)=>{
+    const amt=num(d.amount);
+    const body={id:r.id,projectId:d.projectId,amount:d.amount,date:d.date,category:d.category,description:d.description,notes:d.notes};
+    if(amt>10000){ if(!window.confirm("This is over $10,000 ("+payMoney(amt)+"). Add it as an expense anyway?")) return null; body.confirmBig=true; }
+    const ok=res=>"Added "+payMoney(res.added.amount)+" to "+res.added.projectName+" · open the project to see it";
+    let res=await rcCall("approve",body,ok);
+    if(res&&res.duplicate){ if(!window.confirm(res.duplicate)) return null; res=await rcCall("approve",{...body,confirmDup:true},ok); }
+    if(res&&res.receipts){ setRcEdit(null); setRcEdits(m=>{const n={...m}; delete n[r.id]; return n;}); }
+    return res;
+  };
+
+  const ReceiptsCard=()=>{
+    if(!rcLoaded&&!rcErr) return null;
+    const pending=rcItems.filter(r=>r.status==="pending"), done=rcItems.filter(r=>r.status!=="pending");
+    const sum=pending.reduce((t,r)=>t+(+r.total||0),0);
+    const smallBtn=(label,onClick,ghost,extra)=>e("button",{style:{...S.btn(ghost?"ghost":undefined),fontSize:11,padding:"5px 11px",opacity:(extra&&extra.dis)?0.4:1,cursor:(extra&&extra.dis)?"not-allowed":"pointer"},disabled:rcBusy||!!(extra&&extra.dis),onClick,...((extra&&extra["data-testid"])?{"data-testid":extra["data-testid"]}:{})},label);
+    const projOpts=[e("option",{key:"",value:""},"Pick a project…"),...projects.map(p=>e("option",{key:p.id,value:String(p.id)},p.name))];
+    const row=r=>{
+      const d=rcDraft(r), amt=num(d.amount), ready=!!d.projectId&&amt>0&&!!d.date;
+      return e("div",{key:r.id,"data-testid":"rc-row",style:{borderTop:"1px solid var(--t-line2)",padding:"12px 0"}},
+        e("div",{style:{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"flex-start"}},
+          e("div",{style:{minWidth:0,flex:"1 1 220px"}},
+            e("div",{style:{fontWeight:700,color:"var(--t-ink)",fontSize:14}},(RC_ICON[r.vendor]||"🧾")+" "+r.vendor+" · order "+r.orderNo),
+            e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:2}},[payNice(r.orderDate),r.po?"PO / job: "+r.po:"no PO / job name",r.summary].filter(Boolean).join(" · ")),
+            r.flags&&e("div",{style:{fontSize:11.5,color:"var(--t-amber)",marginTop:3}},"⚠ "+String(r.flags).split(" | ").join(" · "))),
+          e("div",{style:{textAlign:"right"}},
+            r.total==null?e("div",{style:{fontSize:13,fontWeight:700,color:"var(--t-amber)"}},"Total needed"):e("div",{style:{fontSize:17,fontWeight:800,color:"var(--t-ink)"}},payMoney(r.total)))),
+        e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:8,alignItems:"center"}},
+          e("select",{"aria-label":"Project for "+r.orderNo,"data-testid":"rc-project",style:{...S.input,width:"auto",minWidth:170,fontSize:12,padding:"5px 8px",borderColor:d.projectId?"var(--t-line)":"var(--t-amber)"},value:d.projectId,onChange:ev=>rcSet(r.id,{projectId:ev.target.value})},...projOpts),
+          smallBtn("✓ Add as expense",()=>rcAdd(r,d),false,{dis:!ready,"data-testid":"rc-add"}),
+          smallBtn("Details",()=>setRcEdit(r.id),true),
+          smallBtn("Skip",()=>rcCall("skip",{id:r.id},"Skipped"),true,{"data-testid":"rc-skip"}),
+          r.pdfUrl&&e("a",{href:r.pdfUrl,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11.5,color:"var(--t-blue2)"}},"Open receipt ↗"),
+          r.mailUrl&&e("a",{href:r.mailUrl,target:"_blank",rel:"noopener noreferrer",style:{fontSize:11.5,color:"var(--t-blue2)"}},"Open email ↗")));
+    };
+    const doneRow=r=>e("div",{key:r.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,fontSize:12,padding:"6px 0",borderBottom:"1px solid var(--t-line2)",color:"var(--t-sub)"}},
+      e("span",{style:{minWidth:0}},(r.status==="approved"?"✓ Added to "+(r.projectName||"a project"):"Skipped")+" · "+r.vendor+" "+r.orderNo+" · "+payNice(r.orderDate)),
+      e("span",{style:{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}},r.total!=null&&e("span",{style:{color:r.status==="approved"?"var(--t-green)":"var(--t-mute)",fontWeight:700}},payMoney(r.total)),
+        r.status==="skipped"&&smallBtn("Restore",()=>rcCall("restore",{id:r.id},"Back in the list"),true)));
+    return e("div",{style:{...S.card,marginBottom:16},"data-testid":"receipts-card"},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-gold)",textTransform:"uppercase",letterSpacing:"0.06em"}},"🧾 Receipts to review"+(pending.length?" · "+pending.length+" waiting"+(sum>0?" · "+payMoney(sum):""):"")),
+        smallBtn("↻ Refresh",rcRefresh,true)),
+      rcErr&&!rcLoaded?e("div",{style:{fontSize:13,color:"var(--t-mute)"}},/Unknown action/.test(rcErr)?"Receipts need the new Code.gs and Receipts.gs in the app's Apps Script (then Deploy → New version).":"Couldn't load receipts: "+rcErr):
+      e("div",null,
+        pending.length===0&&e("div",{style:{fontSize:13,color:"var(--t-mute)"}},"Nothing waiting. New Home Depot, Lowe's and Amazon order emails from your bills inbox show up here, with the project filled in from the PO / job name. Nothing becomes an expense until you press Add."),
+        ...pending.map(row),
+        done.length>0&&e("div",{style:{marginTop:10}},
+          e("button",{style:{background:"transparent",border:"none",color:"var(--t-mute)",cursor:"pointer",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",padding:0},onClick:()=>setRcShowDone(v=>!v)},(rcShowDone?"▾":"▸")+" Added / skipped ("+done.length+")"),
+          rcShowDone&&e("div",{style:{background:"var(--t-inset)",borderRadius:8,padding:"4px 12px",marginTop:6},"data-testid":"rc-done"},...done.map(doneRow)))));
+  };
+
+  const ReceiptModal=()=>{
+    const r=rcEdit&&rcItems.find(x=>x.id===rcEdit); if(!r) return null;
+    const d=rcDraft(r), set=p=>rcSet(r.id,p), amt=num(d.amount), ready=!!d.projectId&&amt>0&&!!d.date;
+    return e("div",{key:"rc-m","data-testid":"rc-modal"},overlay(()=>setRcEdit(null),[
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:4}},(RC_ICON[r.vendor]||"🧾")+" "+r.vendor+" · order "+r.orderNo),
+      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:12}},[payNice(r.orderDate),r.po?"PO / job: "+r.po:"",r.shipTo].filter(Boolean).join(" · ")),
+      r.flags&&e("div",{key:"fl",style:{fontSize:12,color:"var(--t-amber)",marginBottom:10}},"⚠ "+String(r.flags).split(" | ").join(" · ")),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        fld("Project *",e("select",{style:S.input,"aria-label":"Project",value:d.projectId,onChange:ev=>set({projectId:ev.target.value})},...projects.map(p=>e("option",{key:p.id,value:String(p.id)},p.name)).reduce((a,x)=>a.concat(x),[e("option",{key:"",value:""},"Pick a project…")]))),
+        e("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+          fld("Amount *",e("input",{style:S.input,inputMode:"decimal","aria-label":"Amount",placeholder:"0.00",value:d.amount,onChange:ev=>set({amount:ev.target.value})})),
+          fld("Date *",e("input",{type:"date",style:S.input,"aria-label":"Date",value:d.date,onChange:ev=>set({date:ev.target.value})}))),
+        fld("Category",e("select",{style:S.input,"aria-label":"Category",value:d.category,onChange:ev=>set({category:ev.target.value})},...CATEGORIES.map(c=>e("option",{key:c,value:c},c)))),
+        fld("Description",e("input",{style:S.input,"aria-label":"Description",placeholder:r.vendor+(r.summary?" — "+r.summary:" order "+r.orderNo),value:d.description,onChange:ev=>set({description:ev.target.value})})),
+        fld("Notes",e("input",{style:S.input,"aria-label":"Notes",placeholder:"optional",value:d.notes,onChange:ev=>set({notes:ev.target.value})})),
+        e("div",{style:{fontSize:11.5,color:"var(--t-mute)"}},"The expense keeps the PO, order number and a link to the receipt in its notes."+(r.pdfUrl||r.mailUrl?" ":"")),
+        e("div",{style:{display:"flex",gap:14,flexWrap:"wrap"}},
+          r.pdfUrl&&e("a",{href:r.pdfUrl,target:"_blank",rel:"noopener noreferrer",style:{fontSize:12,color:"var(--t-blue2)"}},"Open receipt ↗"),
+          r.mailUrl&&e("a",{href:r.mailUrl,target:"_blank",rel:"noopener noreferrer",style:{fontSize:12,color:"var(--t-blue2)"}},"Open email ↗"))),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16}},
+        e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setRcEdit(null)},"Close"),
+        e("button",{style:S.btn(),disabled:rcBusy||!ready,"data-testid":"rc-modal-add",onClick:()=>rcAdd(r,d)},rcBusy?"Adding…":"✓ Add as expense"))]));
+  };
 
 
   const deal      =activeProject?deals[String(activeProject.id)]:null;
@@ -6343,6 +6437,7 @@ function App() {
         )
       ),
 
+      ReceiptsCard(),
       PaymentsCard(),
       CompanyLoansCard(),
       TaxCard(),
@@ -6555,6 +6650,7 @@ function App() {
     CompanyTxnModal(),
     PaymentModal(),
     PayMarkModal(),
+    ReceiptModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"var(--t-ink)"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
