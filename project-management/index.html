@@ -2538,6 +2538,7 @@ function App() {
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [payItems,setPayItems] = useState([]); const [payLog,setPayLog] = useState([]); const [payEdit,setPayEdit] = useState(null); const [payMark,setPayMark] = useState(null); const [payOpen,setPayOpen] = useState({}); const [payBusy,setPayBusy] = useState(false); const [payShowHist,setPayShowHist] = useState(false); const [payShowIdle,setPayShowIdle] = useState(false);   // Management → Payment reminders
   const [rcItems,setRcItems] = useState([]); const [rcLoaded,setRcLoaded] = useState(false); const [rcErr,setRcErr] = useState(""); const [rcBusy,setRcBusy] = useState(false); const [rcEdit,setRcEdit] = useState(null); const [rcEdits,setRcEdits] = useState({}); const [rcShowDone,setRcShowDone] = useState(false);   // Management → Receipts to review
+  const [ck,setCk] = useState({template:[],lists:[],items:[]}); const [ckLoaded,setCkLoaded] = useState(false); const [ckErr,setCkErr] = useState(""); const [ckBusy,setCkBusy] = useState(false); const [ckOpen,setCkOpen] = useState({}); const [ckEditMode,setCkEditMode] = useState({}); const [ckItemEdit,setCkItemEdit] = useState(null); const [ckAdd,setCkAdd] = useState({}); const [ckNew,setCkNew] = useState(null); const [ckTplOpen,setCkTplOpen] = useState(false); const [ckPick,setCkPick] = useState({}); const [ckRename,setCkRename] = useState(null);   // Management → Project checklists
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
   const [txYear,setTxYear] = useState(()=>{const d=new Date();return String(d.getMonth()<2?d.getFullYear()-1:d.getFullYear());}); const [txBusy,setTxBusy] = useState(""); const [txDone,setTxDone] = useState(null);   // tax package
   const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
@@ -2753,6 +2754,7 @@ function App() {
     api("loan.get").then(d=>{ const m={}; (d.loans||[]).forEach(l=>{ m[String(l.projectId)]=l; }); setLoans(m); setDraws(d.draws||[]); const dm={}; (d.deals||[]).forEach(x=>{ dm[String(x.projectId)]=x; }); setDeals(dm); setDrawBudget(d.budget||[]); setCoLoans(d.companyLoans||[]); setCoTxns(d.companyTxns||[]); setPayItems(d.payments||[]); setPayLog(d.paymentLog||[]); setLoansLoaded(true); setLoanErr(""); })
       .catch(err=>setLoanErr(err.message));
     api("rcpt.list").then(d=>{ setRcItems(d.receipts||[]); setRcLoaded(true); setRcErr(""); }).catch(err=>setRcErr(err.message));   // Receipts.gs
+    api("ck.list").then(d=>{ setCk({template:d.template||[],lists:d.lists||[],items:d.items||[]}); setCkLoaded(true); setCkErr(""); }).catch(err=>setCkErr(err.message));   // Checklists.gs
   },[authed]);
 
   // Save milestones to Sheet when they change (debounced, only after initial load)
@@ -3771,6 +3773,162 @@ function App() {
   };
 
 
+  // ══ Project checklists: the same steps for every deal. Starts in Management (a copy of your template), "Assign" puts it in a project (Checklists.gs) ══
+  // State lives next to the other Management state (see the line before `const [dsItems`). Nothing here deletes a project, expense or draw.
+  const ckToday=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const ckApply=r=>{ if(r&&r.lists){ setCk({template:r.template||[],lists:r.lists||[],items:r.items||[]}); setCkLoaded(true); setCkErr(""); } };
+  const ckCall=async(action,body,okMsg)=>{
+    setCkBusy(true);
+    try{ const r=await api("ck."+action,body,0); ckApply(r); if(okMsg) showToast(typeof okMsg==="function"?okMsg(r):okMsg); return r; }
+    catch(err){ showToast(/Unknown action|not defined|Unauthorized/.test(err.message)?"The app's Apps Script doesn't have checklists yet. Paste in the new Code.gs and Checklists.gs, then Deploy → Manage deployments → ✏️ Edit → New version.":err.message,"error"); return null; }
+    finally{ setCkBusy(false); }
+  };
+  const ckItemsOf=id=>ck.items.filter(x=>x.checklistId===id).sort((a,b)=>a.sort-b.sort);
+  const ckStats=id=>{ const its=ckItemsOf(id), na=its.filter(x=>x.status==="na").length, done=its.filter(x=>x.status==="done").length, total=its.length-na; return {done,na,total,all:its.length,pct:total>0?Math.round(done/total*100):0}; };
+  const ckProjName=pid=>{ const p=projects.find(x=>String(x.id)===String(pid)); return p?p.name:"(a project that was deleted)"; };
+  const ckPickable=projects.filter(p=>!(p.description||"").includes("No budget"));
+  const ckToggle=(it,status)=>{      // ticks show at once; the Sheet is saved right after, and a failure puts the old state back
+    const before=ck;
+    setCk(c=>({...c,items:c.items.map(x=>x.id===it.id?{...x,status,doneDate:status==="done"?ckToday():""}:x)}));
+    api("ck.setStatus",{id:it.id,status},0).then(r=>ckApply(r)).catch(err=>{ setCk(before); showToast(err.message,"error"); });
+  };
+  const ckBtn=(label,onClick,ghost,extra)=>e("button",{style:{...S.btn(ghost?"ghost":undefined),fontSize:11,padding:"5px 11px",opacity:(extra&&extra.dis)?0.4:1,cursor:(extra&&extra.dis)?"not-allowed":"pointer"},disabled:ckBusy||!!(extra&&extra.dis),onClick,...((extra&&extra["data-testid"])?{"data-testid":extra["data-testid"]}:{}),...((extra&&extra.title)?{title:extra.title}:{})},label);
+  const ckBar=(st)=>e("div",{style:{height:6,borderRadius:99,background:"var(--t-line)",overflow:"hidden",minWidth:80}},e("div",{style:{width:st.pct+"%",height:"100%",background:st.pct>=100?"var(--t-green)":"var(--t-gold)"}}));
+  const ckStatText=st=>st.done+" of "+st.total+" done"+(st.na?" · "+st.na+" not needed":"");
+
+  // One step: tick box, text, "N/A", and (in edit mode) move / rename / remove
+  const ckStepRow=(it,edit)=>{
+    const done=it.status==="done", na=it.status==="na", editing=ckItemEdit&&ckItemEdit.id===it.id;
+    return e("div",{key:it.id,"data-testid":"ck-step",style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid var(--t-line2)"}},
+      e("button",{"data-testid":"ck-box","aria-label":(done?"Mark not done: ":"Mark done: ")+it.text,disabled:na,onClick:()=>ckToggle(it,done?"":"done"),
+        style:{width:22,height:22,flex:"0 0 22px",borderRadius:6,border:"2px solid "+(done?"var(--t-green)":"var(--t-faint)"),background:done?"var(--t-green)":"transparent",color:"#fff",cursor:na?"not-allowed":"pointer",fontSize:13,lineHeight:"16px",padding:0,opacity:na?0.35:1}},done?"✓":""),
+      editing?e("input",{style:{...S.input,flex:1,fontSize:13,padding:"4px 8px"},autoFocus:true,"aria-label":"Step text",value:ckItemEdit.text,onChange:ev=>{const v=ev.target.value;setCkItemEdit(m=>({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckItemEdit.text).trim()){ ckCall("editItem",{id:it.id,text:ckItemEdit.text}).then(r=>{ if(r) setCkItemEdit(null); }); } if(ev.key==="Escape") setCkItemEdit(null); }})
+        :e("div",{style:{flex:1,minWidth:0,fontSize:13.5,color:(done||na)?"var(--t-mute)":"var(--t-ink)",textDecoration:done?"line-through":"none"}},
+          it.text,
+          na&&e("span",{style:{marginLeft:8,fontSize:10.5,fontWeight:700,color:"var(--t-mute)",border:"1px solid var(--t-line)",borderRadius:99,padding:"1px 7px"}},"NOT NEEDED"),
+          done&&it.doneDate&&e("span",{style:{marginLeft:8,fontSize:11,color:"var(--t-mute)"}},payNice(it.doneDate))),
+      editing?[ckBtn("Save",()=>ckCall("editItem",{id:it.id,text:ckItemEdit.text}).then(r=>{ if(r) setCkItemEdit(null); }),false,{dis:!String(ckItemEdit.text).trim()}),ckBtn("Cancel",()=>setCkItemEdit(null),true)].map((b,i)=>e(React.Fragment,{key:i},b))
+      :[done?null:ckBtn(na?"Needed":"N/A",()=>ckToggle(it,na?"":"na"),true,{"data-testid":"ck-na",title:na?"Put this step back on the list":"This deal doesn't need this step"}),
+        edit&&ckBtn("↑",()=>ckCall("moveItem",{id:it.id,dir:"up"}),true,{title:"Move up"}),
+        edit&&ckBtn("↓",()=>ckCall("moveItem",{id:it.id,dir:"down"}),true,{title:"Move down"}),
+        edit&&ckBtn("✎",()=>setCkItemEdit({id:it.id,text:it.text}),true,{title:"Rename this step"}),
+        edit&&ckBtn("✕",()=>{ if(window.confirm("Remove “"+it.text+"” from this checklist?")) ckCall("removeItem",{id:it.id}); },true,{"data-testid":"ck-remove",title:"Remove this step from this checklist"})].map((b,i)=>b?e(React.Fragment,{key:i},b):null));
+  };
+  const ckAddRow=(listId)=>e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
+    e("input",{"data-testid":"ck-add-input","aria-label":"Add a step",style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},placeholder:"Add a step…",value:ckAdd[listId]||"",onChange:ev=>{const v=ev.target.value;setCkAdd(m=>({...m,[listId]:v}));},
+      onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckAdd[listId]||"").trim()){ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t}).then(r=>{ if(r) setCkAdd(m=>({...m,[listId]:""})); }); } }}),
+    ckBtn("+ Add step",()=>{ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t},"Step added").then(r=>{ if(r) setCkAdd(m=>({...m,[listId]:""})); }); },false,{dis:!String(ckAdd[listId]||"").trim(),"data-testid":"ck-add"}));
+
+  // All steps of one checklist (Management and project use the same thing)
+  const ckSteps=(l,opts)=>{
+    const o=opts||{}, edit=!!ckEditMode[l.id], its=ckItemsOf(l.id), shown=o.onlyOpen?its.filter(x=>!x.status).slice(0,o.limit||5):its;
+    return e("div",{"data-testid":"ck-steps"},
+      shown.length===0?e("div",{style:{fontSize:12.5,color:"var(--t-mute)",padding:"6px 0"}},its.length?"Every step is done or marked not needed. 🎉":"No steps yet."):shown.map(it=>ckStepRow(it,edit)),
+      !o.onlyOpen&&ckAddRow(l.id),
+      !o.onlyOpen&&e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
+        ckBtn(edit?"Done editing":"Edit steps",()=>{ setCkEditMode(m=>({...m,[l.id]:!edit})); setCkItemEdit(null); },true,{"data-testid":"ck-edit-toggle"})));
+  };
+
+  const CkCard=()=>{
+    if(!ckLoaded&&!ckErr) return null;
+    const loose=ck.lists.filter(l=>!l.projectId), placed=ck.lists.filter(l=>l.projectId);
+    const row=l=>{
+      const st=ckStats(l.id), open=!!ckOpen[l.id], pick=ckPick[l.id]||"", renaming=ckRename&&ckRename.id===l.id;
+      return e("div",{key:l.id,"data-testid":"ck-list",style:{borderTop:"1px solid var(--t-line2)",padding:"12px 0"}},
+        e("div",{style:{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap",alignItems:"center"}},
+          e("div",{style:{minWidth:0,flex:"1 1 220px",cursor:"pointer"},onClick:()=>setCkOpen(m=>({...m,[l.id]:!open}))},
+            e("div",{style:{fontWeight:700,color:"var(--t-ink)",fontSize:14}},(open?"▾ ":"▸ ")+l.name),
+            e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:2}},ckStatText(st)+(l.projectId?" · in project: "+ckProjName(l.projectId):" · not assigned to a project yet"))),
+          e("div",{style:{width:110}},ckBar(st))),
+        !l.projectId&&e("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:8,alignItems:"center"}},
+          e("select",{"aria-label":"Project for "+l.name,"data-testid":"ck-project",style:{...S.input,width:"auto",minWidth:170,fontSize:12,padding:"5px 8px"},value:pick,onChange:ev=>{const v=ev.target.value;setCkPick(m=>({...m,[l.id]:v}));}},
+            e("option",{value:""},"Assign to a project…"),...ckPickable.map(p=>e("option",{key:p.id,value:String(p.id)},p.name))),
+          ckBtn("Assign",()=>ckCall("assign",{id:l.id,projectId:pick},"Assigned to "+ckProjName(pick)+" · it now shows on that project's Dashboard").then(r=>{ if(r) setCkPick(m=>({...m,[l.id]:""})); }),false,{dis:!pick,"data-testid":"ck-assign"})),
+        open&&e("div",{style:{background:"var(--t-inset)",borderRadius:8,padding:"8px 12px",marginTop:10}},
+          renaming?e("div",{style:{display:"flex",gap:6,marginBottom:6,flexWrap:"wrap"}},
+            e("input",{style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},"aria-label":"Checklist name",autoFocus:true,value:ckRename.name,onChange:ev=>{const v=ev.target.value;setCkRename(m=>({...m,name:v}));}}),
+            ckBtn("Save name",()=>ckCall("rename",{id:l.id,name:ckRename.name}).then(r=>{ if(r) setCkRename(null); }),false,{dis:!String(ckRename.name).trim()}),ckBtn("Cancel",()=>setCkRename(null),true))
+          :e("div",{style:{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}},
+            ckBtn("Rename",()=>setCkRename({id:l.id,name:l.name}),true),
+            l.projectId&&ckBtn("Move back to Management",()=>ckCall("assign",{id:l.id,projectId:""},"Moved back to Management"),true,{"data-testid":"ck-unassign"}),
+            !l.projectId&&ckBtn("Delete checklist",()=>{ if(window.confirm("Delete “"+l.name+"” and all its steps? This can't be undone.")) ckCall("delete",{id:l.id},"Checklist deleted"); },true,{"data-testid":"ck-delete"})),
+          ckSteps(l)));
+    };
+    return e("div",{style:{...S.card,marginBottom:16},"data-testid":"checklists-card"},
+      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}},
+        e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-gold)",textTransform:"uppercase",letterSpacing:"0.06em"}},"✅ Project checklists"+(ck.lists.length?" · "+ck.lists.length:"")),
+        e("div",{style:{display:"flex",gap:6}},ckBtn("Edit template",()=>setCkTplOpen(true),true,{"data-testid":"ck-tpl-open"}),ckBtn("+ New checklist",()=>setCkNew({name:"",projectId:""}),false,{"data-testid":"ck-new"}))),
+      ckErr&&!ckLoaded?e("div",{style:{fontSize:13,color:"var(--t-mute)"}},/Unknown action|not defined|Unauthorized/.test(ckErr)?"Checklists need the new Code.gs and Checklists.gs in the app's Apps Script (then Deploy → New version).":"Couldn't load checklists: "+ckErr):
+      e("div",null,
+        ck.lists.length===0&&e("div",{style:{fontSize:13,color:"var(--t-mute)"}},"No checklists yet. Press “+ New checklist” to start one from your template ("+ck.template.length+" steps: offer, closing, rehab orders, staging…). It stays here until you assign it to a project."),
+        loose.length>0&&e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginTop:4}},"Not assigned yet"),
+        ...loose.map(row),
+        placed.length>0&&e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginTop:12}},"In a project"),
+        ...placed.map(row)));
+  };
+
+  // The box on a project's Dashboard: only the checklists assigned to THIS project
+  const CkProjectBox=()=>{
+    if(!ckLoaded||!activeProject) return null;
+    const mine=ck.lists.filter(l=>String(l.projectId)===String(activeProject.id));
+    if(mine.length===0) return e("div",{style:{...S.card,marginBottom:16,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"},"data-testid":"ck-project-empty"},
+      e("div",{style:{fontSize:12.5,color:"var(--t-mute)"}},"✅ No checklist on this project yet."),
+      e("div",{style:{display:"flex",gap:6}},
+        ckBtn("Start one from the template",()=>ckCall("create",{name:activeProject.name,projectId:String(activeProject.id)},"Checklist started for "+activeProject.name),false,{"data-testid":"ck-start"}),
+        ckBtn("Open Management",()=>{ setActiveId(null); navTo("management"); },true)));
+    return e("div",null,...mine.map(l=>{
+      const st=ckStats(l.id), full=!!ckOpen["p:"+l.id];
+      return e("div",{key:l.id,style:{...S.card,marginBottom:16},"data-testid":"ck-project-box"},
+        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:8}},
+          e("div",null,
+            e("div",{style:{fontSize:12,fontWeight:700,color:"var(--t-gold)",textTransform:"uppercase",letterSpacing:"0.06em"}},"✅ Checklist · "+l.name),
+            e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:2}},ckStatText(st))),
+          e("div",{style:{display:"flex",alignItems:"center",gap:10}},e("div",{style:{width:110}},ckBar(st)),
+            ckBtn(full?"Show next steps":"Show all "+st.all+" steps",()=>setCkOpen(m=>({...m,["p:"+l.id]:!full})),true,{"data-testid":"ck-toggle-all"}))),
+        full?ckSteps(l):e("div",null,e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2}},"Next up"),ckSteps(l,{onlyOpen:true,limit:5}),ckAddRow(l.id)));
+    }));
+  };
+
+  // New checklist: name + (optional) project right at the start
+  const CkNewModal=()=>{
+    if(!ckNew) return null;
+    const set=p=>setCkNew(m=>({...m,...p})), go=async()=>{
+      const r=await ckCall("create",{name:ckNew.name,projectId:ckNew.projectId},res=>"Checklist created from your template ("+res.items.filter(i=>i.checklistId===res.createdId).length+" steps)"+(ckNew.projectId?" and assigned to "+ckProjName(ckNew.projectId):""));
+      if(r){ setCkNew(null); if(r.createdId&&!ckNew.projectId) setCkOpen(m=>({...m,[r.createdId]:true})); }
+    };
+    return e("div",{key:"ck-n","data-testid":"ck-new-modal"},overlay(()=>setCkNew(null),[
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:4}},"New project checklist"),
+      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:12}},"A copy of your template ("+ck.template.length+" steps). You can add or change steps after."),
+      e("div",{key:"f",style:{display:"flex",flexDirection:"column",gap:12}},
+        fld("Name",e("input",{style:S.input,"aria-label":"Checklist name",autoFocus:true,placeholder:"e.g. Trabue",value:ckNew.name,onChange:ev=>set({name:ev.target.value}),onKeyDown:ev=>{ if(ev.key==="Enter"&&!ckBusy) go(); }})),
+        fld("Assign to a project",e("select",{style:S.input,"aria-label":"Assign to a project",value:ckNew.projectId,onChange:ev=>set({projectId:ev.target.value})},
+          e("option",{value:""},"Not yet: keep it in Management"),...ckPickable.map(p=>e("option",{key:p.id,value:String(p.id)},p.name)))),
+        e("div",{style:{fontSize:11.5,color:"var(--t-mute)"}},"A checklist that isn't assigned only shows here in Management. Once it's assigned it also shows on that project's Dashboard.")),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16}},e("div",{style:{flex:1}}),
+        e("button",{style:S.btn("ghost"),onClick:()=>setCkNew(null)},"Cancel"),
+        e("button",{style:S.btn(),disabled:ckBusy,"data-testid":"ck-create",onClick:go},ckBusy?"Creating…":"Create checklist"))]));
+  };
+
+  // The master template: new checklists start as a copy of it. Changing it never changes checklists that already exist.
+  const CkTemplateModal=()=>{
+    if(!ckTplOpen) return null;
+    const tpl=ck.template, ed=ckItemEdit&&ckItemEdit.tpl?ckItemEdit:null;
+    return e("div",{key:"ck-t","data-testid":"ck-tpl-modal"},overlay(()=>{ setCkTplOpen(false); setCkItemEdit(null); },[
+      e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:4}},"Checklist template"),
+      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:10}},"New checklists start as a copy of these steps. Changes here apply to checklists you create from now on; existing ones aren't touched."),
+      e("div",{key:"l","data-testid":"ck-tpl-steps"},...tpl.map((t,i)=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderTop:"1px solid var(--t-line2)"}},
+        e("div",{style:{width:22,fontSize:11,color:"var(--t-mute)"}},i+1),
+        ed&&ed.id===t.id?e("input",{style:{...S.input,flex:1,fontSize:13,padding:"4px 8px"},autoFocus:true,"aria-label":"Template step text",value:ed.text,onChange:ev=>{const v=ev.target.value;setCkItemEdit(m=>({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ed.text).trim()) ckCall("tplEdit",{id:t.id,text:ed.text}).then(r=>{ if(r) setCkItemEdit(null); }); }})
+          :e("div",{style:{flex:1,minWidth:0,fontSize:13.5,color:"var(--t-ink)"}},t.text),
+        ed&&ed.id===t.id?[ckBtn("Save",()=>ckCall("tplEdit",{id:t.id,text:ed.text}).then(r=>{ if(r) setCkItemEdit(null); }),false,{dis:!String(ed.text).trim()}),ckBtn("Cancel",()=>setCkItemEdit(null),true)].map((b,k)=>e(React.Fragment,{key:k},b))
+        :[ckBtn("↑",()=>ckCall("tplMove",{id:t.id,dir:"up"}),true,{title:"Move up"}),ckBtn("↓",()=>ckCall("tplMove",{id:t.id,dir:"down"}),true,{title:"Move down"}),ckBtn("✎",()=>setCkItemEdit({id:t.id,text:t.text,tpl:true}),true,{title:"Rename"}),
+          ckBtn("✕",()=>{ if(window.confirm("Remove “"+t.text+"” from the template? Existing checklists keep it.")) ckCall("tplRemove",{id:t.id}); },true,{title:"Remove from the template","data-testid":"ck-tpl-remove"})].map((b,k)=>e(React.Fragment,{key:k},b))))),
+      e("div",{key:"add",style:{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}},
+        e("input",{"data-testid":"ck-tpl-input","aria-label":"Add a template step",style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},placeholder:"Add a step to the template…",value:ckAdd.tpl||"",onChange:ev=>{const v=ev.target.value;setCkAdd(m=>({...m,tpl:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckAdd.tpl||"").trim()) ckCall("tplAdd",{text:ckAdd.tpl}).then(r=>{ if(r) setCkAdd(m=>({...m,tpl:""})); }); }}),
+        ckBtn("+ Add to template",()=>ckCall("tplAdd",{text:ckAdd.tpl}).then(r=>{ if(r) setCkAdd(m=>({...m,tpl:""})); }),false,{dis:!String(ckAdd.tpl||"").trim(),"data-testid":"ck-tpl-add"})),
+      e("div",{key:"a",style:{display:"flex",gap:8,marginTop:16}},e("div",{style:{flex:1}}),e("button",{style:S.btn(),onClick:()=>{ setCkTplOpen(false); setCkItemEdit(null); }},"Close"))]));
+  };
+
   const deal      =activeProject?deals[String(activeProject.id)]:null;
   const fundedList=pDraws.filter(d=>d.status==="Funded").map(d=>({amt:nz(d.amountFunded)||nz(d.amountRequested),date:d.fundedDate}));
   const projCalc  =calcProfit({pp,rb,expenses,deal,loan,drawn:drawnFunded,funded:fundedList,otherInterest:activeProject?coInterestFor(activeProject.id):0,drawFees:pDraws.filter(d=>d.status!=="Denied").reduce((s,d)=>s+nz(d.fee),0)});
@@ -4261,6 +4419,7 @@ function App() {
     ),
 
     !isGeneral&&ProfitStatusCard(),
+    !isGeneral&&CkProjectBox(),
 
     // Cost Summary — hidden for General Expenses
     !isGeneral&&e("div",{style:{...S.card,marginBottom:16,background:"linear-gradient(135deg,var(--t-card),var(--t-grad1))",border:"1px solid var(--t-faint)"}},
@@ -6440,6 +6599,7 @@ function App() {
       ),
 
       ReceiptsCard(),
+      CkCard(),
       PaymentsCard(),
       CompanyLoansCard(),
       TaxCard(),
@@ -6653,6 +6813,8 @@ function App() {
     PaymentModal(),
     PayMarkModal(),
     ReceiptModal(),
+    CkNewModal(),
+    CkTemplateModal(),
     delConfirm&&e("div",{style:{position:"fixed",inset:0,background:"#000c",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:16}},
       e("div",{style:{...S.card,maxWidth:360,width:"100%"}},
         e("div",{style:{fontWeight:700,fontSize:16,marginBottom:8,color:"var(--t-ink)"}},"Delete "+(delConfirm.type==="project"?"Project":delConfirm.type==="task"?"Task":delConfirm.type==="quote"?"Quote":"Expense")+"?"),
