@@ -3792,14 +3792,60 @@ function App() {
     setCk(c=>({...c,items:c.items.map(x=>x.id===it.id?{...x,status,doneDate:status==="done"?ckToday():""}:x)}));
     api("ck.setStatus",{id:it.id,status},0).then(r=>ckApply(r)).catch(err=>{ setCk(before); showToast(err.message,"error"); });
   };
+  // Drag and drop (mouse AND touch): grab the ⠿ handle of any step and move it up or down; the other steps slide out of the way.
+  // Arrow-up / arrow-down on the focused handle also move it. onDrop gets the new order of the row ids.
+  const ckDrag=(ev,onDrop)=>{
+    if(ev.button!==undefined&&ev.button!==0) return;
+    const handle=ev.currentTarget, row=handle.closest("[data-ck-id]"), box=row&&row.closest("[data-ck-rows]"); if(!row||!box) return;
+    const rows=[...box.querySelectorAll(":scope > [data-ck-id]")], from=rows.indexOf(row); if(from<0||rows.length<2) return;
+    ev.preventDefault();
+    const rects=rows.map(r=>r.getBoundingClientRect()), h=rects[from].height, mid=rects.map(r=>r.top+r.height/2), startY=ev.clientY;
+    let scroller=box; while(scroller&&scroller!==document.body){ const oy=getComputedStyle(scroller).overflowY; if((oy==="auto"||oy==="scroll")&&scroller.scrollHeight>scroller.clientHeight) break; scroller=scroller.parentElement; }
+    const useWin=!scroller||scroller===document.body, sc=()=>useWin?(window.pageYOffset||document.documentElement.scrollTop||0):scroller.scrollTop, sc0=sc();
+    let lastY=startY, to=from, timer=null;
+    row.style.position="relative"; row.style.zIndex="5"; row.style.background="var(--t-card)"; row.style.boxShadow="0 6px 18px #0009"; row.style.transition="none"; handle.style.cursor="grabbing";
+    rows.forEach((r,i)=>{ if(i!==from) r.style.transition="transform .12s"; });
+    try{ handle.setPointerCapture(ev.pointerId); }catch(_){}
+    const update=()=>{
+      const dy=(lastY-startY)+(sc()-sc0), c=mid[from]+dy; row.style.transform="translateY("+dy+"px)";
+      to=rows.reduce((n,r,i)=>n+((i!==from&&mid[i]<c)?1:0),0);
+      rows.forEach((r,i)=>{ if(i===from) return; r.style.transform=(from<to&&i>from&&i<=to)?"translateY("+(-h)+"px)":(to<from&&i>=to&&i<from)?"translateY("+h+"px)":""; });
+    };
+    const onMove=m=>{ lastY=m.clientY; update(); };
+    timer=setInterval(()=>{   // scroll when the finger / mouse is near the top or bottom edge
+      const top=useWin?0:scroller.getBoundingClientRect().top, bot=useWin?window.innerHeight:scroller.getBoundingClientRect().bottom;
+      const d=lastY<top+50?-12:lastY>bot-50?12:0; if(d){ if(useWin) window.scrollBy(0,d); else scroller.scrollTop+=d; update(); }
+    },16);
+    const end=()=>{
+      document.removeEventListener("pointermove",onMove); document.removeEventListener("pointerup",up); document.removeEventListener("pointercancel",cancel); clearInterval(timer);
+      rows.forEach(r=>{ r.style.transform=""; r.style.transition=""; r.style.position=""; r.style.zIndex=""; r.style.background=""; r.style.boxShadow=""; }); handle.style.cursor="grab";
+    };
+    const up=()=>{ end(); if(to!==from){ const ids=rows.map(r=>r.getAttribute("data-ck-id")), [m]=ids.splice(from,1); ids.splice(to,0,m); onDrop(ids); } };
+    const cancel=()=>end();
+    document.addEventListener("pointermove",onMove); document.addEventListener("pointerup",up); document.addEventListener("pointercancel",cancel);
+  };
+  const ckReorder=(listId,ids)=>{      // the new order shows at once; the Sheet is saved right after (a failure puts the old order back)
+    const before=ck, rank={}; ids.forEach((id,i)=>{ rank[id]=i+1; });
+    setCk(c=>({...c,items:c.items.map(x=>x.checklistId===listId&&rank[x.id]?{...x,sort:rank[x.id]}:x)}));
+    api("ck.reorder",{checklistId:listId,ids},0).then(r=>ckApply(r)).catch(err=>{ setCk(before); showToast(err.message,"error"); });
+  };
+  const ckTplReorder=(ids)=>{
+    const before=ck, rank={}; ids.forEach((id,i)=>{ rank[id]=i+1; });
+    setCk(c=>({...c,template:c.template.map(x=>rank[x.id]?{...x,sort:rank[x.id]}:x).sort((a,b)=>a.sort-b.sort)}));
+    api("ck.tplReorder",{ids},0).then(r=>ckApply(r)).catch(err=>{ setCk(before); showToast(err.message,"error"); });
+  };
+  const ckHandle=(text,onDrop,onKey)=>e("button",{"data-testid":"ck-handle","aria-label":"Move “"+text+"”: drag it, or press the up or down arrow key",title:"Drag to move (or press ↑ / ↓ while it's selected)",
+    onPointerDown:ev=>ckDrag(ev,onDrop),onKeyDown:ev=>{ if(ev.key==="ArrowUp"||ev.key==="ArrowDown"){ ev.preventDefault(); onKey(ev.key==="ArrowUp"?"up":"down"); } },
+    style:{background:"transparent",border:"none",color:"var(--t-mute)",cursor:"grab",fontSize:17,lineHeight:"18px",padding:"0 4px",touchAction:"none",userSelect:"none",flex:"0 0 auto"}},"⠿");
   const ckBtn=(label,onClick,ghost,extra)=>e("button",{style:{...S.btn(ghost?"ghost":undefined),fontSize:11,padding:"5px 11px",opacity:(extra&&extra.dis)?0.4:1,cursor:(extra&&extra.dis)?"not-allowed":"pointer"},disabled:ckBusy||!!(extra&&extra.dis),onClick,...((extra&&extra["data-testid"])?{"data-testid":extra["data-testid"]}:{}),...((extra&&extra.title)?{title:extra.title}:{})},label);
   const ckBar=(st)=>e("div",{style:{height:6,borderRadius:99,background:"var(--t-line)",overflow:"hidden",minWidth:80}},e("div",{style:{width:st.pct+"%",height:"100%",background:st.pct>=100?"var(--t-green)":"var(--t-gold)"}}));
   const ckStatText=st=>st.done+" of "+st.total+" done"+(st.na?" · "+st.na+" not needed":"");
 
   // One step: tick box, text, "N/A", and (in edit mode) move / rename / remove
-  const ckStepRow=(it,edit)=>{
+  const ckStepRow=(it,edit,drag)=>{
     const done=it.status==="done", na=it.status==="na", editing=ckItemEdit&&ckItemEdit.id===it.id;
-    return e("div",{key:it.id,"data-testid":"ck-step",style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid var(--t-line2)"}},
+    return e("div",{key:it.id,"data-testid":"ck-step","data-ck-id":it.id,style:{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid var(--t-line2)"}},
+      drag&&!editing&&ckHandle(it.text,ids=>ckReorder(it.checklistId,ids),dir=>ckCall("moveItem",{id:it.id,dir})),
       e("button",{"data-testid":"ck-box","aria-label":(done?"Mark not done: ":"Mark done: ")+it.text,disabled:na,onClick:()=>ckToggle(it,done?"":"done"),
         style:{width:22,height:22,flex:"0 0 22px",borderRadius:6,border:"2px solid "+(done?"var(--t-green)":"var(--t-faint)"),background:done?"var(--t-green)":"transparent",color:"#fff",cursor:na?"not-allowed":"pointer",fontSize:13,lineHeight:"16px",padding:0,opacity:na?0.35:1}},done?"✓":""),
       editing?e("input",{style:{...S.input,flex:1,fontSize:13,padding:"4px 8px"},autoFocus:true,"aria-label":"Step text",value:ckItemEdit.text,onChange:ev=>{const v=ev.target.value;setCkItemEdit(m=>({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckItemEdit.text).trim()){ ckCall("editItem",{id:it.id,text:ckItemEdit.text}).then(r=>{ if(r) setCkItemEdit(null); }); } if(ev.key==="Escape") setCkItemEdit(null); }})
@@ -3814,16 +3860,16 @@ function App() {
         edit&&ckBtn("✎",()=>setCkItemEdit({id:it.id,text:it.text}),true,{title:"Rename this step"}),
         edit&&ckBtn("✕",()=>{ if(window.confirm("Remove “"+it.text+"” from this checklist?")) ckCall("removeItem",{id:it.id}); },true,{"data-testid":"ck-remove",title:"Remove this step from this checklist"})].map((b,i)=>b?e(React.Fragment,{key:i},b):null));
   };
-  const ckAddRow=(listId)=>e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
+  const ckAddRow=(listId,onAdded)=>e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
     e("input",{"data-testid":"ck-add-input","aria-label":"Add a step",style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},placeholder:"Add a step…",value:ckAdd[listId]||"",onChange:ev=>{const v=ev.target.value;setCkAdd(m=>({...m,[listId]:v}));},
-      onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckAdd[listId]||"").trim()){ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t}).then(r=>{ if(r) setCkAdd(m=>({...m,[listId]:""})); }); } }}),
-    ckBtn("+ Add step",()=>{ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t},"Step added").then(r=>{ if(r) setCkAdd(m=>({...m,[listId]:""})); }); },false,{dis:!String(ckAdd[listId]||"").trim(),"data-testid":"ck-add"}));
+      onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckAdd[listId]||"").trim()){ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t}).then(r=>{ if(r){ setCkAdd(m=>({...m,[listId]:""})); if(onAdded) onAdded(); } }); } }}),
+    ckBtn("+ Add step",()=>{ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t},"Step added").then(r=>{ if(r){ setCkAdd(m=>({...m,[listId]:""})); if(onAdded) onAdded(); } }); },false,{dis:!String(ckAdd[listId]||"").trim(),"data-testid":"ck-add"}));
 
   // All steps of one checklist (Management and project use the same thing)
   const ckSteps=(l,opts)=>{
     const o=opts||{}, edit=!!ckEditMode[l.id], its=ckItemsOf(l.id), shown=o.onlyOpen?its.filter(x=>!x.status).slice(0,o.limit||5):its;
-    return e("div",{"data-testid":"ck-steps"},
-      shown.length===0?e("div",{style:{fontSize:12.5,color:"var(--t-mute)",padding:"6px 0"}},its.length?"Every step is done or marked not needed. 🎉":"No steps yet."):shown.map(it=>ckStepRow(it,edit)),
+    return e("div",{"data-testid":"ck-steps","data-ck-rows":"1"},
+      shown.length===0?e("div",{style:{fontSize:12.5,color:"var(--t-mute)",padding:"6px 0"}},its.length?"Every step is done or marked not needed. 🎉":"No steps yet."):shown.map(it=>ckStepRow(it,edit,!o.onlyOpen)),
       !o.onlyOpen&&ckAddRow(l.id),
       !o.onlyOpen&&e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
         ckBtn(edit?"Done editing":"Edit steps",()=>{ setCkEditMode(m=>({...m,[l.id]:!edit})); setCkItemEdit(null); },true,{"data-testid":"ck-edit-toggle"})));
@@ -3885,7 +3931,7 @@ function App() {
             e("div",{style:{fontSize:11.5,color:"var(--t-mute)",marginTop:2}},ckStatText(st))),
           e("div",{style:{display:"flex",alignItems:"center",gap:10}},e("div",{style:{width:110}},ckBar(st)),
             ckBtn(full?"Show next steps":"Show all "+st.all+" steps",()=>setCkOpen(m=>({...m,["p:"+l.id]:!full})),true,{"data-testid":"ck-toggle-all"}))),
-        full?ckSteps(l):e("div",null,e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2}},"Next up"),ckSteps(l,{onlyOpen:true,limit:5}),ckAddRow(l.id)));
+        full?ckSteps(l):e("div",null,e("div",{style:{fontSize:10.5,fontWeight:700,color:"var(--t-mute)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:2}},"Next up"),ckSteps(l,{onlyOpen:true,limit:5}),ckAddRow(l.id,()=>setCkOpen(m=>({...m,["p:"+l.id]:true})))));
     }));
   };
 
@@ -3915,8 +3961,9 @@ function App() {
     const tpl=ck.template, ed=ckItemEdit&&ckItemEdit.tpl?ckItemEdit:null;
     return e("div",{key:"ck-t","data-testid":"ck-tpl-modal"},overlay(()=>{ setCkTplOpen(false); setCkItemEdit(null); },[
       e("div",{key:"h",style:{fontWeight:800,fontSize:16,color:"var(--t-ink)",marginBottom:4}},"Checklist template"),
-      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:10}},"New checklists start as a copy of these steps. Changes here apply to checklists you create from now on; existing ones aren't touched."),
-      e("div",{key:"l","data-testid":"ck-tpl-steps"},...tpl.map((t,i)=>e("div",{key:t.id,style:{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderTop:"1px solid var(--t-line2)"}},
+      e("div",{key:"s",style:{fontSize:12,color:"var(--t-sub)",marginBottom:10}},"New checklists start as a copy of these steps. Drag ⠿ to reorder. Changes here apply to checklists you create from now on; existing ones aren't touched."),
+      e("div",{key:"l","data-testid":"ck-tpl-steps","data-ck-rows":"1"},...tpl.map((t,i)=>e("div",{key:t.id,"data-ck-id":t.id,style:{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderTop:"1px solid var(--t-line2)"}},
+        !(ed&&ed.id===t.id)&&ckHandle(t.text,ids=>ckTplReorder(ids),dir=>ckCall("tplMove",{id:t.id,dir})),
         e("div",{style:{width:22,fontSize:11,color:"var(--t-mute)"}},i+1),
         ed&&ed.id===t.id?e("input",{style:{...S.input,flex:1,fontSize:13,padding:"4px 8px"},autoFocus:true,"aria-label":"Template step text",value:ed.text,onChange:ev=>{const v=ev.target.value;setCkItemEdit(m=>({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ed.text).trim()) ckCall("tplEdit",{id:t.id,text:ed.text}).then(r=>{ if(r) setCkItemEdit(null); }); }})
           :e("div",{style:{flex:1,minWidth:0,fontSize:13.5,color:"var(--t-ink)"}},t.text),
