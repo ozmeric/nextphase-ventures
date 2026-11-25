@@ -2538,7 +2538,7 @@ function App() {
   const [coEdit,setCoEdit] = useState(null); const [coPay,setCoPay] = useState(null); const [coOpen,setCoOpen] = useState({}); const [coBusy,setCoBusy] = useState(false);
   const [payItems,setPayItems] = useState([]); const [payLog,setPayLog] = useState([]); const [payEdit,setPayEdit] = useState(null); const [payMark,setPayMark] = useState(null); const [payOpen,setPayOpen] = useState({}); const [payBusy,setPayBusy] = useState(false); const [payShowHist,setPayShowHist] = useState(false); const [payShowIdle,setPayShowIdle] = useState(false);   // Management → Payment reminders
   const [rcItems,setRcItems] = useState([]); const [rcLoaded,setRcLoaded] = useState(false); const [rcErr,setRcErr] = useState(""); const [rcBusy,setRcBusy] = useState(false); const [rcEdit,setRcEdit] = useState(null); const [rcEdits,setRcEdits] = useState({}); const [rcShowDone,setRcShowDone] = useState(false);   // Management → Receipts to review
-  const [ck,setCk] = useState({template:[],lists:[],items:[]}); const [ckLoaded,setCkLoaded] = useState(false); const [ckErr,setCkErr] = useState(""); const [ckBusy,setCkBusy] = useState(false); const [ckOpen,setCkOpen] = useState({}); const [ckEditMode,setCkEditMode] = useState({}); const [ckItemEdit,setCkItemEdit] = useState(null); const [ckAdd,setCkAdd] = useState({}); const [ckNew,setCkNew] = useState(null); const [ckTplOpen,setCkTplOpen] = useState(false); const [ckPick,setCkPick] = useState({}); const [ckRename,setCkRename] = useState(null);   // Management → Project checklists
+  const [ck,setCk] = useState({template:[],lists:[],items:[]}); const [ckLoaded,setCkLoaded] = useState(false); const [ckErr,setCkErr] = useState(""); const [ckBusy,setCkBusy] = useState(false); const [ckOpen,setCkOpen] = useState({}); const [ckEditMode,setCkEditMode] = useState({}); const [ckIns,setCkIns] = useState(null); const [ckItemEdit,setCkItemEdit] = useState(null); const [ckAdd,setCkAdd] = useState({}); const [ckNew,setCkNew] = useState(null); const [ckTplOpen,setCkTplOpen] = useState(false); const [ckPick,setCkPick] = useState({}); const [ckRename,setCkRename] = useState(null);   // Management → Project checklists
   const [dsItems,setDsItems] = useState([]); const [dsLoadedFor,setDsLoadedFor] = useState(null); const [dsErr,setDsErr] = useState(""); const [dsBusy,setDsBusy] = useState(false);   // 🎨 Design Decisions
   const [txYear,setTxYear] = useState(()=>{const d=new Date();return String(d.getMonth()<2?d.getFullYear()-1:d.getFullYear());}); const [txBusy,setTxBusy] = useState(""); const [txDone,setTxDone] = useState(null);   // tax package
   const [vpOpen,setVpOpen] = useState(null); const [vpAdding,setVpAdding] = useState(null); const [vpCat,setVpCat] = useState("Other"); const vpAddingRef = useRef(false);   // vendor picker
@@ -3849,16 +3849,15 @@ function App() {
       e("button",{"data-testid":"ck-box","aria-label":(done?"Mark not done: ":"Mark done: ")+it.text,disabled:na,onClick:()=>ckToggle(it,done?"":"done"),
         style:{width:22,height:22,flex:"0 0 22px",borderRadius:6,border:"2px solid "+(done?"var(--t-green)":"var(--t-faint)"),background:done?"var(--t-green)":"transparent",color:"#fff",cursor:na?"not-allowed":"pointer",fontSize:13,lineHeight:"16px",padding:0,opacity:na?0.35:1}},done?"✓":""),
       editing?e("input",{style:{...S.input,flex:1,fontSize:13,padding:"4px 8px"},autoFocus:true,"aria-label":"Step text",value:ckItemEdit.text,onChange:ev=>{const v=ev.target.value;setCkItemEdit(m=>({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter"&&String(ckItemEdit.text).trim()){ ckCall("editItem",{id:it.id,text:ckItemEdit.text}).then(r=>{ if(r) setCkItemEdit(null); }); } if(ev.key==="Escape") setCkItemEdit(null); }})
-        :e("div",{style:{flex:1,minWidth:0,fontSize:13.5,color:(done||na)?"var(--t-mute)":"var(--t-ink)",textDecoration:done?"line-through":"none"}},
+        :e("div",{"data-testid":"ck-text",title:drag?"Tap to rename this step":undefined,onClick:drag?()=>{ setCkIns(null); setCkItemEdit({id:it.id,text:it.text}); }:undefined,style:{flex:1,minWidth:0,fontSize:13.5,cursor:drag?"text":"default",color:(done||na)?"var(--t-mute)":"var(--t-ink)",textDecoration:done?"line-through":"none"}},
           it.text,
           na&&e("span",{style:{marginLeft:8,fontSize:10.5,fontWeight:700,color:"var(--t-mute)",border:"1px solid var(--t-line)",borderRadius:99,padding:"1px 7px"}},"NOT NEEDED"),
           done&&it.doneDate&&e("span",{style:{marginLeft:8,fontSize:11,color:"var(--t-mute)"}},payNice(it.doneDate))),
       editing?[ckBtn("Save",()=>ckCall("editItem",{id:it.id,text:ckItemEdit.text}).then(r=>{ if(r) setCkItemEdit(null); }),false,{dis:!String(ckItemEdit.text).trim()}),ckBtn("Cancel",()=>setCkItemEdit(null),true)].map((b,i)=>e(React.Fragment,{key:i},b))
       :[done?null:ckBtn(na?"Needed":"N/A",()=>ckToggle(it,na?"":"na"),true,{"data-testid":"ck-na",title:na?"Put this step back on the list":"This deal doesn't need this step"}),
-        edit&&ckBtn("↑",()=>ckCall("moveItem",{id:it.id,dir:"up"}),true,{title:"Move up"}),
-        edit&&ckBtn("↓",()=>ckCall("moveItem",{id:it.id,dir:"down"}),true,{title:"Move down"}),
-        edit&&ckBtn("✎",()=>setCkItemEdit({id:it.id,text:it.text}),true,{title:"Rename this step"}),
-        edit&&ckBtn("✕",()=>{ if(window.confirm("Remove “"+it.text+"” from this checklist?")) ckCall("removeItem",{id:it.id}); },true,{"data-testid":"ck-remove",title:"Remove this step from this checklist"})].map((b,i)=>b?e(React.Fragment,{key:i},b):null));
+        drag&&ckBtn("＋",()=>{ setCkItemEdit(null); setCkIns(m=>m&&m.after===it.id?null:{after:it.id,listId:it.checklistId,text:""}); },true,{"data-testid":"ck-insert",title:"Add a new step right below this one"}),
+        drag&&ckBtn("✎",()=>{ setCkIns(null); setCkItemEdit({id:it.id,text:it.text}); },true,{"data-testid":"ck-rename-step",title:"Rename this step"}),
+        drag&&ckBtn("✕",()=>{ if(window.confirm("Remove “"+it.text+"” from this checklist?")) ckCall("removeItem",{id:it.id}); },true,{"data-testid":"ck-remove",title:"Remove this step from this checklist"})].map((b,i)=>b?e(React.Fragment,{key:i},b):null));
   };
   const ckAddRow=(listId,onAdded)=>e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
     e("input",{"data-testid":"ck-add-input","aria-label":"Add a step",style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},placeholder:"Add a step…",value:ckAdd[listId]||"",onChange:ev=>{const v=ev.target.value;setCkAdd(m=>({...m,[listId]:v}));},
@@ -3866,13 +3865,22 @@ function App() {
     ckBtn("+ Add step",()=>{ const t=ckAdd[listId]; ckCall("addItem",{checklistId:listId,text:t},"Step added").then(r=>{ if(r){ setCkAdd(m=>({...m,[listId]:""})); if(onAdded) onAdded(); } }); },false,{dis:!String(ckAdd[listId]||"").trim(),"data-testid":"ck-add"}));
 
   // All steps of one checklist (Management and project use the same thing)
+  const ckInsRow=it=>{
+    const go=()=>{ const t=String(ckIns.text||"").trim(); if(!t) return; ckCall("addItem",{checklistId:it.checklistId,text:t,afterId:it.id},"Step added below").then(r=>{ if(r) setCkIns(null); }); };
+    return e("div",{key:"ins-"+it.id,"data-testid":"ck-ins-row",style:{display:"flex",gap:6,padding:"6px 0 6px 30px",flexWrap:"wrap",borderTop:"1px dashed var(--t-line)"}},
+      e("input",{"data-testid":"ck-ins-input","aria-label":"New step below “"+it.text+"”",autoFocus:true,style:{...S.input,flex:"1 1 200px",fontSize:13,padding:"6px 10px"},placeholder:"New step goes right here…",value:ckIns.text,
+        onChange:ev=>{const v=ev.target.value;setCkIns(m=>m&&({...m,text:v}));},onKeyDown:ev=>{ if(ev.key==="Enter") go(); if(ev.key==="Escape") setCkIns(null); }}),
+      ckBtn("Add here",go,false,{dis:!String(ckIns.text||"").trim(),"data-testid":"ck-ins-add"}),ckBtn("Cancel",()=>setCkIns(null),true));
+  };
   const ckSteps=(l,opts)=>{
-    const o=opts||{}, edit=!!ckEditMode[l.id], its=ckItemsOf(l.id), shown=o.onlyOpen?its.filter(x=>!x.status).slice(0,o.limit||5):its;
-    return e("div",{"data-testid":"ck-steps","data-ck-rows":"1"},
-      shown.length===0?e("div",{style:{fontSize:12.5,color:"var(--t-mute)",padding:"6px 0"}},its.length?"Every step is done or marked not needed. 🎉":"No steps yet."):shown.map(it=>ckStepRow(it,edit,!o.onlyOpen)),
-      !o.onlyOpen&&ckAddRow(l.id),
-      !o.onlyOpen&&e("div",{style:{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}},
-        ckBtn(edit?"Done editing":"Edit steps",()=>{ setCkEditMode(m=>({...m,[l.id]:!edit})); setCkItemEdit(null); },true,{"data-testid":"ck-edit-toggle"})));
+    const o=opts||{}, its=ckItemsOf(l.id), shown=o.onlyOpen?its.filter(x=>!x.status).slice(0,o.limit||5):its;
+    const rowsOut=[]; shown.forEach(it=>{ rowsOut.push(ckStepRow(it,false,!o.onlyOpen)); if(!o.onlyOpen&&ckIns&&ckIns.after===it.id) rowsOut.push(ckInsRow(it)); });
+    return e("div",null,
+      !o.onlyOpen&&e("div",{style:{marginBottom:6}},
+        ckAddRow(l.id,()=>{ setTimeout(()=>{ const bs=document.querySelectorAll('[data-ck-rows][data-ck-list="'+l.id+'"]'), b=bs[bs.length-1], last=b&&b.querySelector(":scope > [data-ck-id]:last-of-type"); if(last&&last.scrollIntoView) last.scrollIntoView({block:"center",behavior:"smooth"}); },250); }),
+        e("div",{style:{fontSize:11,color:"var(--t-mute)",marginTop:4}},"New steps go at the end of the list. Use ＋ on a row to add one right below it, tap a step's name to rename it, drag ⠿ to move it.")),
+      e("div",{"data-testid":"ck-steps","data-ck-rows":"1","data-ck-list":l.id},
+        shown.length===0?e("div",{style:{fontSize:12.5,color:"var(--t-mute)",padding:"6px 0"}},its.length?"Every step is done or marked not needed. 🎉":"No steps yet."):rowsOut));
   };
 
   const CkCard=()=>{
